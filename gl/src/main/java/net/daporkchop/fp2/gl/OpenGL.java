@@ -19,8 +19,6 @@
 
 package net.daporkchop.fp2.gl;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
@@ -44,8 +42,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -57,7 +53,6 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public abstract class OpenGL {
     public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
@@ -90,6 +85,30 @@ public abstract class OpenGL {
     private final GLExtensionSet allExtensions; //a set of all the supported extensions
 
     private final Limits limits;
+
+    protected OpenGL(@NonNull GLVersion version, @NonNull GLExtensionSet extensions, @NonNull GLProfile profile, boolean forwardCompatibility, Limits limits) {
+        this.version = version;
+        this.extensions = extensions;
+        this.profile = profile;
+        this.forwardCompatibility = forwardCompatibility;
+        this.limits = limits;
+
+        //ensure that extensions doesn't contain any extensions which are core in the current version
+        for (GLExtension extension : extensions) {
+            if (extension.core(version)) {
+                throw new IllegalArgumentException(extension + " is core in " + version);
+            }
+        }
+
+        //set allExtensions to extensions + all extensions which are core in the current version
+        GLExtensionSet allExtensions = extensions;
+        for (GLExtension extension : GLExtension.values()) {
+            if (extension.core(version)) {
+                allExtensions = allExtensions.add(extension);
+            }
+        }
+        this.allExtensions = allExtensions;
+    }
 
     protected OpenGL() {
         final boolean FORCE_LEGACY = false;
@@ -187,6 +206,18 @@ public abstract class OpenGL {
      */
     public final boolean supports(GLExtensionSet extensions) {
         return this.allExtensions.containsAll(extensions);
+    }
+
+    /**
+     * Checks that the features provided by the given OpenGL extension is supported by the current context.
+     *
+     * @param extension the OpenGL extension
+     * @throws UnsupportedOperationException if the given extensions is not supported
+     */
+    public final void checkSupported(GLExtension extension) {
+        if (!this.allExtensions.contains(extension)) {
+            throw new UnsupportedOperationException(this.unsupportedMsg(extension));
+        }
     }
 
     /**
@@ -322,6 +353,21 @@ public abstract class OpenGL {
         } else {
             return () -> {};
         }
+    }
+
+    /**
+     * Gets an {@link OpenGL} instance which wraps the current context, but exposes a limited subset of features.
+     * <p>
+     * Intended for compatibility testing with newer systems.
+     *
+     * @param version              the requested version. May not be newer than this context's version!
+     * @param extensions           the requested extensions. May only contain any extensions supported by this {@link OpenGL} instance, and may not contain any extensions which are core in the given version
+     * @param profile              the requested profile
+     * @param forwardCompatibility the requested forward compatibility flag
+     * @return an {@link OpenGL} instance
+     */
+    public final OpenGL wrapAsLegacy(@NonNull GLVersion version, @NonNull GLExtensionSet extensions, @NonNull GLProfile profile, boolean forwardCompatibility) {
+        return LegacyOpenGL.wrap(this, version, extensions, profile, forwardCompatibility);
     }
 
     //
@@ -814,14 +860,14 @@ public abstract class OpenGL {
     public abstract int glGetAttribLocation(int program, @NonNull CharSequence name);
 
     /**
-     * @since OpenGL 2.0
      * @return the attribute name
+     * @since OpenGL 2.0
      */
     public abstract String glGetActiveAttrib(int program, int index, int bufSize, @NonNull IntBuffer size, @NonNull IntBuffer type);
 
     /**
-     * @since OpenGL 2.0
      * @return the attribute name
+     * @since OpenGL 2.0
      */
     public abstract String glGetActiveAttrib(int program, int index, int bufSize, @NonNull int[] size, @NonNull int[] type);
 
@@ -1654,17 +1700,17 @@ public abstract class OpenGL {
     public abstract void glNamedBufferData(int buffer, @NonNull ByteBuffer data, int usage);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_buffer_storage)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage })
     public abstract void glNamedBufferStorage(int buffer, long data_size, long data, int flags);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_buffer_storage)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage })
     public abstract void glNamedBufferStorage(int buffer, @NonNull ByteBuffer data, int flags);
 
     /**
@@ -1745,10 +1791,10 @@ public abstract class OpenGL {
     public abstract boolean glUnmapNamedBuffer(int buffer);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_copy_buffer })
     public abstract void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size);
 
     /**
@@ -1813,6 +1859,8 @@ public abstract class OpenGL {
      */
     @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayVertexBuffer(int vaobj, int bindingindex, int buffer, long offset, int stride);
+
+    //TODO: does this require ARB_multi_bind as well?
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
@@ -1931,7 +1979,7 @@ public abstract class OpenGL {
         @GLRequires(GLExtension.GL_ARB_sparse_buffer)
         private final int sparseBufferPageSizeARB;
 
-        Limits(OpenGL gl) {
+        public Limits(OpenGL gl) {
             this.maxFragmentColors = gl.glGetInteger(GL_MAX_DRAW_BUFFERS);
             this.maxTextureUnits = gl.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
             this.maxVertexAttributes = gl.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
