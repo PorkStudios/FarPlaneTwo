@@ -32,6 +32,7 @@ import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A compact, immutable set of {@link GLExtension}s.
@@ -313,7 +314,7 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
     }
 
     /**
-     * Gets a set which contains the union of this set and the compliment of the given set.
+     * Gets a set which contains the intersection of this set and the compliment of the given set.
      *
      * @param extensions the other set
      * @return the union of this set and the compliment of the given set
@@ -331,7 +332,7 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
     }
 
     /**
-     * Gets a set which contains the union of this set and the compliment of the given set.
+     * Gets a set which contains the intersection of this set and the compliment of the given set.
      *
      * @param extensions the other set
      * @return the union of this set and the compliment of the given set
@@ -344,6 +345,24 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
         GLExtensionSet result = new GLExtensionSet(this);
         for (GLExtension extension : extensions) {
             result.removeMutable(extension);
+        }
+        return result;
+    }
+
+    /**
+     * Gets a set which contains the intersection of this set and the given set.
+     *
+     * @param extensions the other set
+     * @return the union of this set and the given set
+     */
+    public GLExtensionSet retainAll(GLExtensionSet extensions) {
+        if (this.equals(extensions)) {
+            return this;
+        }
+
+        GLExtensionSet result = new GLExtensionSet();
+        for (int word = 0; word < WORDS; word++) {
+            result.setBitsWord(word, this.getBitsWord(word) & extensions.getBitsWord(word));
         }
         return result;
     }
@@ -381,17 +400,23 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof GLExtensionSet) {
-            GLExtensionSet other = (GLExtensionSet) obj;
-            for (int word = 0; word < WORDS; word++) {
-                if (this.getBitsWord(word) != other.getBitsWord(word)) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
+        return obj instanceof GLExtensionSet && this.equals((GLExtensionSet) obj);
+    }
+
+    /**
+     * @see #equals(Object)
+     */
+    public boolean equals(GLExtensionSet other) {
+        if (other == null) {
             return false;
         }
+
+        for (int word = 0; word < WORDS; word++) {
+            if (this.getBitsWord(word) != other.getBitsWord(word)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -408,6 +433,13 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
     @Override
     public Iterator<GLExtension> iterator() { //this is slow but i don't care
         return Collections.unmodifiableList(Arrays.asList(this.toArray())).iterator();
+    }
+
+    /**
+     * @return a {@link Stream} over all the {@link GLExtension}s in this set
+     */
+    public Stream<GLExtension> stream() {
+        return Arrays.stream(this.toArray());
     }
 
     @Override

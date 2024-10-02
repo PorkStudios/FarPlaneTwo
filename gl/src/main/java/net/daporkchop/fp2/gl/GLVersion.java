@@ -22,6 +22,8 @@ package net.daporkchop.fp2.gl;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.stream.Stream;
+
 /**
  * All known OpenGL versions.
  *
@@ -58,5 +60,12 @@ public enum GLVersion {
     @Override
     public String toString() {
         return "OpenGL " + this.major + '.' + this.minor;
+    }
+
+    /**
+     * @return a {@link GLExtensionSet} containing every {@link GLExtension} which is core in this OpenGL version
+     */
+    public GLExtensionSet coreExtensions() {
+        return Stream.of(GLExtension.values()).filter(extension -> extension.core(this)).collect(GLExtensionSet.toExtensionSet());
     }
 }

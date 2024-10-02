@@ -34,24 +34,7 @@ public enum GLExtension {
     /**
      * @see <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_compatibility.txt">https://registry.khronos.org/OpenGL/extensions/ARB/ARB_compatibility.txt</a>
      */
-    GL_ARB_compatibility(null, false) {
-        @Override
-        public boolean core(@NonNull GLVersion version) {
-            return false;
-        }
-
-        @Override
-        public boolean supported(@NonNull OpenGL gl) {
-            if (gl.version().compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0
-                //they may be removed if forward compatibility is enabled, however that would still be overridden by the presence of ARB_compatibility
-                return !gl.forwardCompatibility() || gl.extensions().contains(this);
-            } else if (gl.version().compareTo(GLVersion.OpenGL31) <= 0) { //3.1: compatibility features only available if ARB_compatibility is present
-                return gl.extensions().contains(this);
-            } else { //3.2+: compatibility features only available in compat profile, or if ARB_compatibility is present
-                return gl.profile() == GLProfile.COMPAT || gl.extensions().contains(this);
-            }
-        }
-    },
+    GL_ARB_compatibility(null, false),
 
     //OpenGL 3.1
     /**
@@ -533,16 +516,7 @@ public enum GLExtension {
      *
      * @param version the OpenGL version
      */
-    public boolean core(@NonNull GLVersion version) {
+    public final boolean core(@NonNull GLVersion version) {
         return this.coreVersion != null && version.compareTo(this.coreVersion) >= 0;
-    }
-
-    /**
-     * Checks whether or not this extension is supported in the given OpenGL context.
-     *
-     * @param gl the OpenGL context
-     */
-    public boolean supported(@NonNull OpenGL gl) {
-        return this.core(gl.version()) || gl.extensions().contains(this);
     }
 }
