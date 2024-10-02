@@ -276,9 +276,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                         .texture(TextureTarget.TEXTURE_2D, client.terrainTextureUnit())
                         .texture(TextureTarget.TEXTURE_2D, client.lightmapTextureUnit())
                         .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING)
-                        .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING)
-                        .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING)
-                        .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING);
+                        .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING);
                 this.levelRenderer.textureUVs().gpuQuadLists().preservedBindState(statePreserverBuilder);
                 this.renderIndex.preservedDrawState(statePreserverBuilder);
                 this.statePreserverDraw = statePreserverBuilder.build();

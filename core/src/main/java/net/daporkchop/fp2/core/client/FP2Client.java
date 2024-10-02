@@ -41,13 +41,22 @@ import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
+import net.daporkchop.fp2.gl.GLProfile;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.lib.logging.Logger;
 
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -92,6 +101,29 @@ public abstract class FP2Client {
                     .info("OpenGL context: " + gl)
                     .info("OpenGL vendor: " + gl.glGetString(GL_VENDOR))
                     .info("OpenGL renderer: " + gl.glGetString(GL_RENDERER));
+
+            if (FP2_DEBUG) {
+                Path path = Paths.get(".fp2", "context_override.properties");
+                if (Files.exists(path)) {
+                    //load properties
+                    Properties properties = new Properties();
+                    try (InputStream in = Files.newInputStream(path)) {
+                        properties.load(in);
+                    }
+
+                    //parse properties
+                    GLVersion version = GLVersion.valueOf(Objects.requireNonNull(properties.getProperty("version"), "version"));
+                    GLExtensionSet extensions = Stream.of(Objects.requireNonNull(properties.getProperty("extensions"), "extensions").split(","))
+                            .map(GLExtension::valueOf)
+                            .collect(GLExtensionSet.toExtensionSet());
+                    GLProfile profile = GLProfile.valueOf(Objects.requireNonNull(properties.getProperty("profile"), "profile"));
+                    boolean forwardCompatibility = Boolean.parseBoolean(Objects.requireNonNull(properties.getProperty("forwardCompatibility"), "forwardCompatibility"));
+
+                    gl = gl.wrapAsLegacy(version, extensions, profile, forwardCompatibility);
+
+                    this.fp2().log().info("Emulating OpenGL context: " + gl);
+                }
+            }
 
             GLVersion minimumVersion = GLVersion.OpenGL30;
             GLExtensionSet minimumRequiredExtensions = GLExtensionSet.empty()
