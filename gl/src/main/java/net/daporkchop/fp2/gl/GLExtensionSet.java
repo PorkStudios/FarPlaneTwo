@@ -25,12 +25,13 @@ import lombok.NonNull;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * A compact, immutable set of {@link GLExtension}s.
@@ -69,6 +70,58 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
      */
     public static GLExtensionSet empty() {
         return EMPTY;
+    }
+
+    /**
+     * @return an empty {@link GLExtensionSet}
+     */
+    public static GLExtensionSet of() {
+        return empty();
+    }
+
+    /**
+     * Gets a {@link GLExtensionSet} containing the specified extension.
+     *
+     * @param extension the extension
+     * @return a {@link GLExtensionSet} containing exactly the specified extension
+     */
+    public static GLExtensionSet of(GLExtension extension) {
+        return empty().add(extension);
+    }
+
+    /**
+     * Gets a {@link GLExtensionSet} containing the specified extensions.
+     *
+     * @param extensions the extensions
+     * @return a {@link GLExtensionSet} containing exactly the specified extensions
+     */
+    public static GLExtensionSet of(GLExtension... extensions) {
+        return empty().addAll(extensions);
+    }
+
+    /**
+     * Gets a {@link GLExtensionSet} containing the specified extensions.
+     *
+     * @param extensions the extensions
+     * @return a {@link GLExtensionSet} containing exactly the specified extensions
+     */
+    public static GLExtensionSet copyOf(Iterable<GLExtension> extensions) {
+        if (extensions instanceof GLExtensionSet) { //the given argument is already a GLExtensionSet
+            return (GLExtensionSet) extensions;
+        }
+
+        GLExtensionSet result = empty();
+        for (GLExtension extension : extensions) {
+            result = result.add(extension);
+        }
+        return result;
+    }
+
+    /**
+     * @return a {@link Collector} for reducing a stream into a {@link GLExtensionSet}
+     */
+    public static Collector<GLExtension, ?, GLExtensionSet> toExtensionSet() {
+        return Collectors.collectingAndThen(Collectors.toSet(), GLExtensionSet::copyOf);
     }
 
     private long bits0;
@@ -119,6 +172,21 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
     }
 
     /**
+     * Checks if this set contains all of the given extensions.
+     *
+     * @param extensions the extensions
+     * @return {@code true} if this set contains all of the given extensions
+     */
+    public boolean containsAll(GLExtension... extensions) {
+        for (GLExtension extension : extensions) {
+            if (!this.contains(extension)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Checks if this set contains any of the given extensions.
      *
      * @param extensions the extensions
@@ -134,6 +202,35 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
     }
 
     /**
+     * Checks if this set contains any of the given extensions.
+     *
+     * @param extensions the extensions
+     * @return {@code true} if this set contains any of the given extensions
+     */
+    public boolean containsAny(GLExtension... extensions) {
+        for (GLExtension extension : extensions) {
+            if (this.contains(extension)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Adds the given extension to this set.
+     * <p>
+     * Note: this method modifies the {@link GLExtensionSet} instance! It should only be used when actually constructing a new set.
+     *
+     * @param extension the extension to add
+     */
+    private void addMutable(GLExtension extension) {
+        int ordinal = extension.ordinal();
+        int word = ord2word(ordinal);
+
+        this.setBitsWord(word, this.getBitsWord(word) | (1L << ordinal));
+    }
+
+    /**
      * Gets a set which contains the union of this set and the given extension.
      *
      * @param extension the extension to add
@@ -143,11 +240,9 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
         if (this.contains(extension)) {
             return this;
         }
-        int ordinal = extension.ordinal();
-        int word = ord2word(ordinal);
 
         GLExtensionSet result = new GLExtensionSet(this);
-        result.setBitsWord(word, this.getBitsWord(word) | (1L << ordinal));
+        result.addMutable(extension);
         return result;
     }
 
@@ -170,6 +265,38 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
     }
 
     /**
+     * Gets a set which contains the union of this set and the given set.
+     *
+     * @param extensions the other set
+     * @return the union of this set and the given set
+     */
+    public GLExtensionSet addAll(GLExtension... extensions) {
+        if (this.containsAll(extensions)) {
+            return this;
+        }
+
+        GLExtensionSet result = new GLExtensionSet(this);
+        for (GLExtension extension : extensions) {
+            result.addMutable(extension);
+        }
+        return result;
+    }
+
+    /**
+     * Removes the given extension from this set.
+     * <p>
+     * Note: this method modifies the {@link GLExtensionSet} instance! It should only be used when actually constructing a new set.
+     *
+     * @param extension the extension to remove
+     */
+    private void removeMutable(GLExtension extension) {
+        int ordinal = extension.ordinal();
+        int word = ord2word(ordinal);
+
+        this.setBitsWord(word, this.getBitsWord(word) & ~(1L << ordinal));
+    }
+
+    /**
      * Gets a set which contains the contents of this set without the given extension.
      *
      * @param extension the extension to remove
@@ -179,11 +306,9 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
         if (!this.contains(extension)) {
             return this;
         }
-        int ordinal = extension.ordinal();
-        int word = ord2word(ordinal);
 
         GLExtensionSet result = new GLExtensionSet(this);
-        result.setBitsWord(word, this.getBitsWord(word) & ~(1L << ordinal));
+        result.removeMutable(extension);
         return result;
     }
 
@@ -201,6 +326,24 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
         GLExtensionSet result = new GLExtensionSet();
         for (int word = 0; word < WORDS; word++) {
             result.setBitsWord(word, this.getBitsWord(word) & ~extensions.getBitsWord(word));
+        }
+        return result;
+    }
+
+    /**
+     * Gets a set which contains the union of this set and the compliment of the given set.
+     *
+     * @param extensions the other set
+     * @return the union of this set and the compliment of the given set
+     */
+    public GLExtensionSet removeAll(GLExtension... extensions) {
+        if (!this.containsAny(extensions)) {
+            return this;
+        }
+
+        GLExtensionSet result = new GLExtensionSet(this);
+        for (GLExtension extension : extensions) {
+            result.removeMutable(extension);
         }
         return result;
     }
@@ -257,20 +400,9 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
             return "[]";
         }
 
-        StringBuilder builder = new StringBuilder().append('[');
-        for (int word = 0; word < WORDS; word++) {
-            long bits = this.getBitsWord(word);
-            while (bits != 0L) {
-                int index = Long.numberOfTrailingZeros(bits);
-                bits &= ~(1L << index);
-
-                if (builder.length() > 1) {
-                    builder.append(", ");
-                }
-                builder.append(VALUES[word * Long.SIZE + index].name());
-            }
-        }
-        return builder.append(']').toString();
+        StringJoiner joiner = new StringJoiner(", ", "[", "]");
+        this.forEach(extension -> joiner.add(extension.name()));
+        return joiner.toString();
     }
 
     @Override

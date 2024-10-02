@@ -115,16 +115,13 @@ public abstract class OpenGL {
                 extensionNames.add(GLExtension.GL_ARB_program_interface_query.name());
             }
 
-            BiFunction<GLExtensionSet, GLExtension, GLExtensionSet> extensionSetReducer = GLExtensionSet::add;
-            BinaryOperator<GLExtensionSet> extensionSetMerger = GLExtensionSet::addAll;
-
             this.extensions = Stream.of(GLExtension.values())
                     .filter(extension -> !extension.core(this.version) && extensionNames.contains(extension.name()))
-                    .reduce(GLExtensionSet.empty(), extensionSetReducer, extensionSetMerger);
+                    .collect(GLExtensionSet.toExtensionSet());
 
             this.allExtensions = Stream.of(GLExtension.values())
                     .filter(extension -> extension.core(this.version) || extensionNames.contains(extension.name()))
-                    .reduce(GLExtensionSet.empty(), extensionSetReducer, extensionSetMerger);
+                    .collect(GLExtensionSet.toExtensionSet());
         }
 
         { //get profile
