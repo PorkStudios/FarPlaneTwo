@@ -80,10 +80,10 @@ void main() {
     gl_Position = cameraTransform(relativePos);
 
     //pass relative position to fragment shader (used to compute face normal)
-    vs_out.pos = vs_out.base_pos = vec3(relativePos);
+    vs_out_pos = vs_out_base_pos = vec3(relativePos);
 
     //copy trivial attributes
-    vs_out.light = a_light;
-    vs_out.state = a_state;
-    vs_out.color = computeVertexColor(a_color, tilePos);
+    vs_out_light = a_light;
+    vs_out_state = a_state;
+    vs_out_color = computeVertexColor(a_color, tilePos);
 }

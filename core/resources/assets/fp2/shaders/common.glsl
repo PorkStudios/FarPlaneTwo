@@ -116,7 +116,7 @@ float diffuseLight(vec3 normal) {
 
 // vector math
 
-int normalToFaceIndex(vec3 normal)  {
+uint normalToFaceIndex(vec3 normal)  {
     vec3 n = abs(normal);
 
     //component-wise mask. one lane is set (the lane whose component has the greatest absolute value)
@@ -132,7 +132,7 @@ int normalToFaceIndex(vec3 normal)  {
     ivec3 values = (base + negativeOffset) & axisMask;
 
     //the maximum component value will be the only one that wasn't masked to zero
-    return max(values.x, max(values.y, values.z));
+    return uint(max(values.x, max(values.y, values.z)));
 
     // equivalent code:
     /*if (n.y > n.x && n.y > n.z)  {

@@ -30,14 +30,12 @@
 //
 //
 
-out VS_OUT {
-    vec3 pos;
-    vec2 light;
+out vec3 vs_out_pos;
+out vec2 vs_out_light;
 
-    flat vec3 color;
-    flat vec3 base_pos;
-    flat uint state;
-} vs_out;
+flat out vec3 vs_out_color;
+flat out vec3 vs_out_base_pos;
+flat out uint vs_out_state;
 
 //
 //

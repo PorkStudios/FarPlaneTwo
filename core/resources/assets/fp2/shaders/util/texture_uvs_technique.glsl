@@ -136,7 +136,7 @@ struct PackedBakedQuad {
  * @param faceIndex the index of the block face
  */
 TexQuadList stateAndFaceIndexToTexQuadList(uint state, uint faceIndex) {
-    uint listIndex = state * 6 + faceIndex;
+    uint listIndex = state * 6u + faceIndex;
 
 #if FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_SSBO
     return b_texQuadList[listIndex];

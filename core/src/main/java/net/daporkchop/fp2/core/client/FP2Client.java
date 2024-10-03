@@ -112,25 +112,25 @@ public abstract class FP2Client {
                         properties.load(in);
                     }
 
-                    //parse properties
-                    GLVersion version = GLVersion.valueOf(Objects.requireNonNull(properties.getProperty("version"), "version"));
-                    GLExtensionSet extensions = Stream.of(Objects.requireNonNull(properties.getProperty("extensions"), "extensions").split(","))
-                            .map(GLExtension::valueOf)
-                            .collect(GLExtensionSet.toExtensionSet());
-                    GLProfile profile = GLProfile.valueOf(Objects.requireNonNull(properties.getProperty("profile"), "profile"));
-                    boolean forwardCompatibility = Boolean.parseBoolean(Objects.requireNonNull(properties.getProperty("forwardCompatibility"), "forwardCompatibility"));
+                    if (Boolean.parseBoolean(Objects.requireNonNull(properties.getProperty("enabled"), "enabled"))) {
+                        //parse properties
+                        GLVersion version = GLVersion.valueOf(Objects.requireNonNull(properties.getProperty("version"), "version"));
+                        GLExtensionSet extensions = Stream.of(Objects.requireNonNull(properties.getProperty("extensions"), "extensions").split(","))
+                                .map(GLExtension::valueOf)
+                                .collect(GLExtensionSet.toExtensionSet());
+                        GLProfile profile = GLProfile.valueOf(Objects.requireNonNull(properties.getProperty("profile"), "profile"));
+                        boolean forwardCompatibility = Boolean.parseBoolean(Objects.requireNonNull(properties.getProperty("forwardCompatibility"), "forwardCompatibility"));
 
-                    gl = gl.wrapAsLegacy(version, extensions, profile, forwardCompatibility);
+                        gl = gl.wrapAsLegacy(version, extensions, profile, forwardCompatibility);
 
-                    this.fp2().log().info("Emulating OpenGL context: " + gl);
+                        this.fp2().log().info("Emulating OpenGL context: " + gl);
+                    }
                 }
             }
 
             GLVersion minimumVersion = GLVersion.OpenGL30;
             GLExtensionSet minimumRequiredExtensions = GLExtensionSet.empty()
-                    .add(GLExtension.GL_ARB_uniform_buffer_object) //needed for select and draw state uniforms (this requirement will probably not be relaxed, too much hassle)
-                    .add(GLExtension.GL_ARB_gpu_shader5) //needed for input and output blocks in shaders (this can be relaxed)
-                    .add(GLExtension.GL_ARB_program_interface_query); //needed by ShaderProgram if any SSBO bindings are added (this requirement can be removed with GL_ARB_shader_storage_buffer_object)
+                    .add(GLExtension.GL_ARB_uniform_buffer_object); //needed for select and draw state uniforms (this requirement will probably not be relaxed, too much hassle)
 
             Object unsupportedCause = null;
             if (gl.version().compareTo(minimumVersion) < 0) {

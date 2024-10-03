@@ -29,14 +29,19 @@
 //
 //
 
-in VS_OUT {
-    vec3 pos;
-    vec2 light;
+in vec3 vs_out_pos;
+in vec2 vs_out_light;
 
-    flat vec3 color;
-    flat vec3 base_pos;
-    flat uint state;
-} fs_in;
+flat in vec3 vs_out_color;
+flat in vec3 vs_out_base_pos;
+flat in uint vs_out_state;
+
+#define fs_in_pos (vs_out_pos)
+#define fs_in_light (vs_out_light)
+
+#define fs_in_color (vs_out_color)
+#define fs_in_base_pos (vs_out_base_pos)
+#define fs_in_state (uint(vs_out_state))
 
 //
 //
@@ -62,13 +67,13 @@ uniform sampler2D LIGHTMAP_SAMPLER_NAME;
 //
 
 vec3 normalVector() {
-    vec3 fdx = dFdx(fs_in.pos);
-    vec3 fdy = dFdy(fs_in.pos);
+    vec3 fdx = dFdx(fs_in_pos);
+    vec3 fdy = dFdy(fs_in_pos);
     return normalize(cross(fdx, fdy));
 }
 
 vec2 texUvFactor(vec3 normal, vec3 pos)  {
-    vec3 delta = pos - fs_in.base_pos;
+    vec3 delta = pos - fs_in_base_pos;
 
     vec3 s = sign(normal);
     normal = -abs(normal);
@@ -83,9 +88,9 @@ vec2 texUvFactor(vec3 normal, vec3 pos)  {
 }
 
 vec4 sampleTerrain(vec3 normal)  {
-    vec2 factor = texUvFactor(normal, fs_in.pos);
+    vec2 factor = texUvFactor(normal, fs_in_pos);
 
-    uint state = fs_in.state;
+    uint state = fs_in_state;
     uint faceIndex = normalToFaceIndex(normal);
     TexQuadList list = stateAndFaceIndexToTexQuadList(state, faceIndex);
 
@@ -97,11 +102,11 @@ vec4 sampleTerrain(vec3 normal)  {
     vec4 color_out = textureGrad(TEXTURE_ATLAS_SAMPLER_NAME, mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
 
     //apply tint if the quad allows it (branchless implementation)
-    color_out.rgb *= max(fs_in.color, vec3(tint));
+    color_out.rgb *= max(fs_in_color, vec3(tint));
 
     //this shouldn't be too bad performance-wise, because in all likelihood it'll have the same number of loops for all neighboring fragments
     // almost all the time
-    for (uint i = list.first + 1; i < list.last; i++) {
+    for (uint i = list.first + 1u; i < list.last; i++) {
         quad = quadIndexToQuad(i);
         quadCoords = quad.coords;
         tint = quad.tint;
@@ -111,7 +116,7 @@ vec4 sampleTerrain(vec3 normal)  {
         vec4 frag_color = textureGrad(TEXTURE_ATLAS_SAMPLER_NAME, mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
 
         //possibly apply tint (branchless implementation)
-        frag_color.rgb *= max(fs_in.color, vec3(tint));
+        frag_color.rgb *= max(fs_in_color, vec3(tint));
 
         //apply texture over previous layers if possible (branchless implementation)
         color_out = color_out * (1. - frag_color.a) + frag_color * frag_color.a;
