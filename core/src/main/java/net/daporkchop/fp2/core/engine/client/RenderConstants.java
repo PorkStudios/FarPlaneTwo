@@ -58,6 +58,13 @@ public class RenderConstants {
     public static final String TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME = "t_texQuads_tint";
     public static final int TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_BINDING = 5;
 
+    public static final String TEXTURE_UVS_LISTS_SAMPLER2D_NAME = "t_texQuadLists";
+    public static final int TEXTURE_UVS_LISTS_SAMPLER2D_BINDING = 3;
+    public static final String TEXTURE_UVS_QUADS_COORD_SAMPLER2D_NAME = "t_texQuads_coord";
+    public static final int TEXTURE_UVS_QUADS_COORD_SAMPLER2D_BINDING = 4;
+    public static final String TEXTURE_UVS_QUADS_TINT_SAMPLER2D_NAME = "t_texQuads_tint";
+    public static final int TEXTURE_UVS_QUADS_TINT_SAMPLER2D_BINDING = 5;
+
     public static final String TILE_POS_ARRAY_UBO_NAME = "U_TilePosArray";
     public static final int TILE_POS_ARRAY_UBO_BINDING = 2;
 

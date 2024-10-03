@@ -127,6 +127,11 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                         builder.addSampler(RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_BINDING, RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME);
                         builder.addSampler(RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_BINDING, RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME);
                         break;
+                    case TEXTURE_2D:
+                        builder.addSampler(RenderConstants.TEXTURE_UVS_LISTS_SAMPLER2D_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SAMPLER2D_NAME);
+                        builder.addSampler(RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLER2D_BINDING, RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLER2D_NAME);
+                        builder.addSampler(RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLER2D_BINDING, RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLER2D_NAME);
+                        break;
                     default:
                         throw new IllegalArgumentException(this.quadsTechnique.name());
                 }

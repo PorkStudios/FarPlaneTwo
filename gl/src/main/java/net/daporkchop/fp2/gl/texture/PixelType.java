@@ -19,35 +19,38 @@
 
 package net.daporkchop.fp2.gl.texture;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLExtension;
-import net.daporkchop.fp2.gl.GLExtensionSet;
-import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.lib.common.closeable.PResourceUtil;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class GLBufferTexture extends GLTexture {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
-            .add(GLExtension.GL_ARB_texture_buffer_object);
+@RequiredArgsConstructor
+@Getter
+public enum PixelType {
+    UNSIGNED_BYTE(GL_UNSIGNED_BYTE),
+    BYTE(GL_BYTE),
+    UNSIGNED_SHORT(GL_UNSIGNED_SHORT),
+    SHORT(GL_SHORT),
+    UNSIGNED_INT(GL_UNSIGNED_INT),
+    INT(GL_INT),
+    HALF_FLOAT(GL_HALF_FLOAT),
+    FLOAT(GL_FLOAT),
+    UNSIGNED_BYTE_3_3_2(GL_UNSIGNED_BYTE_3_3_2),
+    UNSIGNED_BYTE_2_3_3_REV(GL_UNSIGNED_BYTE_2_3_3_REV),
+    UNSIGNED_SHORT_5_6_5(GL_UNSIGNED_SHORT_5_6_5),
+    UNSIGNED_SHORT_5_6_5_REV(GL_UNSIGNED_SHORT_5_6_5_REV),
+    UNSIGNED_SHORT_4_4_4_4(GL_UNSIGNED_SHORT_4_4_4_4),
+    UNSIGNED_SHORT_4_4_4_4_REV(GL_UNSIGNED_SHORT_4_4_4_4_REV),
+    UNSIGNED_SHORT_5_5_5_1(GL_UNSIGNED_SHORT_5_5_5_1),
+    UNSIGNED_SHORT_1_5_5_5_REV(GL_UNSIGNED_SHORT_1_5_5_5_REV),
+    UNSIGNED_INT_8_8_8_8(GL_UNSIGNED_INT_8_8_8_8),
+    UNSIGNED_INT_8_8_8_8_REV(GL_UNSIGNED_INT_8_8_8_8_REV),
+    UNSIGNED_INT_10_10_10_2(GL_UNSIGNED_INT_10_10_10_2),
+    UNSIGNED_INT_2_10_10_10_REV(GL_UNSIGNED_INT_2_10_10_10_REV),
+    ;
 
-    public static GLBufferTexture create(OpenGL gl, @NonNull TextureInternalFormat internalFormat, @NonNull GLBuffer buffer) {
-        gl.checkSupported(REQUIRED_EXTENSIONS);
-        return new GLBufferTexture(gl, internalFormat, buffer);
-    }
-
-    private GLBufferTexture(OpenGL gl, TextureInternalFormat internalFormat, GLBuffer buffer) {
-        super(gl, TextureTarget.TEXTURE_BUFFER);
-
-        try {
-            //actually attach the buffer object to this buffer texture
-            this.bind(target -> {
-                gl.glTexBuffer(target.id(), internalFormat.id(), buffer.id());
-            });
-        } catch (Throwable t) {
-            throw PResourceUtil.closeSuppressed(t, this);
-        }
-    }
+    private final int id;
 }

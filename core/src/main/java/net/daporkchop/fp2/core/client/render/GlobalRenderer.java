@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
 import net.daporkchop.fp2.core.client.render.textureuvs.gpu.GpuQuadLists;
+import net.daporkchop.fp2.core.client.render.textureuvs.gpu.Texture2dGpuQuadLists;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
@@ -136,6 +137,13 @@ public final class GlobalRenderer {
                         .define("TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME", RenderConstants.TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME)
                         .define("TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME", RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME)
                         .define("TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME", RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME);
+            }
+            if (gl.supports(GpuQuadLists.QuadsTechnique.TEXTURE_2D.requiredExtensions())) {
+                shaderMacrosBuilder
+                        .define("TEXTURE_UVS_LISTS_SAMPLER2D_NAME", RenderConstants.TEXTURE_UVS_LISTS_SAMPLER2D_NAME)
+                        .define("TEXTURE_UVS_QUADS_COORD_SAMPLER2D_NAME", RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLER2D_NAME)
+                        .define("TEXTURE_UVS_QUADS_TINT_SAMPLER2D_NAME", RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLER2D_NAME)
+                        .define("TEXTURE_UVS_TEXTURE_X_COORD_WRAP", Texture2dGpuQuadLists.X_COORD_WRAP);
             }
 
             this.shaderMacros = shaderMacrosBuilder.build();

@@ -20,34 +20,39 @@
 package net.daporkchop.fp2.gl.texture;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLExtension;
-import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author DaPorkchop_
  */
-public final class GLBufferTexture extends GLTexture {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
-            .add(GLExtension.GL_ARB_texture_buffer_object);
-
-    public static GLBufferTexture create(OpenGL gl, @NonNull TextureInternalFormat internalFormat, @NonNull GLBuffer buffer) {
-        gl.checkSupported(REQUIRED_EXTENSIONS);
-        return new GLBufferTexture(gl, internalFormat, buffer);
+public final class GLTexture2D extends GLSampledTexture {
+    public static GLTexture2D create(OpenGL gl) {
+        return new GLTexture2D(gl);
     }
 
-    private GLBufferTexture(OpenGL gl, TextureInternalFormat internalFormat, GLBuffer buffer) {
-        super(gl, TextureTarget.TEXTURE_BUFFER);
+    private GLTexture2D(OpenGL gl) {
+        super(gl, TextureTarget.TEXTURE_2D);
+    }
 
-        try {
-            //actually attach the buffer object to this buffer texture
-            this.bind(target -> {
-                gl.glTexBuffer(target.id(), internalFormat.id(), buffer.id());
-            });
-        } catch (Throwable t) {
-            throw PResourceUtil.closeSuppressed(t, this);
-        }
+    /**
+     * Uploads the given texture data to this texture at the given mipmap level.
+     *
+     * @param level          the mipmap level
+     * @param width          the texture width
+     * @param height         the texture height
+     * @param internalFormat the internal format of the texture's backing data store
+     * @param pixelFormat    the data format of the provided pixel data
+     * @param pixelType      the data type of the provided pixel data
+     * @param pixelData      the pixel data
+     */
+    public void texImage(@NotNegative int level, @NotNegative int width, @NotNegative int height, @NonNull TextureInternalFormat internalFormat, @NonNull PixelFormat pixelFormat, @NonNull PixelType pixelType, ByteBuffer pixelData) {
+        this.checkOpen();
+
+        this.bind(target -> {
+            this.gl.glTexImage2D(target.id(), level, internalFormat.id(), width, height, pixelFormat.id(), pixelType.id(), pixelData);
+        });
     }
 }

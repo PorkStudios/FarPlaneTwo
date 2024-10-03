@@ -92,8 +92,9 @@ public abstract class OpenGL {
             throw new IllegalStateException("OpenGL versions older than 3.0 aren't supported! Found: " + version);
         } else if (version.compareTo(GLVersion.OpenGL31) <= 0 && profile != GLProfile.UNKNOWN) {
             throw new IllegalStateException("OpenGL versions older than 3.1 only support profile UNKNOWN! " + version + ", found profile " + profile);
-        } else if (version.compareTo(GLVersion.OpenGL32) >= 0 && profile == GLProfile.UNKNOWN) {
-            throw new IllegalStateException("OpenGL 3.2+ only support profile CORE or COMPATIBILITY! " + version + ", found profile " + profile);
+        } else if (false && version.compareTo(GLVersion.OpenGL32) >= 0 && profile == GLProfile.UNKNOWN) {
+            //annoyingly, this actually seems to be the case when using apitrace
+            throw new IllegalStateException("OpenGL 3.2+ only supports profile CORE or COMPATIBILITY! " + version + ", found profile " + profile);
         }
 
         if (!allExtensions.containsAll(nonCoreExtensions)) {
@@ -117,7 +118,7 @@ public abstract class OpenGL {
         if (!allExtensions.contains(GLExtension.GL_ARB_compatibility)) {
             if (version.compareTo(GLVersion.OpenGL30) <= 0 && !forwardCompatibility) {
                 throw new IllegalStateException(version + " non-forward-compatible context is missing GL_ARB_compatibility!");
-            } else if (profile == GLProfile.COMPAT) {
+            } else if (version.compareTo(GLVersion.OpenGL32) >= 0 && profile == GLProfile.COMPAT) {
                 throw new IllegalStateException(version + " compatibility context is missing GL_ARB_compatibility!");
             }
         }

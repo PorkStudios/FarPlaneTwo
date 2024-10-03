@@ -20,34 +20,35 @@
 package net.daporkchop.fp2.gl.texture;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLExtension;
-import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Base class for textures with sampler parameters.
+ *
  * @author DaPorkchop_
  */
-public final class GLBufferTexture extends GLTexture {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
-            .add(GLExtension.GL_ARB_texture_buffer_object);
-
-    public static GLBufferTexture create(OpenGL gl, @NonNull TextureInternalFormat internalFormat, @NonNull GLBuffer buffer) {
-        gl.checkSupported(REQUIRED_EXTENSIONS);
-        return new GLBufferTexture(gl, internalFormat, buffer);
+public abstract class GLSampledTexture extends GLTexture {
+    protected GLSampledTexture(OpenGL gl, @NonNull TextureTarget target) {
+        super(gl, target);
     }
 
-    private GLBufferTexture(OpenGL gl, TextureInternalFormat internalFormat, GLBuffer buffer) {
-        super(gl, TextureTarget.TEXTURE_BUFFER);
+    /**
+     * Sets this texture's base and maximum mipmap levels.
+     *
+     * @param baseLevel the base mipmap level (inclusive)
+     * @param maxLevel  the maximum mipmap level (inclusive)
+     */
+    public final void mipmapLevels(@NotNegative int baseLevel, @NotNegative int maxLevel) {
+        this.checkOpen();
+        checkArg(baseLevel <= maxLevel, "baseLevel (%s) must be less than or equal to maxLevel (%s)", baseLevel, maxLevel);
 
-        try {
-            //actually attach the buffer object to this buffer texture
-            this.bind(target -> {
-                gl.glTexBuffer(target.id(), internalFormat.id(), buffer.id());
-            });
-        } catch (Throwable t) {
-            throw PResourceUtil.closeSuppressed(t, this);
-        }
+        this.bind(target -> {
+            this.gl.glTexParameter(target.id(), GL_TEXTURE_BASE_LEVEL, baseLevel);
+            this.gl.glTexParameter(target.id(), GL_TEXTURE_MAX_LEVEL, maxLevel);
+        });
     }
 }

@@ -44,7 +44,7 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 public final class SSBOGpuQuadLists extends GpuQuadLists {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = GpuQuadLists.REQUIRED_EXTENSIONS
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
             .add(GLExtension.GL_ARB_shader_storage_buffer_object);
 
     private final AttributeBuffer<TextureUVs.QuadListAttribute> listsBuffer;

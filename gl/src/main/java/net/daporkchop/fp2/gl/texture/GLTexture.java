@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.texture;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLObject;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.function.Consumer;
 
@@ -31,8 +32,18 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 public abstract class GLTexture extends GLObject.Normal {
-    protected GLTexture(OpenGL gl) {
+    private final TextureTarget target;
+
+    protected GLTexture(OpenGL gl, @NonNull TextureTarget target) {
         super(gl, gl.glGenTexture());
+
+        try {
+            this.target = target;
+
+            this.bindPreserving(ignored -> {});
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
     }
 
     @Override
@@ -51,63 +62,58 @@ public abstract class GLTexture extends GLObject.Normal {
     }
 
     /**
-     * Executes the given action with this texture bound to the given {@link TextureTarget texture binding target}.
+     * Executes the given action with this texture bound to the texture's {@link TextureTarget texture binding target}.
      * <p>
      * This will restore the previously bound texture when the operation completes.
      *
-     * @param target   the {@link TextureTarget texture binding target} to bind the texture to
      * @param callback the action to run
      */
-    public final void bindPreserving(TextureTarget target, Consumer<TextureTarget> callback) {
+    public final void bindPreserving(Consumer<TextureTarget> callback) {
         this.checkOpen();
-        int old = this.gl.glGetInteger(target.binding());
+        int old = this.gl.glGetInteger(this.target.binding());
         try {
-            this.gl.glBindTexture(target.id(), this.id);
-            callback.accept(target);
+            this.gl.glBindTexture(this.target.id(), this.id);
+            callback.accept(this.target);
         } finally {
-            this.gl.glBindTexture(target.id(), old);
+            this.gl.glBindTexture(this.target.id(), old);
         }
     }
 
     /**
-     * Immediately binds this texture to the given {@link TextureTarget texture binding target} in the OpenGL context.
+     * Immediately binds this texture to the texture's {@link TextureTarget texture binding target} in the OpenGL context.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound texture when the operation completes. The user is responsible for ensuring
+     * that OpenGL state is preserved, or that leaving this texture bound will not cause future issues.
+     */
+    public final void bindUnsafe() {
+        this.checkOpen();
+        this.gl.glBindTexture(this.target.id(), this.id);
+    }
+
+    /**
+     * Executes the given action with this texture bound to the texture's {@link TextureTarget texture binding target}.
      * <p>
      * This method is unsafe in that it does not provide a mechanism to restore the previously bound texture when the operation completes. The user is responsible for ensuring
      * that OpenGL state is preserved, or that leaving this texture bound will not cause future issues.
      *
-     * @param target the {@link TextureTarget texture binding target} to bind the texture to
+     * @param callback the action to run
      */
-    public final void bindUnsafe(TextureTarget target) {
+    public final void bindUnsafe(Consumer<TextureTarget> callback) {
         this.checkOpen();
-        this.gl.glBindTexture(target.id(), this.id);
+        this.gl.glBindTexture(this.target.id(), this.id);
+        callback.accept(this.target);
     }
 
     /**
-     * Executes the given action with this texture bound to the given {@link TextureTarget texture binding target}.
-     * <p>
-     * This method is unsafe in that it does not provide a mechanism to restore the previously bound texture when the operation completes. The user is responsible for ensuring
-     * that OpenGL state is preserved, or that leaving this texture bound will not cause future issues.
+     * Executes the given action with this texture bound to the texture's {@link TextureTarget texture binding target}.
      *
-     * @param target   the {@link TextureTarget texture binding target} to bind the texture to
      * @param callback the action to run
      */
-    public final void bindUnsafe(TextureTarget target, Consumer<TextureTarget> callback) {
-        this.checkOpen();
-        this.gl.glBindTexture(target.id(), this.id);
-        callback.accept(target);
-    }
-
-    /**
-     * Executes the given action with this texture bound to the given {@link TextureTarget texture binding target}.
-     *
-     * @param target   the {@link TextureTarget texture binding target} to bind the texture to
-     * @param callback the action to run
-     */
-    public final void bind(TextureTarget target, Consumer<TextureTarget> callback) {
+    public final void bind(Consumer<TextureTarget> callback) {
         if (OpenGL.PRESERVE_TEXTURE_BINDINGS_IN_METHODS) {
-            this.bindPreserving(target, callback);
+            this.bindPreserving(callback);
         } else {
-            this.bindUnsafe(target, callback);
+            this.bindUnsafe(callback);
         }
     }
 }

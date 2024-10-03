@@ -19,35 +19,32 @@
 
 package net.daporkchop.fp2.gl.texture;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLExtension;
-import net.daporkchop.fp2.gl.GLExtensionSet;
-import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.lib.common.closeable.PResourceUtil;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class GLBufferTexture extends GLTexture {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
-            .add(GLExtension.GL_ARB_texture_buffer_object);
+@RequiredArgsConstructor
+@Getter
+public enum PixelFormat {
+    RED(GL_RED),
+    RG(GL_RG),
+    RGB(GL_RGB),
+    BGR(GL_BGR),
+    RGBA(GL_RGBA),
+    BGRA(GL_BGRA),
+    RED_INTEGER(GL_RED_INTEGER),
+    RG_INTEGER(GL_RG_INTEGER),
+    RGB_INTEGER(GL_RGB_INTEGER),
+    BGR_INTEGER(GL_BGR_INTEGER),
+    RGBA_INTEGER(GL_RGBA_INTEGER),
+    BGRA_INTEGER(GL_BGRA_INTEGER),
+    DEPTH_COMPONENT(GL_DEPTH_COMPONENT),
+    DEPTH_STENCIL(GL_DEPTH_STENCIL),
+    ;
 
-    public static GLBufferTexture create(OpenGL gl, @NonNull TextureInternalFormat internalFormat, @NonNull GLBuffer buffer) {
-        gl.checkSupported(REQUIRED_EXTENSIONS);
-        return new GLBufferTexture(gl, internalFormat, buffer);
-    }
-
-    private GLBufferTexture(OpenGL gl, TextureInternalFormat internalFormat, GLBuffer buffer) {
-        super(gl, TextureTarget.TEXTURE_BUFFER);
-
-        try {
-            //actually attach the buffer object to this buffer texture
-            this.bind(target -> {
-                gl.glTexBuffer(target.id(), internalFormat.id(), buffer.id());
-            });
-        } catch (Throwable t) {
-            throw PResourceUtil.closeSuppressed(t, this);
-        }
-    }
+    private final int id;
 }

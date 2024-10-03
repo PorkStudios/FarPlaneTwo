@@ -37,8 +37,6 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 public abstract class GpuQuadLists implements AutoCloseable {
-    protected static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty();
-
     /**
      * Creates a new instance of {@link GpuQuadLists}.
      *
@@ -59,6 +57,12 @@ public abstract class GpuQuadLists implements AutoCloseable {
             return new BufferTextureGpuQuadLists(gl);
         } else {
             logUnsupported(fp2, BufferTextureGpuQuadLists.class, BufferTextureGpuQuadLists.REQUIRED_EXTENSIONS);
+        }
+
+        if (gl.supports(Texture2dGpuQuadLists.REQUIRED_EXTENSIONS)) {
+            return new Texture2dGpuQuadLists(gl);
+        } else {
+            logUnsupported(fp2, Texture2dGpuQuadLists.class, Texture2dGpuQuadLists.REQUIRED_EXTENSIONS);
         }
 
         throw new UnsupportedOperationException("No texture UV implementations are supported! (see log)");
@@ -126,11 +130,24 @@ public abstract class GpuQuadLists implements AutoCloseable {
          * The shader declares the following:
          * <br>
          * <ul>
-         *     <li>A  at {@link RenderConstants#TEXTURE_UVS_LISTS_SSBO_BINDING}, containing an array of {@link TextureUVs.QuadList}s</li>
-         *     <li>An SSBO at {@link RenderConstants#TEXTURE_UVS_QUADS_SSBO_BINDING}, containing an array of {@link TextureUVs.PackedBakedQuad}s</li>
+         *     <li>A buffer texture at {@link RenderConstants#TEXTURE_UVS_LISTS_SAMPLERBUFFER_BINDING}, containing an array of {@link TextureUVs.QuadList}s</li>
+         *     <li>A buffer texture at {@link RenderConstants#TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_BINDING}, containing an array of {@link TextureUVs.PackedBakedQuad}s' coords</li>
+         *     <li>A buffer texture at {@link RenderConstants#TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_BINDING}, containing an array of {@link TextureUVs.PackedBakedQuad}s' tint factors</li>
          * </ul>
          */
         BUFFER_TEXTURE(BufferTextureGpuQuadLists.REQUIRED_EXTENSIONS),
+        /**
+         * The shader declares the following:
+         * <br>
+         * <ul>
+         *     <li>A 2D texture at {@link RenderConstants#TEXTURE_UVS_LISTS_SAMPLER2D_BINDING}, containing an array of {@link TextureUVs.QuadList}s</li>
+         *     <li>A 2D texture at {@link RenderConstants#TEXTURE_UVS_QUADS_COORD_SAMPLER2D_BINDING}, containing an array of {@link TextureUVs.PackedBakedQuad}s' coords</li>
+         *     <li>A 2D texture at {@link RenderConstants#TEXTURE_UVS_QUADS_TINT_SAMPLER2D_BINDING}, containing an array of {@link TextureUVs.PackedBakedQuad}s' tint factors</li>
+         * </ul>
+         * <p>
+         * Each of the textures is a {@link Texture2dGpuQuadLists#X_COORD_WRAP}x{@code h}-pixel grid, where image coordinates wrap around along the X axis.
+         */
+        TEXTURE_2D(Texture2dGpuQuadLists.REQUIRED_EXTENSIONS),
         ;
 
         private final @NonNull GLExtensionSet requiredExtensions;

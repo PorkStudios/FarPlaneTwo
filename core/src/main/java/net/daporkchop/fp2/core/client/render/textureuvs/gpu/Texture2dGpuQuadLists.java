@@ -26,20 +26,23 @@ import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.state.StatePreserver;
-import net.daporkchop.fp2.gl.texture.GLBufferTexture;
+import net.daporkchop.fp2.gl.texture.GLTexture2D;
+import net.daporkchop.fp2.gl.texture.PixelFormat;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
 import net.daporkchop.fp2.gl.texture.TextureTarget;
+import net.daporkchop.fp2.gl.texture.PixelType;
+import net.daporkchop.fp2.gl.util.AbstractDirectList;
 import net.daporkchop.fp2.gl.util.list.DirectFloatList;
 import net.daporkchop.fp2.gl.util.list.DirectIVec2List;
 import net.daporkchop.fp2.gl.util.list.DirectVec4List;
 import net.daporkchop.fp2.gl.util.type.GLIVec2;
 import net.daporkchop.fp2.gl.util.type.GLVec4;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.math.PMath;
 
 import java.util.List;
+import java.util.function.Function;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
@@ -48,30 +51,24 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  *
  * @author DaPorkchop_
  */
-public final class BufferTextureGpuQuadLists extends GpuQuadLists {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLBufferTexture.REQUIRED_EXTENSIONS;
+public final class Texture2dGpuQuadLists extends GpuQuadLists {
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty();
 
-    private final GLMutableBuffer listsBuffer;
-    private final GLMutableBuffer quadsCoordBuffer;
-    private final GLMutableBuffer quadsTintBuffer;
+    public static final int X_COORD_WRAP = 1024; //this is the minimum permitted value of GL_MAX_TEXTURE_SIZE
 
-    private final GLBufferTexture listsTexture;
-    private final GLBufferTexture quadsCoordTexture;
-    private final GLBufferTexture quadsTintTexture;
+    private final GLTexture2D listsTexture;
+    private final GLTexture2D quadsCoordTexture;
+    private final GLTexture2D quadsTintTexture;
 
-    public BufferTextureGpuQuadLists(@NonNull OpenGL gl) {
-        super(gl, QuadsTechnique.BUFFER_TEXTURE);
+    public Texture2dGpuQuadLists(@NonNull OpenGL gl) {
+        super(gl, QuadsTechnique.TEXTURE_2D);
 
         try {
             gl.checkSupported(REQUIRED_EXTENSIONS);
 
-            this.listsBuffer = GLMutableBuffer.create(gl);
-            this.quadsCoordBuffer = GLMutableBuffer.create(gl);
-            this.quadsTintBuffer = GLMutableBuffer.create(gl);
-
-            this.listsTexture = GLBufferTexture.create(gl, TextureInternalFormat.RG32UI, this.listsBuffer);
-            this.quadsCoordTexture = GLBufferTexture.create(gl, TextureInternalFormat.RGBA32F, this.quadsCoordBuffer);
-            this.quadsTintTexture = GLBufferTexture.create(gl, TextureInternalFormat.R32F, this.quadsTintBuffer);
+            this.listsTexture = GLTexture2D.create(gl);
+            this.quadsCoordTexture = GLTexture2D.create(gl);
+            this.quadsTintTexture = GLTexture2D.create(gl);
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -82,16 +79,7 @@ public final class BufferTextureGpuQuadLists extends GpuQuadLists {
         PResourceUtil.closeAll(
                 this.quadsTintTexture,
                 this.quadsCoordTexture,
-                this.listsTexture,
-                this.quadsTintBuffer,
-                this.quadsCoordBuffer,
-                this.listsBuffer);
-    }
-
-    private static void checkFitsInTextureBuffer(int maxTextureBufferSize, String name, int size, int scale) {
-        if (size * scale > maxTextureBufferSize) {
-            throw new IllegalStateException(name + " list doesn't fit in an OpenGL texture buffer! (" + size + " * " + scale + " bytes, GL_MAX_TEXTURE_BUFFER_SIZE=" + maxTextureBufferSize + ')');
-        }
+                this.listsTexture);
     }
 
     @Override
@@ -99,32 +87,42 @@ public final class BufferTextureGpuQuadLists extends GpuQuadLists {
         int listsSize = lists.size();
         int quadsSize = quads.size();
 
-        //ensure that both lists are small enough to fit in an OpenGL texture buffer
-        int maxTextureBufferSize = this.gl.limits().maxTextureBufferSize();
-        checkFitsInTextureBuffer(maxTextureBufferSize, "lists", listsSize, GLIVec2.BYTES);
-        checkFitsInTextureBuffer(maxTextureBufferSize, "quads", quadsSize, GLVec4.BYTES);
+        this.listsTexture.mipmapLevels(0, 0);
+        this.quadsCoordTexture.mipmapLevels(0, 0);
+        this.quadsTintTexture.mipmapLevels(0, 0);
 
         try (val alloc = new DirectMemoryAllocator()) { //temporary allocator for staging data
             try (val listsList = new DirectIVec2List(alloc)) {
-                listsList.reserve(listsSize);
+                int width = X_COORD_WRAP;
+                int height = PMath.roundUp(listsSize, width) / width;
+                int capacity = width * height;
+
+                listsList.reserve(capacity);
                 for (val list : lists) {
                     listsList.add(new GLIVec2(list.texQuadListFirst(), list.texQuadListLast()));
                 }
+                listsList.appendZero(capacity - listsList.size());
 
-                this.listsBuffer.upload(listsList.byteBufferView(), BufferUsage.STATIC_DRAW);
+                this.listsTexture.texImage(0, width, height, TextureInternalFormat.RG32UI, PixelFormat.RG_INTEGER, PixelType.UNSIGNED_INT, listsList.byteBufferView());
             }
 
             try (val quadsCoordList = new DirectVec4List(alloc);
                  val quadsTintList = new DirectFloatList(alloc)) {
-                quadsCoordList.reserve(quadsSize);
-                quadsTintList.reserve(quadsSize);
+                int width = X_COORD_WRAP;
+                int height = PMath.roundUp(quadsSize, width) / width;
+                int capacity = width * height;
+
+                quadsCoordList.reserve(capacity);
+                quadsTintList.reserve(capacity);
                 for (val quad : quads) {
                     quadsCoordList.add(new GLVec4(quad.texQuadCoordS(), quad.texQuadCoordT(), quad.texQuadCoordP(), quad.texQuadCoordQ()));
                     quadsTintList.add(quad.texQuadTint());
                 }
+                quadsCoordList.appendZero(capacity - quadsCoordList.size());
+                quadsTintList.appendZero(capacity - quadsTintList.size());
 
-                this.quadsCoordBuffer.upload(quadsCoordList.byteBufferView(), BufferUsage.STATIC_DRAW);
-                this.quadsTintBuffer.upload(quadsTintList.byteBufferView(), BufferUsage.STATIC_DRAW);
+                this.quadsCoordTexture.texImage(0, width, height, TextureInternalFormat.RGBA32F, PixelFormat.RGBA, PixelType.FLOAT, quadsCoordList.byteBufferView());
+                this.quadsTintTexture.texImage(0, width, height, TextureInternalFormat.R32F, PixelFormat.RED, PixelType.FLOAT, quadsTintList.byteBufferView());
             }
         }
     }
@@ -132,18 +130,18 @@ public final class BufferTextureGpuQuadLists extends GpuQuadLists {
     @Override
     public void preservedBindState(StatePreserver.Builder builder) {
         super.preservedBindState(builder
-                .texture(TextureTarget.TEXTURE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SAMPLERBUFFER_BINDING)
-                .texture(TextureTarget.TEXTURE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_BINDING)
-                .texture(TextureTarget.TEXTURE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_BINDING));
+                .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_UVS_LISTS_SAMPLER2D_BINDING)
+                .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLER2D_BINDING)
+                .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLER2D_BINDING));
     }
 
     @Override
     public void bind(OpenGL gl) {
-        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_LISTS_SAMPLERBUFFER_BINDING);
-        gl.glBindTexture(GL_TEXTURE_BUFFER, this.listsTexture.id());
-        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_BINDING);
-        gl.glBindTexture(GL_TEXTURE_BUFFER, this.quadsCoordTexture.id());
-        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_BINDING);
-        gl.glBindTexture(GL_TEXTURE_BUFFER, this.quadsTintTexture.id());
+        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_LISTS_SAMPLER2D_BINDING);
+        gl.glBindTexture(GL_TEXTURE_2D, this.listsTexture.id());
+        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLER2D_BINDING);
+        gl.glBindTexture(GL_TEXTURE_2D, this.quadsCoordTexture.id());
+        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLER2D_BINDING);
+        gl.glBindTexture(GL_TEXTURE_2D, this.quadsTintTexture.id());
     }
 }

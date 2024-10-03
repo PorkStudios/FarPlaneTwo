@@ -100,7 +100,8 @@ public abstract class FP2Client {
             this.fp2().log()
                     .info("OpenGL context: " + gl)
                     .info("OpenGL vendor: " + gl.glGetString(GL_VENDOR))
-                    .info("OpenGL renderer: " + gl.glGetString(GL_RENDERER));
+                    .info("OpenGL renderer: " + gl.glGetString(GL_RENDERER))
+                    .info("OpenGL driver version: " + gl.glGetString(GL_VERSION));
 
             if (FP2_DEBUG) {
                 Path path = Paths.get(".fp2", "context_override.properties");
@@ -129,7 +130,6 @@ public abstract class FP2Client {
             GLExtensionSet minimumRequiredExtensions = GLExtensionSet.empty()
                     .add(GLExtension.GL_ARB_uniform_buffer_object) //needed for select and draw state uniforms (this requirement will probably not be relaxed, too much hassle)
                     .add(GLExtension.GL_ARB_gpu_shader5) //needed for input and output blocks in shaders (this can be relaxed)
-                    .add(GLExtension.GL_ARB_shader_storage_buffer_object) //needed for state -> texture UV mappings (this requirement can be relaxed)
                     .add(GLExtension.GL_ARB_program_interface_query); //needed by ShaderProgram if any SSBO bindings are added (this requirement can be removed with GL_ARB_shader_storage_buffer_object)
 
             Object unsupportedCause = null;
