@@ -38,9 +38,14 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Wrapper around an OpenGL vertex array object.
+ *
  * @author DaPorkchop_
  */
 public abstract class VertexArrayObject extends GLObject.Normal {
+    //Unlike with buffers, i'm putting code for DSA in a separate class. This is because the DSA functions for VAOs only provide
+    //  GL_ARB_vertex_attrib_binding-style functionality, which works completely differently from the old code.
+
     public static VertexArrayObject create(OpenGL gl) {
         if (gl.supports(GLExtension.GL_ARB_direct_state_access) && gl.supports(GLExtension.GL_ARB_vertex_attrib_binding)) {
             return (VertexArrayObject) (Object) new DSA(gl);
@@ -53,24 +58,25 @@ public abstract class VertexArrayObject extends GLObject.Normal {
         return new Builder(gl);
     }
 
+    protected int enabledAttributes;
+
     VertexArrayObject(OpenGL gl, int id) {
         super(gl, id);
     }
 
-    public abstract void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor);
-
-    public abstract void setIAttrib(GLBuffer buffer, int index, int size, int type, int stride, long pointer, int divisor);
-
-    public final void configure(AttributeBuffer<?> buffer) {
-        this.configure(buffer, 0);
-    }
-
-    public final void configure(AttributeBuffer<?> buffer, @NotNegative int divisor) {
-        this.configure(buffer.format().vertexAttributeFormats(), buffer.buffers(divisor));
-    }
-
+    /**
+     * Configures this vertex array with the given vertex attribute formats and buffers.
+     *
+     * @param attributes the vertex attribute formats
+     * @param buffers    the vertex attribute buffers
+     */
     public abstract void configure(VertexAttributeFormat[] attributes, VertexArrayVertexBuffer[] buffers);
 
+    /**
+     * Binds the given buffer to this vertex array as the elements buffer.
+     *
+     * @param buffer the buffer to bind
+     */
     public abstract void setElementsBuffer(GLBuffer buffer);
 
     /**
@@ -161,28 +167,6 @@ public abstract class VertexArrayObject extends GLObject.Normal {
         }
 
         @Override
-        public void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor) {
-            buffer.bind(BufferTarget.ARRAY_BUFFER, target -> {
-                this.bind(() -> {
-                    this.gl.glEnableVertexAttribArray(index);
-                    this.gl.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
-                    this.configureDivisor(index, divisor);
-                });
-            });
-        }
-
-        @Override
-        public void setIAttrib(GLBuffer buffer, int index, int size, int type, int stride, long pointer, int divisor) {
-            buffer.bind(BufferTarget.ARRAY_BUFFER, target -> {
-                this.bind(() -> {
-                    this.gl.glEnableVertexAttribArray(index);
-                    this.gl.glVertexAttribIPointer(index, size, type, stride, pointer);
-                    this.configureDivisor(index, divisor);
-                });
-            });
-        }
-
-        @Override
         public void configure(VertexAttributeFormat[] attributes, VertexArrayVertexBuffer[] buffers) {
             checkArg(attributes.length == buffers.length);
             this.bind(() -> {
@@ -198,7 +182,11 @@ public abstract class VertexArrayObject extends GLObject.Normal {
                             this.gl.glBindBuffer(GL_ARRAY_BUFFER, buffer.buffer());
                         }
 
-                        this.gl.glEnableVertexAttribArray(index);
+                        //enable the attribute array if it wasn't already
+                        if (index >= this.enabledAttributes) {
+                            this.gl.glEnableVertexAttribArray(index);
+                        }
+
                         if (attrib.integer()) {
                             this.gl.glVertexAttribIPointer(index, attrib.size(), attrib.type(), buffer.stride(), attrib.offset() + buffer.offset());
                         } else {
@@ -206,6 +194,12 @@ public abstract class VertexArrayObject extends GLObject.Normal {
                         }
                         this.configureDivisor(index, buffer.divisor());
                     }
+
+                    //disable any attribute arrays which were enabled before but aren't anymore
+                    for (int index = attributes.length; index < this.enabledAttributes; index++) {
+                        this.gl.glDisableVertexAttribArray(index);
+                    }
+                    this.enabledAttributes = attributes.length;
                 } finally {
                     this.gl.glBindBuffer(GL_ARRAY_BUFFER, oldBuffer);
                 }
@@ -232,26 +226,6 @@ public abstract class VertexArrayObject extends GLObject.Normal {
             } else if (divisor != 0) {
                 throw new UnsupportedOperationException(this.gl.unsupportedMsg(GLExtension.GL_ARB_instanced_arrays));
             }
-        }
-
-        @Override
-        public void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor) {
-            this.checkOpen();
-            this.gl.glEnableVertexArrayAttrib(this.id, index);
-            this.gl.glVertexArrayAttribFormat(this.id, index, size, type, normalized, 0);
-            this.gl.glVertexArrayAttribBinding(this.id, index, index);
-            this.gl.glVertexArrayVertexBuffer(this.id, index, buffer.id(), pointer, stride);
-            this.configureDivisor(index, divisor);
-        }
-
-        @Override
-        public void setIAttrib(GLBuffer buffer, int index, int size, int type, int stride, long pointer, int divisor) {
-            this.checkOpen();
-            this.gl.glEnableVertexArrayAttrib(this.id, index);
-            this.gl.glVertexArrayAttribIFormat(this.id, index, size, type, 0);
-            this.gl.glVertexArrayAttribBinding(this.id, index, index);
-            this.gl.glVertexArrayVertexBuffer(this.id, index, buffer.id(), pointer, stride);
-            this.configureDivisor(index, divisor);
         }
 
         private static void configureFormat(OpenGL gl, int vaobj, int attribIndex, VertexAttributeFormat attrib) {
@@ -282,88 +256,20 @@ public abstract class VertexArrayObject extends GLObject.Normal {
 
                 VertexAttributeFormat attrib = attributes[attribIndex];
 
-                this.gl.glEnableVertexArrayAttrib(this.id, attribIndex);
+                //enable the attribute array if it wasn't already
+                if (attribIndex >= this.enabledAttributes) {
+                    this.gl.glEnableVertexArrayAttrib(this.id, attribIndex);
+                }
                 configureFormat(this.gl, this.id, attribIndex, attrib);
                 this.gl.glVertexArrayAttribBinding(this.id, attribIndex, bindingIndex);
             }
+
+            //disable any attribute arrays which were enabled before but aren't anymore
+            for (int attribIndex = attributes.length; attribIndex < this.enabledAttributes; attribIndex++) {
+                this.gl.glDisableVertexArrayAttrib(this.id, attribIndex);
+            }
+            this.enabledAttributes = attributes.length;
         }
-
-        /*private static boolean identityEquals(NewAttributeFormat<?>[] a, NewAttributeFormat<?>[] b) {
-            if (a.length != b.length) {
-                return false;
-            }
-            for (int i = 0; i < a.length; i++) {
-                if (a[i] != b[i]) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Override
-        public void configure(NewAttributeFormat<?>... formats) {
-            if (identityEquals(formats, this.configuredFormats)) { //already configured with the same vertex formats, do nothing
-                return;
-            }
-
-            this.configuredFormats = formats = formats.clone();
-
-            int attribIndex = 0;
-            int enabledAttrs = this.enabledAttrs;
-            for (NewAttributeFormat<?> format : formats) {
-                for (VertexAttributeFormat attrib : format.vertexAttributeFormats()) {
-                    if (attribIndex <= enabledAttrs) { //the attribute index hasn't been enabled yet
-                        this.gl.glEnableVertexArrayAttrib(this.id, attribIndex);
-                        enabledAttrs++;
-                    }
-
-                    configureFormat(this.gl, this.id, attribIndex, attrib);
-                    attribIndex++;
-                }
-            }
-
-            while (enabledAttrs > attribIndex) { //disable all attribute indices which were previously enabled
-                this.gl.glDisableVertexArrayAttrib(this.id, --enabledAttrs);
-            }
-            this.enabledAttrs = enabledAttrs;
-
-            throw new UnsupportedOperationException(); //TODO
-        }
-
-        private static boolean compatible(NewAttributeBuffer<?>[] buffers, NewAttributeFormat<?>[] formats) {
-            if (buffers.length != formats.length) {
-                return false;
-            }
-            for (int i = 0; i < buffers.length; i++) {
-                if (buffers[i].format() != formats[i]) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private static NewAttributeFormat<?>[] toFormats(NewAttributeBuffer<?>[] buffers) {
-            NewAttributeFormat<?>[] formats = new NewAttributeFormat[buffers.length];
-            for (int i = 0; i < buffers.length; i++) {
-                formats[i] = buffers[i].format();
-            }
-            return formats;
-        }
-
-        @Override
-        public void bind(NewAttributeBuffer<?>... buffers) { //TODO: this api doesn't support divisors, lmao
-            if (!compatible(buffers, this.configuredFormats)) { //the given buffers use vertex formats incompatible with the currently configured ones
-                //configure this VAO for the vertex formats used by the given vertex buffers before proceeding
-                this.configure(toFormats(buffers));
-            }
-
-            for (NewAttributeBuffer<?> buffer : buffers) {
-                for (VertexArrayVertexBuffer vertexBuffer : buffer.buffers(0)) {
-                }
-            }
-
-            throw new UnsupportedOperationException(); //TODO
-        }*/
 
         @Override
         public void setElementsBuffer(GLBuffer buffer) {
