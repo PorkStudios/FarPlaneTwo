@@ -34,8 +34,6 @@ import java.nio.IntBuffer;
  */
 final class LegacyOpenGL extends OpenGL {
     static OpenGL wrap(@NonNull OpenGL delegate, @NonNull GLVersion version, @NonNull GLExtensionSet extensions, @NonNull GLProfile profile, boolean forwardCompatibility) {
-        //TODO: better argument validation
-
         //avoid having more than one layer of wrapping over a single context
         while (delegate instanceof LegacyOpenGL) {
             delegate = ((LegacyOpenGL) delegate).delegate;

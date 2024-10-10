@@ -77,7 +77,7 @@ public abstract class OpenGL {
                 .invokeExact();
     }
 
-    private static boolean isImplied_GL_ARB_compatibility(GLVersion version, GLProfile profile, boolean forwardCompatibility) {
+    private static boolean isImplied_GL_ARB_compatibility(@NonNull GLVersion version, @NonNull GLProfile profile, boolean forwardCompatibility) {
         if (version.compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0, as long as this isn't a forward-compatible context
             return !forwardCompatibility;
         } else if (version.compareTo(GLVersion.OpenGL31) <= 0) { //3.1: compatibility features only available if ARB_compatibility is present
@@ -87,7 +87,7 @@ public abstract class OpenGL {
         }
     }
 
-    protected static void validateContext(GLVersion version, GLExtensionSet nonCoreExtensions, GLExtensionSet allExtensions, GLProfile profile, boolean forwardCompatibility) {
+    private static void validateContext(@NonNull GLVersion version, @NonNull GLProfile profile, boolean forwardCompatibility, @NonNull GLExtensionSet nonCoreExtensions, @NonNull GLExtensionSet allExtensions) {
         if (version.compareTo(GLVersion.OpenGL30) < 0) {
             throw new IllegalStateException("OpenGL versions older than 3.0 aren't supported! Found: " + version);
         } else if (version.compareTo(GLVersion.OpenGL31) <= 0 && profile != GLProfile.UNKNOWN) {
@@ -126,91 +126,99 @@ public abstract class OpenGL {
 
     private final GLVersion version;
     private final GLProfile profile;
-    private final GLExtensionSet extensions; //a set of the supported extensions, excluding those whose features are already available because they're core features in the current OpenGL version
     private final boolean forwardCompatibility;
 
+    private final GLExtensionSet extensions; //a set of the supported extensions, excluding those whose features are already available because they're core features in the current OpenGL version
     private final GLExtensionSet allExtensions; //a set of all the supported extensions
 
     private final Limits limits;
 
     protected OpenGL(@NonNull GLVersion version, @NonNull GLExtensionSet extensions, @NonNull GLProfile profile, boolean forwardCompatibility, Limits limits) {
-        //figure out if GL_ARB_compatibility features should be assumed to be present
-        if (isImplied_GL_ARB_compatibility(version, profile, forwardCompatibility)) {
-            extensions = extensions.add(GLExtension.GL_ARB_compatibility);
-        }
-
-        this.version = version;
-        this.extensions = extensions;
-        this.profile = profile;
-        this.forwardCompatibility = forwardCompatibility;
-        this.limits = limits;
-        this.allExtensions = extensions.addAll(version.coreExtensions());
-
-        validateContext(this.version, this.extensions, this.allExtensions, this.profile, this.forwardCompatibility);
+        this(version, extensions, profile, forwardCompatibility, limits, true);
     }
 
     protected OpenGL() {
-        this.version = this.determineVersion();
+        this(null, null, null, null, null, false);
+    }
 
-        { //get profile
+    private OpenGL(GLVersion version, GLExtensionSet extensions, GLProfile profile, Boolean forwardCompatibility, Limits limits, boolean legacy) {
+        if (legacy) {
+            Objects.requireNonNull(version, "version");
+            Objects.requireNonNull(extensions, "extensions");
+            Objects.requireNonNull(profile, "profile");
+            Objects.requireNonNull(forwardCompatibility, "forwardCompatibility");
+        } else {
+            if (version != null || extensions != null || profile != null || forwardCompatibility != null || limits != null) {
+                throw new IllegalArgumentException("all arguments must be null!");
+            }
+
+            version = this.determineVersion();
+
+            //get profile
             int contextFlags = 0;
             int contextProfileMask = 0;
 
-            if (this.version.compareTo(GLVersion.OpenGL30) >= 0) { // >= 3.0, we can access context flags
+            if (version.compareTo(GLVersion.OpenGL30) >= 0) { // >= 3.0, we can access context flags
                 contextFlags = this.glGetInteger(GL_CONTEXT_FLAGS);
 
-                if (this.version.compareTo(GLVersion.OpenGL32) >= 0) { // >= 3.2, we can access profile information
+                if (version.compareTo(GLVersion.OpenGL32) >= 0) { // >= 3.2, we can access profile information
                     contextProfileMask = this.glGetInteger(GL_CONTEXT_PROFILE_MASK);
                 }
             }
 
             boolean compat = (contextProfileMask & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) != 0;
             boolean core = (contextProfileMask & GL_CONTEXT_CORE_PROFILE_BIT) != 0;
-            this.forwardCompatibility = (contextFlags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0;
+            forwardCompatibility = (contextFlags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0;
 
-            if (this.version.compareTo(GLVersion.OpenGL31) <= 0) { // <= 3.1, profiles don't exist yet
-                this.profile = GLProfile.UNKNOWN;
+            if (version.compareTo(GLVersion.OpenGL31) <= 0) { // <= 3.1, profiles don't exist yet
+                profile = GLProfile.UNKNOWN;
             } else { // >= 3.2
                 assert !(compat && core) : "a context can't be using both core and compatibility profiles at once!";
 
                 if (compat) {
-                    this.profile = GLProfile.COMPAT;
+                    profile = GLProfile.COMPAT;
                 } else if (core) {
-                    this.profile = GLProfile.CORE;
+                    profile = GLProfile.CORE;
                 } else {
-                    this.profile = GLProfile.UNKNOWN;
+                    profile = GLProfile.UNKNOWN;
                 }
             }
-        }
 
-        //get supported extension names
-        Set<String> extensionNames;
-        if (this.version.compareTo(GLVersion.OpenGL30) < 0) { //use old extensions field
-            String extensions = this.glGetString(GL_EXTENSIONS);
-            extensionNames = new HashSet<>(Arrays.asList(extensions.trim().split(" ")));
-        } else { //use new indexed EXTENSIONS property
-            extensionNames = IntStream.range(0, this.glGetInteger(GL_NUM_EXTENSIONS))
-                    .mapToObj(i -> this.glGetString(GL_EXTENSIONS, i))
-                    .collect(Collectors.toSet());
-        }
+            //get supported extension names
+            Set<String> extensionNames;
+            if (version.compareTo(GLVersion.OpenGL30) < 0) { //use old extensions field
+                String extensionsString = this.glGetString(GL_EXTENSIONS);
+                extensionNames = new HashSet<>(Arrays.asList(extensionsString.trim().split(" ")));
+            } else { //use new indexed EXTENSIONS property
+                extensionNames = IntStream.range(0, this.glGetInteger(GL_NUM_EXTENSIONS))
+                        .mapToObj(i -> this.glGetString(GL_EXTENSIONS, i))
+                        .collect(Collectors.toSet());
+            }
 
-        //map extension names to the actual extensions
-        GLExtensionSet supportedExtensions = Stream.of(GLExtension.values())
-                .filter(extension -> extensionNames.contains(extension.name()))
-                .collect(GLExtensionSet.toExtensionSet());
+            //map extension names to the actual extensions
+            extensions = Stream.of(GLExtension.values())
+                    .filter(extension -> extensionNames.contains(extension.name()))
+                    .collect(GLExtensionSet.toExtensionSet())
+                    .removeAll(version.coreExtensions());
+        }
 
         //figure out if GL_ARB_compatibility features should be assumed to be present
-        if (isImplied_GL_ARB_compatibility(this.version, this.profile, this.forwardCompatibility)) {
-            supportedExtensions = supportedExtensions.add(GLExtension.GL_ARB_compatibility);
+        if (isImplied_GL_ARB_compatibility(version, profile, forwardCompatibility)) {
+            extensions = extensions.add(GLExtension.GL_ARB_compatibility);
         }
 
-        GLExtensionSet coreExtensions = this.version.coreExtensions();
-        this.extensions = supportedExtensions.removeAll(coreExtensions);
-        this.allExtensions = supportedExtensions.addAll(coreExtensions);
+        GLExtensionSet allExtensions = extensions.addAll(version.coreExtensions());
 
-        validateContext(this.version, this.extensions, this.allExtensions, this.profile, this.forwardCompatibility);
+        this.version = version;
+        this.profile = profile;
+        this.forwardCompatibility = forwardCompatibility;
 
-        this.limits = new Limits(this);
+        this.extensions = extensions;
+        this.allExtensions = allExtensions;
+
+        this.limits = legacy ? limits : new Limits(this);
+
+        validateContext(version, profile, forwardCompatibility, extensions, allExtensions);
     }
 
     //
