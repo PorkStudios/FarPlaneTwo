@@ -1409,45 +1409,53 @@ final class LegacyOpenGL extends OpenGL {
         this.delegate.glDisableVertexArrayAttrib(vaobj, index);
     }
 
+    private static final GLExtensionSet direct_state_access_AND_vertex_attrib_binding = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_direct_state_access)
+            .add(GLExtension.GL_ARB_vertex_attrib_binding);
+
     @Override
     public void glVertexArrayAttribFormat(int vaobj, int attribindex, int size, int type, boolean normalized, int relativeoffset) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        super.checkSupported(direct_state_access_AND_vertex_attrib_binding);
         this.delegate.glVertexArrayAttribFormat(vaobj, attribindex, size, type, normalized, relativeoffset);
     }
 
     @Override
     public void glVertexArrayAttribIFormat(int vaobj, int attribindex, int size, int type, int relativeoffset) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        super.checkSupported(direct_state_access_AND_vertex_attrib_binding);
         this.delegate.glVertexArrayAttribIFormat(vaobj, attribindex, size, type, relativeoffset);
     }
 
     @Override
     public void glVertexArrayBindingDivisor(int vaobj, int bindingindex, int divisor) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        super.checkSupported(direct_state_access_AND_vertex_attrib_binding);
         this.delegate.glVertexArrayBindingDivisor(vaobj, bindingindex, divisor);
     }
 
     @Override
     public void glVertexArrayAttribBinding(int vaobj, int attribindex, int bindingindex) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        super.checkSupported(direct_state_access_AND_vertex_attrib_binding);
         this.delegate.glVertexArrayAttribBinding(vaobj, attribindex, bindingindex);
     }
 
     @Override
     public void glVertexArrayVertexBuffer(int vaobj, int bindingindex, int buffer, long offset, int stride) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        super.checkSupported(direct_state_access_AND_vertex_attrib_binding);
         this.delegate.glVertexArrayVertexBuffer(vaobj, bindingindex, buffer, offset, stride);
     }
 
+    private static final GLExtensionSet direct_state_access_AND_multi_bind = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_direct_state_access)
+            .add(GLExtension.GL_ARB_multi_bind);
+
     @Override
     public void glVertexArrayVertexBuffers(int vaobj, int first, int count, int[] buffers, long[] offsets, int[] strides) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        super.checkSupported(direct_state_access_AND_multi_bind);
         this.delegate.glVertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
     }
 
     @Override
     public void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        super.checkSupported(direct_state_access_AND_multi_bind);
         this.delegate.glVertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
     }
 

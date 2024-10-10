@@ -1862,54 +1862,52 @@ public abstract class OpenGL {
     public abstract void glDisableVertexArrayAttrib(int vaobj, int index);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_vertex_attrib_binding GL_ARB_vertex_attrib_binding}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_vertex_attrib_binding })
     public abstract void glVertexArrayAttribFormat(int vaobj, int attribindex, int size, int type, boolean normalized, int relativeoffset);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_vertex_attrib_binding GL_ARB_vertex_attrib_binding}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_vertex_attrib_binding })
     public abstract void glVertexArrayAttribIFormat(int vaobj, int attribindex, int size, int type, int relativeoffset);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_vertex_attrib_binding GL_ARB_vertex_attrib_binding}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_vertex_attrib_binding })
     public abstract void glVertexArrayBindingDivisor(int vaobj, int bindingindex, int divisor);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_vertex_attrib_binding GL_ARB_vertex_attrib_binding}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_vertex_attrib_binding })
     public abstract void glVertexArrayAttribBinding(int vaobj, int attribindex, int bindingindex);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_vertex_attrib_binding GL_ARB_vertex_attrib_binding}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_vertex_attrib_binding })
     public abstract void glVertexArrayVertexBuffer(int vaobj, int bindingindex, int buffer, long offset, int stride);
 
-    //TODO: does this require ARB_multi_bind as well?
-
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_multi_bind GL_ARB_multi_bind}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_multi_bind })
     public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, int[] buffers, long[] offsets, int[] strides);
 
     /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_multi_bind GL_ARB_multi_bind}
      * @since OpenGL 4.5
      */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_multi_bind })
     public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides);
 
     //

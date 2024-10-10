@@ -42,7 +42,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public abstract class VertexArrayObject extends GLObject.Normal {
     public static VertexArrayObject create(OpenGL gl) {
-        if (gl.supports(GLExtension.GL_ARB_direct_state_access)) {
+        if (gl.supports(GLExtension.GL_ARB_direct_state_access) && gl.supports(GLExtension.GL_ARB_vertex_attrib_binding)) {
             return (VertexArrayObject) (Object) new DSA(gl);
         } else {
             return (VertexArrayObject) (Object) new Basic(gl);

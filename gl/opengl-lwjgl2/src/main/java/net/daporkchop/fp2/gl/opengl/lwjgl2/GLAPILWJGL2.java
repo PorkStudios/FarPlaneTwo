@@ -162,6 +162,9 @@ public final class GLAPILWJGL2 extends OpenGL {
 
         this.extraFunctions = ExtraFunctionsProvider.INSTANCE.get();
 
+        //TODO: these boolean flags aren't always correct, LWJGL2 will set them to false if ANY of its functions are absent - it doesn't take
+        //      into account that some functions are only present if some other extension is available.
+
         // OpenGL 3.1
         this.OpenGL31 = capabilities.OpenGL31;
         this.GL_ARB_copy_buffer = !capabilities.OpenGL31 && capabilities.GL_ARB_copy_buffer;
