@@ -73,6 +73,7 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -84,124 +85,13 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     private final ExtraFunctions extraFunctions;
 
-    // OpenGL 3.1
-    private final boolean OpenGL31;
-    private final boolean GL_ARB_copy_buffer;
-    private final boolean GL_ARB_draw_instanced;
-    private final boolean GL_ARB_texture_buffer_object;
-    private final boolean GL_ARB_uniform_buffer_object;
-
-    // OpenGL 3.2
-    private final boolean OpenGL32;
-    private final boolean GL_ARB_draw_elements_base_vertex;
-    private final boolean GL_ARB_sync;
-
-    // OpenGL 3.3
-    private final boolean OpenGL33;
-    private final boolean GL_ARB_instanced_arrays;
-    private final boolean GL_ARB_sampler_objects;
-
-    // OpenGL 4.1
-    private final boolean OpenGL41;
-    private final boolean GL_ARB_separate_shader_objects;
-
-    // OpenGL 4.2
-    private final boolean OpenGL42;
-    private final boolean GL_ARB_base_instance;
-    private final boolean GL_ARB_shader_image_load_store;
-
-    // OpenGL 4.3
-    private final boolean OpenGL43;
-    private final boolean GL_ARB_compute_shader;
-    private final boolean GL_ARB_invalidate_subdata;
-    private final boolean GL_ARB_multi_draw_indirect;
-    private final boolean GL_ARB_program_interface_query;
-    private final boolean GL_ARB_shader_storage_buffer_object;
-    private final boolean GL_ARB_vertex_attrib_binding;
-    private final boolean GL_KHR_debug;
-
-    // OpenGL 4.4
-    private final boolean OpenGL44;
-    private final boolean GL_ARB_buffer_storage;
-    private final boolean GL_ARB_multi_bind;
-
-    // OpenGL 4.5
-    private final boolean OpenGL45;
-    private final boolean GL_ARB_clip_control;
-    private final boolean GL_ARB_direct_state_access;
-
-    // OpenGL 4.6
-    private final boolean OpenGL46;
-    private final boolean GL_ARB_indirect_parameters;
-
-    // No OpenGL version
-    private final boolean GL_ARB_debug_output;
-    private final boolean GL_ARB_sparse_buffer;
-
     //funny workarounds
     private final long glMultiDrawElements;
 
     public GLAPILWJGL2() {
-        ContextCapabilities capabilities = GLContext.getCapabilities();
+        checkState(!this.OpenGL46, "LWJGL2 doesn't support OpenGL 4.6!");
 
         this.extraFunctions = ExtraFunctionsProvider.INSTANCE.get();
-
-        //TODO: these boolean flags aren't always correct, LWJGL2 will set them to false if ANY of its functions are absent - it doesn't take
-        //      into account that some functions are only present if some other extension is available.
-
-        // OpenGL 3.1
-        this.OpenGL31 = capabilities.OpenGL31;
-        this.GL_ARB_copy_buffer = !capabilities.OpenGL31 && capabilities.GL_ARB_copy_buffer;
-        this.GL_ARB_draw_instanced = !capabilities.OpenGL31 && capabilities.GL_ARB_draw_instanced;
-        this.GL_ARB_texture_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_texture_buffer_object;
-        this.GL_ARB_uniform_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_uniform_buffer_object;
-
-        // OpenGL 3.2
-        this.OpenGL32 = capabilities.OpenGL32;
-        this.GL_ARB_draw_elements_base_vertex = !capabilities.OpenGL32 && capabilities.GL_ARB_draw_elements_base_vertex;
-        this.GL_ARB_sync = !capabilities.OpenGL32 && capabilities.GL_ARB_sync;
-
-        // OpenGL 3.3
-        this.OpenGL33 = capabilities.OpenGL33;
-        this.GL_ARB_instanced_arrays = !capabilities.OpenGL33 && capabilities.GL_ARB_instanced_arrays;
-        this.GL_ARB_sampler_objects = !capabilities.OpenGL33 && capabilities.GL_ARB_sampler_objects;
-
-        // OpenGL 4.1
-        this.OpenGL41 = capabilities.OpenGL41;
-        this.GL_ARB_separate_shader_objects = !capabilities.OpenGL41 && capabilities.GL_ARB_separate_shader_objects;
-
-        // OpenGL 4.2
-        this.OpenGL42 = capabilities.OpenGL42;
-        this.GL_ARB_base_instance = !capabilities.OpenGL42 && capabilities.GL_ARB_base_instance;
-        this.GL_ARB_shader_image_load_store = !capabilities.OpenGL42 && capabilities.GL_ARB_shader_image_load_store;
-
-        // OpenGL 4.3
-        this.OpenGL43 = capabilities.OpenGL43;
-        this.GL_ARB_compute_shader = !capabilities.OpenGL43 && capabilities.GL_ARB_compute_shader;
-        this.GL_ARB_invalidate_subdata = !capabilities.OpenGL43 && capabilities.GL_ARB_invalidate_subdata;
-        this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
-        this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
-        this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
-        this.GL_ARB_vertex_attrib_binding = !capabilities.OpenGL43 && capabilities.GL_ARB_vertex_attrib_binding;
-        this.GL_KHR_debug = !capabilities.OpenGL43 && capabilities.GL_KHR_debug;
-
-        // OpenGL 4.4
-        this.OpenGL44 = capabilities.OpenGL44;
-        this.GL_ARB_buffer_storage = !capabilities.OpenGL44 && capabilities.GL_ARB_buffer_storage;
-        this.GL_ARB_multi_bind = !capabilities.OpenGL44 && capabilities.GL_ARB_multi_bind;
-
-        // OpenGL 4.5
-        this.OpenGL45 = capabilities.OpenGL45;
-        this.GL_ARB_clip_control = !capabilities.OpenGL45 && capabilities.GL_ARB_clip_control;
-        this.GL_ARB_direct_state_access = !capabilities.OpenGL45 && capabilities.GL_ARB_direct_state_access;
-
-        // OpenGL 4.6
-        this.OpenGL46 = false /*capabilities.OpenGL46*/;
-        this.GL_ARB_indirect_parameters = !this.OpenGL46 && capabilities.GL_ARB_indirect_parameters;
-
-        // No OpenGL version
-        this.GL_ARB_debug_output = capabilities.GL_ARB_debug_output;
-        this.GL_ARB_sparse_buffer = capabilities.GL_ARB_sparse_buffer;
 
         //funny workarounds
         this.glMultiDrawElements = getFunctionAddress("glMultiDrawElements");

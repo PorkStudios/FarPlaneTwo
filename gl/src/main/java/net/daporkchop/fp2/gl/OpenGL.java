@@ -53,7 +53,6 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  *
  * @author DaPorkchop_
  */
-@Getter
 public abstract class OpenGL {
     public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
     public static final boolean DEBUG_OUTPUT = Boolean.getBoolean("fp2.gl.opengl.debug.output");
@@ -123,32 +122,106 @@ public abstract class OpenGL {
             }
         }
     }
+    
+    //
+    //
+    // REGULAR FIELDS
+    //
+    //
 
+    @Getter
     private final GLVersion version;
+    @Getter
     private final GLProfile profile;
+    @Getter
     private final boolean forwardCompatibility;
 
-    private final GLExtensionSet extensions; //a set of the supported extensions, excluding those whose features are already available because they're core features in the current OpenGL version
+    @Getter
+    private final GLExtensionSet nonCoreExtensions; //a set of the supported extensions, excluding those whose features are already available because they're core features in the current OpenGL version
+    @Getter
     private final GLExtensionSet allExtensions; //a set of all the supported extensions
 
+    @Getter
     private final Limits limits;
+    
+    //
+    //
+    // EXTENSION AND VERSION CAPABILITY FIELDS
+    // The OpenGLxx fields are true iff the context supports the corresponding OpenGL version.
+    // The GL_ARB_xx fields are true iff the corresponding OpenGL extensions are supported, but not in the core profile.
+    //
+    //
 
-    protected OpenGL(@NonNull GLVersion version, @NonNull GLExtensionSet extensions, @NonNull GLProfile profile, boolean forwardCompatibility, Limits limits) {
-        this(version, extensions, profile, forwardCompatibility, limits, true);
+    // OpenGL 3.1
+    protected final boolean OpenGL31;
+    protected final boolean GL_ARB_copy_buffer;
+    protected final boolean GL_ARB_draw_instanced;
+    protected final boolean GL_ARB_texture_buffer_object;
+    protected final boolean GL_ARB_uniform_buffer_object;
+
+    // OpenGL 3.2
+    protected final boolean OpenGL32;
+    protected final boolean GL_ARB_draw_elements_base_vertex;
+    protected final boolean GL_ARB_sync;
+
+    // OpenGL 3.3
+    protected final boolean OpenGL33;
+    protected final boolean GL_ARB_instanced_arrays;
+    protected final boolean GL_ARB_sampler_objects;
+
+    // OpenGL 4.1
+    protected final boolean OpenGL41;
+    protected final boolean GL_ARB_separate_shader_objects;
+
+    // OpenGL 4.2
+    protected final boolean OpenGL42;
+    protected final boolean GL_ARB_base_instance;
+    protected final boolean GL_ARB_shader_image_load_store;
+
+    // OpenGL 4.3
+    protected final boolean OpenGL43;
+    protected final boolean GL_ARB_compute_shader;
+    protected final boolean GL_ARB_invalidate_subdata;
+    protected final boolean GL_ARB_multi_draw_indirect;
+    protected final boolean GL_ARB_program_interface_query;
+    protected final boolean GL_ARB_shader_storage_buffer_object;
+    protected final boolean GL_ARB_vertex_attrib_binding;
+    protected final boolean GL_KHR_debug;
+
+    // OpenGL 4.4
+    protected final boolean OpenGL44;
+    protected final boolean GL_ARB_buffer_storage;
+    protected final boolean GL_ARB_multi_bind;
+
+    // OpenGL 4.5
+    protected final boolean OpenGL45;
+    protected final boolean GL_ARB_clip_control;
+    protected final boolean GL_ARB_direct_state_access;
+
+    // OpenGL 4.6
+    protected final boolean OpenGL46;
+    protected final boolean GL_ARB_indirect_parameters;
+
+    // No OpenGL version
+    protected final boolean GL_ARB_debug_output;
+    protected final boolean GL_ARB_sparse_buffer;
+
+    protected OpenGL(@NonNull GLVersion version, @NonNull GLExtensionSet nonCoreExtensions, @NonNull GLProfile profile, boolean forwardCompatibility, Limits limits) {
+        this(version, nonCoreExtensions, profile, forwardCompatibility, limits, true);
     }
 
     protected OpenGL() {
         this(null, null, null, null, null, false);
     }
 
-    private OpenGL(GLVersion version, GLExtensionSet extensions, GLProfile profile, Boolean forwardCompatibility, Limits limits, boolean legacy) {
+    private OpenGL(GLVersion version, GLExtensionSet nonCoreExtensions, GLProfile profile, Boolean forwardCompatibility, Limits limits, boolean legacy) {
         if (legacy) {
             Objects.requireNonNull(version, "version");
-            Objects.requireNonNull(extensions, "extensions");
+            Objects.requireNonNull(nonCoreExtensions, "extensions");
             Objects.requireNonNull(profile, "profile");
             Objects.requireNonNull(forwardCompatibility, "forwardCompatibility");
         } else {
-            if (version != null || extensions != null || profile != null || forwardCompatibility != null || limits != null) {
+            if (version != null || nonCoreExtensions != null || profile != null || forwardCompatibility != null || limits != null) {
                 throw new IllegalArgumentException("all arguments must be null!");
             }
 
@@ -196,7 +269,7 @@ public abstract class OpenGL {
             }
 
             //map extension names to the actual extensions
-            extensions = Stream.of(GLExtension.values())
+            nonCoreExtensions = Stream.of(GLExtension.values())
                     .filter(extension -> extensionNames.contains(extension.name()))
                     .collect(GLExtensionSet.toExtensionSet())
                     .removeAll(version.coreExtensions());
@@ -204,21 +277,75 @@ public abstract class OpenGL {
 
         //figure out if GL_ARB_compatibility features should be assumed to be present
         if (isImplied_GL_ARB_compatibility(version, profile, forwardCompatibility)) {
-            extensions = extensions.add(GLExtension.GL_ARB_compatibility);
+            nonCoreExtensions = nonCoreExtensions.add(GLExtension.GL_ARB_compatibility);
         }
 
-        GLExtensionSet allExtensions = extensions.addAll(version.coreExtensions());
+        GLExtensionSet allExtensions = nonCoreExtensions.addAll(version.coreExtensions());
 
         this.version = version;
         this.profile = profile;
         this.forwardCompatibility = forwardCompatibility;
 
-        this.extensions = extensions;
+        this.nonCoreExtensions = nonCoreExtensions;
         this.allExtensions = allExtensions;
 
         this.limits = legacy ? limits : new Limits(this);
 
-        validateContext(version, profile, forwardCompatibility, extensions, allExtensions);
+        validateContext(version, profile, forwardCompatibility, nonCoreExtensions, allExtensions);
+
+        // OpenGL 3.1
+        this.OpenGL31 = version.compareTo(GLVersion.OpenGL31) >= 0;
+        this.GL_ARB_copy_buffer = !this.OpenGL31 && allExtensions.contains(GLExtension.GL_ARB_copy_buffer);
+        this.GL_ARB_draw_instanced = !this.OpenGL31 && allExtensions.contains(GLExtension.GL_ARB_draw_instanced);
+        this.GL_ARB_texture_buffer_object = !this.OpenGL31 && allExtensions.contains(GLExtension.GL_ARB_texture_buffer_object);
+        this.GL_ARB_uniform_buffer_object = !this.OpenGL31 && allExtensions.contains(GLExtension.GL_ARB_uniform_buffer_object);
+
+        // OpenGL 3.2
+        this.OpenGL32 = version.compareTo(GLVersion.OpenGL32) >= 0;
+        this.GL_ARB_draw_elements_base_vertex = !this.OpenGL32 && allExtensions.contains(GLExtension.GL_ARB_draw_elements_base_vertex);
+        this.GL_ARB_sync = !this.OpenGL32 && allExtensions.contains(GLExtension.GL_ARB_sync);
+
+        // OpenGL 3.3
+        this.OpenGL33 = version.compareTo(GLVersion.OpenGL33) >= 0;
+        this.GL_ARB_instanced_arrays = !this.OpenGL33 && allExtensions.contains(GLExtension.GL_ARB_instanced_arrays);
+        this.GL_ARB_sampler_objects = !this.OpenGL33 && allExtensions.contains(GLExtension.GL_ARB_sampler_objects);
+
+        // OpenGL 4.1
+        this.OpenGL41 = version.compareTo(GLVersion.OpenGL41) >= 0;
+        this.GL_ARB_separate_shader_objects = !this.OpenGL41 && allExtensions.contains(GLExtension.GL_ARB_separate_shader_objects);
+
+        // OpenGL 4.2
+        this.OpenGL42 = version.compareTo(GLVersion.OpenGL42) >= 0;
+        this.GL_ARB_base_instance = !this.OpenGL42 && allExtensions.contains(GLExtension.GL_ARB_base_instance);
+        this.GL_ARB_shader_image_load_store = !this.OpenGL42 && allExtensions.contains(GLExtension.GL_ARB_shader_image_load_store);
+
+        // OpenGL 4.3
+        this.OpenGL43 = version.compareTo(GLVersion.OpenGL43) >= 0;
+        this.GL_ARB_compute_shader = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_compute_shader);
+        this.GL_ARB_invalidate_subdata = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_invalidate_subdata);
+        this.GL_ARB_multi_draw_indirect = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_multi_draw_indirect);
+        this.GL_ARB_program_interface_query = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_program_interface_query);
+        this.GL_ARB_shader_storage_buffer_object = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_shader_storage_buffer_object);
+        this.GL_ARB_vertex_attrib_binding = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_vertex_attrib_binding);
+        this.GL_KHR_debug = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_KHR_debug);
+
+        // OpenGL 4.4
+        this.OpenGL44 = version.compareTo(GLVersion.OpenGL44) >= 0;
+        this.GL_ARB_buffer_storage = !this.OpenGL44 && allExtensions.contains(GLExtension.GL_ARB_buffer_storage);
+        this.GL_ARB_multi_bind = !this.OpenGL44 && allExtensions.contains(GLExtension.GL_ARB_multi_bind);
+
+        // OpenGL 4.5
+        this.OpenGL45 = version.compareTo(GLVersion.OpenGL45) >= 0;
+        this.GL_ARB_clip_control = !this.OpenGL45 && allExtensions.contains(GLExtension.GL_ARB_clip_control);
+        this.GL_ARB_direct_state_access = !this.OpenGL45 && allExtensions.contains(GLExtension.GL_ARB_direct_state_access);
+
+        // OpenGL 4.6
+        this.OpenGL46 = version.compareTo(GLVersion.OpenGL46) >= 0;
+        this.GL_ARB_indirect_parameters = !this.OpenGL46 && allExtensions.contains(GLExtension.GL_ARB_indirect_parameters);
+
+        // No OpenGL version
+        this.GL_ARB_debug_output = allExtensions.contains(GLExtension.GL_ARB_debug_output);
+        this.GL_ARB_sparse_buffer = allExtensions.contains(GLExtension.GL_ARB_sparse_buffer);
     }
 
     //
@@ -366,7 +493,7 @@ public abstract class OpenGL {
 
     @Override
     public final String toString() {
-        return this.version + " " + this.profile + (this.forwardCompatibility ? " (forward compatibility)" : " ") + this.extensions;
+        return this.version + " " + this.profile + (this.forwardCompatibility ? " (forward compatibility)" : " ") + this.nonCoreExtensions;
     }
 
     /**
