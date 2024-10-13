@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.world.registry;
@@ -28,17 +27,19 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.minecraft.block.BlockState;
+import net.minecraft.state.Property;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -71,7 +72,16 @@ public final class GameRegistry1_16 implements FGameRegistry {
         //  ForgeRegistry#spliterator() wraps iterator(), which iterates in ID order using BitSet#nextSetBit. if i were using something like values().stream(), it would be a stream
         //  over a guava HashBiMap, which would obviously be bad because its order is unpredictable
         this.idsToStates = StreamSupport.stream(ForgeRegistries.BLOCKS.spliterator(), false)
-                .flatMap(block -> block.getStateDefinition().getPossibleStates().stream())
+                .flatMap(block -> {
+                    //Certain mods (i'm looking at you, IC² and Vintage-GT) have overridden StateContainer#getPossibleStates() to not return every possible state, but instead
+                    //  only a subset of the possible states. It's pretty cursed, and really shouldn't work at all, but it does actually occur in the wild. Thanks to that, what
+                    //  should have been a single line of code is now this monstrosity.
+                    Stream<BlockState> allStates = Stream.of(block.defaultBlockState());
+                    for (Property<?> property : block.getStateDefinition().getProperties()) {
+                        allStates = allStates.flatMap(state -> property.getPossibleValues().stream().map(value -> state.setValue(property, uncheckedCast(value))));
+                    }
+                    return allStates;
+                })
                 .toArray(BlockState[]::new);
 
         //states -> ids
