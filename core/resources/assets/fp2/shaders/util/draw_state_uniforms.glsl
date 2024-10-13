@@ -36,6 +36,4 @@ layout(DRAW_STATE_UNIFORMS_UBO_LAYOUT) uniform DRAW_STATE_UNIFORMS_UBO_NAME {
     float u_fogScale;
     //misc. GL state
     float u_alphaRefCutout;
-    //debug state
-    int u_debug_colorMode; //TODO: make this a constant and generate specialized shader variants (?)
 };

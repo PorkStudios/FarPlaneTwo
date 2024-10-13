@@ -163,7 +163,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
      */
     @RequiredArgsConstructor
     @Getter
-    public enum PosTechnique { //synced with resources/assets/fp2/shaders/comp/tile_pos_technique.glsl
+    public enum PosTechnique { //synced with resources/assets/fp2/shaders/util/tile_pos_technique.glsl
         /**
          * The shader declares ordinary vertex attributes for {@link net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes}.
          * <p>

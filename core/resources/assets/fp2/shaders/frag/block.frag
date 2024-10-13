@@ -20,7 +20,8 @@
 
 #include <"fp2:shaders/frag/common.frag">
 #include <"fp2:shaders/frag/fog.frag">
-#include <"fp2:shaders/util/draw_state_uniforms.glsl"> // u_alphaRefCutout, u_debug_colorMode
+#include <"fp2:shaders/util/debug_color_mode.glsl"> // FP2_DEBUG_COLOR_MODE_*
+#include <"fp2:shaders/util/draw_state_uniforms.glsl"> // u_alphaRefCutout
 
 vec4 computeBlockColor(vec3 normal) {
     //initial block texture sample
@@ -42,29 +43,23 @@ vec4 computeBlockColor(vec3 normal) {
     return frag_color;
 }
 
+vec4 computeBaseFragColor(vec3 normal) {
+#if FP2_DEBUG_COLOR_MODE == FP2_DEBUG_COLOR_MODE_DISABLED
+    return computeBlockColor(normal);
+#elif FP2_DEBUG_COLOR_MODE == FP2_DEBUG_COLOR_MODE_LEVEL || FP2_DEBUG_COLOR_MODE == FP2_DEBUG_COLOR_MODE_POSITION
+    //these both use the color indicated by the vertex shader, we just need to apply diffuse shading to that
+    return vec4(fs_in_color * diffuseLight(normal), 1.);
+#elif FP2_DEBUG_COLOR_MODE == FP2_DEBUG_COLOR_MODE_NORMAL
+    return vec4(normal * normal, 1.);
+#else
+#   error "FP2_DEBUG_COLOR_MODE is set to an unsupported value!"
+#endif
+}
+
 void main() {
     vec3 normal = normalVector();
 
-    vec4 frag_color;
-
-#if FP2_DEBUG
-    //if debug colors are enabled, determine the color to use based on the active color mode
-    switch (u_debug_colorMode) {
-        //case FP2_DEBUG_COLORS_MODE_DISABLED:
-        default:
-            frag_color = computeBlockColor(normal);
-            break;
-        case FP2_DEBUG_COLORS_MODE_LEVEL:
-        case FP2_DEBUG_COLORS_MODE_POSITION:
-            frag_color = vec4(fs_in_color * diffuseLight(normal), 1.);
-            break;
-        case FP2_DEBUG_COLORS_MODE_NORMAL:
-            frag_color = vec4(normal * normal, 1.);
-            break;
-    }
-#else //FP2_DEBUG
-    frag_color = computeBlockColor(normal);
-#endif //FP2_DEBUG
+    vec4 frag_color = computeBaseFragColor(normal);
 
     //fog
     frag_color = addFog(frag_color);

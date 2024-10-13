@@ -413,13 +413,13 @@ public final class FP2Config implements Cloneable<FP2Config> {
          */
         @RequiredArgsConstructor
         @Getter
-        public enum DebugColorMode {
+        public enum DebugColorMode { //synced with resources/assets/fp2/shaders/util/debug_color_mode.glsl
             DISABLED(false),
             LEVEL(true),
             POSITION(true),
             NORMAL(true);
 
-            protected final boolean enable;
+            private final boolean enable;
         }
     }
 }

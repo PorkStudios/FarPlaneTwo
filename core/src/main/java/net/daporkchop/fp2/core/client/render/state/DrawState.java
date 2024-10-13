@@ -44,9 +44,6 @@ public final class DrawState implements Cloneable<DrawState> {
     //misc. GL state
     public float alphaRefCutout;
 
-    //debug state
-    public int debug_colorMode;
-
     @Override
     public DrawState clone() {
         return (DrawState) super.clone();
@@ -68,8 +65,5 @@ public final class DrawState implements Cloneable<DrawState> {
 
         //misc. GL state
         uniforms.alphaRefCutout(this.alphaRefCutout);
-
-        //debug state
-        uniforms.debug_colorMode(this.debug_colorMode);
     }
 }

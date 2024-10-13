@@ -41,8 +41,6 @@ import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 @Attribute(name = "fogScale", typeScalar = @ScalarType(float.class))
 //misc. GL state
 @Attribute(name = "alphaRefCutout", typeScalar = @ScalarType(float.class))
-//debug state
-@Attribute(name = "debug_colorMode", typeScalar = @ScalarType(int.class))
 public interface DrawStateUniforms extends AttributeStruct {
     //
     // fog
@@ -72,11 +70,4 @@ public interface DrawStateUniforms extends AttributeStruct {
 
     @AttributeSetter
     DrawStateUniforms alphaRefCutout(float alphaRefCutout);
-
-    //
-    // debug state
-    //
-
-    @AttributeSetter
-    DrawStateUniforms debug_colorMode(int debug_colorMode);
 }

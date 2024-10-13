@@ -26,35 +26,6 @@
 //
 //
 
-// Debug colors
-
-//the following 2 macros are defined from java code:
-//#define FP2_DEBUG_COLORS_ENABLED (bool)
-//#define FP2_DEBUG_COLORS_MODE (FP2_DEBUG_COLORS_MODE_*)
-
-//debug colors are disabled
-#define FP2_DEBUG_COLORS_MODE_DISABLED (0)
-
-//colors terrain based on its detail level
-#define FP2_DEBUG_COLORS_MODE_LEVEL (1)
-
-//colors terrain based on its tile position
-#define FP2_DEBUG_COLORS_MODE_POSITION (2)
-
-//colors terrain based on its face normal vector
-#define FP2_DEBUG_COLORS_MODE_NORMAL (3)
-
-#if !defined(FP2_DEBUG_COLORS_ENABLED) || !FP2_DEBUG_COLORS_ENABLED || !defined(FP2_DEBUG_COLORS_MODE)
-#undef FP2_DEBUG_COLORS_ENABLED
-#undef FP2_DEBUG_COLORS_MODE
-#define FP2_DEBUG_COLORS_ENABLED (0)
-#define FP2_DEBUG_COLORS_MODE (-1)
-#endif
-
-#if FP2_DEBUG_COLORS_ENABLED && FP2_DEBUG_COLORS_MODE != FP2_DEBUG_COLORS_MODE_LEVEL && FP2_DEBUG_COLORS_MODE != FP2_DEBUG_COLORS_MODE_POSITION && FP2_DEBUG_COLORS_MODE != FP2_DEBUG_COLORS_MODE_NORMAL
-#error unsupported debug color mode!
-#endif
-
 // Fog
 
 //literally just no fog

@@ -116,7 +116,7 @@ public abstract class GpuQuadLists implements AutoCloseable {
      */
     @RequiredArgsConstructor
     @Getter
-    public enum QuadsTechnique { //synced with resources/assets/fp2/shaders/comp/texture_uvs_technique.glsl
+    public enum QuadsTechnique { //synced with resources/assets/fp2/shaders/util/texture_uvs_technique.glsl
         /**
          * The shader declares the following:
          * <br>

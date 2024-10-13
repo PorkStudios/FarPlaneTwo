@@ -42,6 +42,7 @@ import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
@@ -92,6 +93,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     @EqualsAndHashCode
     @ToString
     private static final class DrawShaderVariant {
+        final @NonNull FP2Config.Debug.DebugColorMode debugColorMode;
         final @NonNull RenderIndex.PosTechnique posTechnique;
         final @NonNull GpuQuadLists.QuadsTechnique quadsTechnique;
         final boolean cutout;
@@ -99,6 +101,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+            builder.put("FP2_DEBUG_COLOR_MODE", this.debugColorMode.ordinal());
             builder.put("FP2_TILE_POS_TECHNIQUE", this.posTechnique.ordinal());
             builder.put("FP2_TEXTURE_UVS_TECHNIQUE", this.quadsTechnique.ordinal());
             if (this.cutout) {
@@ -139,25 +142,30 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         }
 
         public static List<DrawShaderVariant> allVariants(@NonNull OpenGL gl) {
+            FP2Config.Debug.DebugColorMode[] debugColorModes = FP2Config.Debug.DebugColorMode.values();
             RenderIndex.PosTechnique[] posTechniques = RenderIndex.PosTechnique.values();
             GpuQuadLists.QuadsTechnique[] quadsTechniques = GpuQuadLists.QuadsTechnique.values();
 
-            List<DrawShaderVariant> result = new ArrayList<>(posTechniques.length * quadsTechniques.length * 4);
-            for (val posTechnique : posTechniques) {
-                if (!gl.supports(posTechnique.requiredExtensions())) {
-                    continue;
-                }
-
-                for (val quadsTechnique : quadsTechniques) {
-                    if (!gl.supports(quadsTechnique.requiredExtensions())) {
+            List<DrawShaderVariant> result = new ArrayList<>(debugColorModes.length * posTechniques.length * quadsTechniques.length * 3);
+            for (val debugColorMode : debugColorModes) {
+                for (val posTechnique : posTechniques) {
+                    if (!gl.supports(posTechnique.requiredExtensions())) {
                         continue;
                     }
 
-                    for (int i = 0b00; i <= 0b11; i++) {
-                        boolean cutout = (i & 0b01) != 0;
-                        boolean stencil = (i & 0b10) != 0;
+                    for (val quadsTechnique : quadsTechniques) {
+                        if (!gl.supports(quadsTechnique.requiredExtensions())) {
+                            continue;
+                        }
 
-                        result.add(new DrawShaderVariant(posTechnique, quadsTechnique, cutout, stencil));
+                        //Iterate over the tuples (cutout, stencil): { (false, false), (false, true), (true, false) }
+                        //We never use the variant with both cutout and stencil enabled, so we won't bother compiling it!
+                        for (int i = 0b00; i < 0b11; i++) {
+                            boolean cutout = (i & 0b01) != 0;
+                            boolean stencil = (i & 0b10) != 0;
+
+                            result.add(new DrawShaderVariant(debugColorMode, posTechnique, quadsTechnique, cutout, stencil));
+                        }
                     }
                 }
             }
@@ -200,10 +208,6 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
     protected final UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer;
     protected final UniformBuffer<DrawStateUniforms> drawStateUniformsBuffer;
-
-    protected final ReloadableShaderProgram<DrawShaderProgram> blockShaderProgram;
-    protected final ReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
-    protected final ReloadableShaderProgram<DrawShaderProgram> blockStencilShaderProgram;
 
     protected final IRenderBaker<VertexType> baker;
     protected final BakeStorage<VertexType> bakeStorage;
@@ -262,10 +266,6 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
             this.tilePosTechnique = this.renderIndex.posTechnique();
             this.textureQuadsTechnique = this.levelRenderer.textureUVs().gpuQuadLists().quadsTechnique;
-
-            this.blockShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, this.textureQuadsTechnique, false, false));
-            this.blockCutoutShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, this.textureQuadsTechnique, true, false));
-            this.blockStencilShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, this.textureQuadsTechnique, false, true));
 
             {
                 StatePreserver.Builder statePreserverBuilder = StatePreserver.builder(this.gl);
@@ -341,17 +341,38 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     }
 
     /**
+     * A container holding the actual shader programs that we're going to draw with.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    private static final class CapturedShaderPrograms {
+        final DrawShaderProgram blockShaderProgram;
+        final DrawShaderProgram blockCutoutShaderProgram;
+        final DrawShaderProgram blockStencilShaderProgram;
+    }
+
+    private CapturedShaderPrograms captureShaderPrograms(@NonNull FP2Config.Debug.DebugColorMode debugColorMode) {
+        ReloadableShaderRegistry shaderRegistry = this.fp2.client().globalRenderer().shaderRegistry;
+
+        return new CapturedShaderPrograms(
+                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, this.tilePosTechnique, this.textureQuadsTechnique, false, false)).get(),
+                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, this.tilePosTechnique, this.textureQuadsTechnique, true, false)).get(),
+                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, this.tilePosTechnique, this.textureQuadsTechnique, false, true)).get());
+    }
+
+    /**
      * Renders a frame.
      */
     public void render(@NonNull CameraState cameraState, @NonNull DrawState drawState) {
         //update draw state uniforms
         try (val uniforms = this.drawStateUniformsBuffer.update()) {
             drawState.configureUniforms(uniforms);
-
-            if (FP2_DEBUG) {
-                uniforms.debug_colorMode(this.fp2.globalConfig().debug().debugColors().ordinal());
-            }
         }
+
+        //determine which shader programs we're going to use
+        FP2Config.Debug.DebugColorMode debugColorMode = FP2_DEBUG ? this.fp2.globalConfig().debug().debugColors() : FP2Config.Debug.DebugColorMode.DISABLED;
+        val capturedShaderPrograms = this.captureShaderPrograms(debugColorMode);
 
         try (val ignored = this.statePreserverDraw.backup()) { //back up opengl state prior to rendering
             this.preRender();
@@ -363,11 +384,11 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             //  from rendering over vanilla water
 
             for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
-                this.renderSolid(level);
-                this.renderCutout(level);
+                this.renderSolid(capturedShaderPrograms, level);
+                this.renderCutout(capturedShaderPrograms, level);
             }
 
-            this.renderTransparent();
+            this.renderTransparent(capturedShaderPrograms);
 
             this.postRender();
         }
@@ -403,42 +424,42 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.renderIndex.postDraw();
     }
 
-    private void renderSolid(int level) {
+    private void renderSolid(CapturedShaderPrograms capturedShaderPrograms, int level) {
         //GlStateManager.disableAlpha();
 
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
         this.gl.glStencilFunc(GL_LEQUAL, level, 0x7F);
 
-        val shader = this.blockShaderProgram.get();
+        val shader = capturedShaderPrograms.blockShaderProgram;
         val uniformSetter = shader.bindUnsafe();
         this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_SOLID, shader, uniformSetter);
 
         //GlStateManager.enableAlpha();
     }
 
-    private void renderCutout(int level) {
+    private void renderCutout(CapturedShaderPrograms capturedShaderPrograms, int level) {
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
 
         this.gl.glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
         this.gl.glStencilFunc(GL_LEQUAL, level, 0x7F);
 
-        val shader = this.blockCutoutShaderProgram.get();
+        val shader = capturedShaderPrograms.blockCutoutShaderProgram;
         val uniformSetter = shader.bindUnsafe();
         this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_CUTOUT, shader, uniformSetter);
 
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    private void renderTransparent() {
-        this.renderTransparentStencilPass();
-        this.renderTransparentFragmentPass();
+    private void renderTransparent(CapturedShaderPrograms capturedShaderPrograms) {
+        this.renderTransparentStencilPass(capturedShaderPrograms);
+        this.renderTransparentFragmentPass(capturedShaderPrograms);
     }
 
-    private void renderTransparentStencilPass() {
+    private void renderTransparentStencilPass(CapturedShaderPrograms capturedShaderPrograms) {
         this.gl.glColorMask(false, false, false, false);
         this.gl.glDepthMask(false);
 
-        val shader = this.blockStencilShaderProgram.get();
+        val shader = capturedShaderPrograms.blockStencilShaderProgram;
         val uniformSetter = shader.bindUnsafe();
 
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
@@ -451,13 +472,13 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glColorMask(true, true, true, true);
     }
 
-    private void renderTransparentFragmentPass() {
+    private void renderTransparentFragmentPass(CapturedShaderPrograms capturedShaderPrograms) {
         this.gl.glEnable(GL_BLEND);
         this.gl.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
         //GlStateManager.alphaFunc(GL_GREATER, 0.1f);
 
-        val shader = this.blockShaderProgram.get();
+        val shader = capturedShaderPrograms.blockShaderProgram;
         val uniformSetter = shader.bindUnsafe();
 
         this.gl.glStencilMask(0);
