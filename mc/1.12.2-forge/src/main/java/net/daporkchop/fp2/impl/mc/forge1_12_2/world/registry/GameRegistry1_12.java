@@ -27,14 +27,17 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.minecraft.block.Block;
+import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.biome.Biome;
 
 import java.nio.charset.StandardCharsets;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -75,7 +78,16 @@ public final class GameRegistry1_12 implements FGameRegistry {
 
         //ids -> states
         this.idsToStates = StreamSupport.stream(Block.REGISTRY.spliterator(), false)
-                .flatMap(block -> block.getBlockState().getValidStates().stream())
+                .flatMap(block -> {
+                    //Certain mods (i'm looking at you, IC² and Vintage-GT) have overridden BlockStateContainer#getValidStates() to not return every possible state, but instead
+                    //  only a subset of the possible states. It's pretty cursed, and really shouldn't work at all, but it does actually occur in the wild. Thanks to that, what
+                    //  should have been a single line of code is now this monstrosity.
+                    Stream<IBlockState> allStates = Stream.of(block.getDefaultState());
+                    for (IProperty<?> property : block.getBlockState().getProperties()) {
+                        allStates = allStates.flatMap(state -> property.getAllowedValues().stream().map(value -> state.withProperty(property, uncheckedCast(value))));
+                    }
+                    return allStates;
+                })
                 .toArray(IBlockState[]::new);
 
         //states -> ids
