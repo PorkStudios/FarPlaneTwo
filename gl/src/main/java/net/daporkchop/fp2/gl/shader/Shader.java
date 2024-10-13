@@ -24,15 +24,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.shader.source.Preprocessor;
-import net.daporkchop.fp2.gl.shader.source.SourceLine;
+import net.daporkchop.fp2.gl.shader.source.IncludePreprocessor;
+import net.daporkchop.fp2.gl.shader.source.SourceLocation;
 import net.daporkchop.fp2.gl.util.GLObject;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
@@ -46,21 +44,21 @@ public final class Shader extends GLObject.Normal {
     private final ShaderType type;
 
     public Shader(OpenGL gl, ShaderType type, ResourceProvider provider, Identifier sourceFile) throws ShaderCompilationException {
-        this(gl, type, Arrays.asList(new Preprocessor(provider).appendLines(sourceFile).preprocess().lines()));
+        this(gl, type, new IncludePreprocessor(provider).addVersionHeader(gl).include(sourceFile));
     }
 
-    public Shader(OpenGL gl, ShaderType type, List<SourceLine> lines) throws ShaderCompilationException {
+    public Shader(OpenGL gl, ShaderType type, IncludePreprocessor source) throws ShaderCompilationException {
         super(gl, gl.glCreateShader(type.id()));
         this.type = type;
 
         try {
             //set source and compile shader
-            gl.glShaderSource(this.id, lines.stream().map(SourceLine::text).collect(Collectors.joining("\n")));
+            gl.glShaderSource(this.id, source.buffer());
             gl.glCompileShader(this.id);
 
             //check for errors
             if (gl.glGetShaderi(this.id, GL_COMPILE_STATUS) == GL_FALSE) {
-                throw new ShaderCompilationException(formatInfoLog(gl.glGetShaderInfoLog(this.id), lines));
+                throw new ShaderCompilationException(formatInfoLog(gl.glGetShaderInfoLog(this.id), source.locations()));
             }
         } catch (Throwable t) { //clean up if something goes wrong
             gl.glDeleteShader(this.id);
@@ -84,7 +82,7 @@ public final class Shader extends GLObject.Normal {
     }
 
     //TODO: make this private
-    public static String formatInfoLog(String text, List<SourceLine> lines) {
+    public static String formatInfoLog(String text, List<SourceLocation> locations) {
         try {
             for (Pattern pattern : new Pattern[]{ //different patterns for various error formats i've encountered so far
                     Pattern.compile("^(?<file>\\d+)\\((?<line>\\d+)\\) (?<text>: .+)", Pattern.MULTILINE),
@@ -94,8 +92,8 @@ public final class Shader extends GLObject.Normal {
                 if (matcher.find()) {
                     StringBuffer buffer = new StringBuffer();
                     do {
-                        SourceLine line = lines.get(Integer.parseInt(matcher.group("line")) - 1);
-                        matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + line.location() + ':' + line.lineNumber() + ')' + matcher.group("text")));
+                        SourceLocation location = locations.get(Integer.parseInt(matcher.group("line")) - 1);
+                        matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + location.location() + ':' + location.lineNumber() + ')' + matcher.group("text")));
                     } while (matcher.find());
                     matcher.appendTail(buffer);
 

@@ -87,8 +87,7 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
                         new IncludePreprocessor(resourceProvider)
                                 .addVersionHeader(gl)
                                 .define(this.macros.defines())
-                                .include(shader.identifier)
-                                .finish()));
+                                .include(shader.identifier)));
             }
 
             val builder = this.builderFactory.apply(gl);

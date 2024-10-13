@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,21 +15,30 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Provides binary resources based on {@link Identifier}s.
@@ -51,8 +60,8 @@ public interface ResourceProvider {
             }
 
             @Override
-            public Reader provideResourceAsReader(@NonNull Identifier id, @NonNull Charset charset) throws IOException, ResourceNotFoundException {
-                return namespace.equals(id.namespace()) ? matches.provideResourceAsReader(id, charset) : notMatches.provideResourceAsReader(id, charset);
+            public List<String> provideResourceAsLines(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+                return namespace.equals(id.namespace()) ? matches.provideResourceAsLines(id) : notMatches.provideResourceAsLines(id);
             }
         };
     }
@@ -64,6 +73,32 @@ public interface ResourceProvider {
                 return stream;
             }
             throw new ResourceNotFoundException(id);
+        };
+    }
+
+    static ResourceProvider caching(@NonNull ResourceProvider delegate) {
+        return new ResourceProvider() {
+            final Map<Identifier, byte[]> byteCache = new ConcurrentHashMap<>();
+            final Map<Identifier, List<String>> linesCache = new ConcurrentHashMap<>();
+
+            @Override
+            public InputStream provideResourceAsStream(@NonNull Identifier _id) throws IOException, ResourceNotFoundException {
+                return new ByteArrayInputStream(this.byteCache.computeIfAbsent(_id, id -> {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    try (InputStream in = delegate.provideResourceAsStream(id)) {
+                        byte[] buf = new byte[4096];
+                        for (int i; (i = in.read(buf)) >= 0; ) {
+                            baos.write(buf, 0, i);
+                        }
+                    }
+                    return baos.toByteArray();
+                }));
+            }
+
+            @Override
+            public List<String> provideResourceAsLines(@NonNull Identifier _id) throws IOException, ResourceNotFoundException {
+                return this.linesCache.computeIfAbsent(_id, id -> ImmutableList.copyOf(delegate.provideResourceAsLines(id)));
+            }
         };
     }
 
@@ -84,18 +119,23 @@ public interface ResourceProvider {
      * @throws ResourceNotFoundException if no resource with the given id could be found
      */
     default Reader provideResourceAsReader(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
-        return this.provideResourceAsReader(id, StandardCharsets.UTF_8);
+        return new InputStreamReader(this.provideResourceAsStream(id), StandardCharsets.UTF_8);
     }
 
     /**
-     * Gets the resource with the provided {@link Identifier} as a {@link Reader} using the given {@link Charset}.
+     * Gets the resource with the provided {@link Identifier} as a {@link List} of {@link String}s using the {@code UTF-8} charset.
      *
      * @param id      the resource id
-     * @param charset the {@link Charset}
-     * @return a {@link Reader} containing the resource data
+     * @return a {@link List} of {@link String}s containing the source lines
      * @throws ResourceNotFoundException if no resource with the given id could be found
      */
-    default Reader provideResourceAsReader(@NonNull Identifier id, @NonNull Charset charset) throws IOException, ResourceNotFoundException {
-        return new InputStreamReader(this.provideResourceAsStream(id), charset);
+    default List<String> provideResourceAsLines(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+        List<String> result = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(this.provideResourceAsReader(id))) {
+            for (String line; (line = reader.readLine()) != null; ) {
+                result.add(line);
+            }
+        }
+        return result;
     }
 }

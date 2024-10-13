@@ -150,7 +150,7 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
         int programCount = this.programs.size();
 
         OpenGL gl = this.fp2.client().gl();
-        ResourceProvider resourceProvider = this.fp2.client().resourceProvider();
+        ResourceProvider resourceProvider = ResourceProvider.caching(this.fp2.client().resourceProvider());
 
         List<ReloadableShaderProgram<?>> reloadablePrograms = new ArrayList<>(this.programs.values());
         List<ShaderProgram> reloadedPrograms = new ArrayList<>(programCount);
