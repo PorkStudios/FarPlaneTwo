@@ -94,6 +94,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     @ToString
     private static final class DrawShaderVariant {
         final @NonNull FP2Config.Debug.DebugColorMode debugColorMode;
+        final @NonNull DrawState.FogMode fogMode;
         final @NonNull RenderIndex.PosTechnique posTechnique;
         final @NonNull GpuQuadLists.QuadsTechnique quadsTechnique;
         final boolean cutout;
@@ -102,6 +103,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
             builder.put("FP2_DEBUG_COLOR_MODE", this.debugColorMode.ordinal());
+            builder.put("FP2_FOG_MODE", this.fogMode.ordinal());
             builder.put("FP2_TILE_POS_TECHNIQUE", this.posTechnique.ordinal());
             builder.put("FP2_TEXTURE_UVS_TECHNIQUE", this.quadsTechnique.ordinal());
             if (this.cutout) {
@@ -143,28 +145,31 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         public static List<DrawShaderVariant> allVariants(@NonNull OpenGL gl) {
             FP2Config.Debug.DebugColorMode[] debugColorModes = FP2Config.Debug.DebugColorMode.values();
+            DrawState.FogMode[] fogModes = DrawState.FogMode.values();
             RenderIndex.PosTechnique[] posTechniques = RenderIndex.PosTechnique.values();
             GpuQuadLists.QuadsTechnique[] quadsTechniques = GpuQuadLists.QuadsTechnique.values();
 
-            List<DrawShaderVariant> result = new ArrayList<>(debugColorModes.length * posTechniques.length * quadsTechniques.length * 3);
+            List<DrawShaderVariant> result = new ArrayList<>(debugColorModes.length * fogModes.length * posTechniques.length * quadsTechniques.length * 3);
             for (val debugColorMode : debugColorModes) {
-                for (val posTechnique : posTechniques) {
-                    if (!gl.supports(posTechnique.requiredExtensions())) {
-                        continue;
-                    }
-
-                    for (val quadsTechnique : quadsTechniques) {
-                        if (!gl.supports(quadsTechnique.requiredExtensions())) {
+                for (val fogMode : fogModes) {
+                    for (val posTechnique : posTechniques) {
+                        if (!gl.supports(posTechnique.requiredExtensions())) {
                             continue;
                         }
 
-                        //Iterate over the tuples (cutout, stencil): { (false, false), (false, true), (true, false) }
-                        //We never use the variant with both cutout and stencil enabled, so we won't bother compiling it!
-                        for (int i = 0b00; i < 0b11; i++) {
-                            boolean cutout = (i & 0b01) != 0;
-                            boolean stencil = (i & 0b10) != 0;
+                        for (val quadsTechnique : quadsTechniques) {
+                            if (!gl.supports(quadsTechnique.requiredExtensions())) {
+                                continue;
+                            }
 
-                            result.add(new DrawShaderVariant(debugColorMode, posTechnique, quadsTechnique, cutout, stencil));
+                            //Iterate over the tuples (cutout, stencil): { (false, false), (false, true), (true, false) }
+                            //We never use the variant with both cutout and stencil enabled, so we won't bother compiling it!
+                            for (int i = 0b00; i < 0b11; i++) {
+                                boolean cutout = (i & 0b01) != 0;
+                                boolean stencil = (i & 0b10) != 0;
+
+                                result.add(new DrawShaderVariant(debugColorMode, fogMode, posTechnique, quadsTechnique, cutout, stencil));
+                            }
                         }
                     }
                 }
@@ -352,13 +357,13 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         final DrawShaderProgram blockStencilShaderProgram;
     }
 
-    private CapturedShaderPrograms captureShaderPrograms(@NonNull FP2Config.Debug.DebugColorMode debugColorMode) {
+    private CapturedShaderPrograms captureShaderPrograms(@NonNull FP2Config.Debug.DebugColorMode debugColorMode, @NonNull DrawState.FogMode fogMode) {
         ReloadableShaderRegistry shaderRegistry = this.fp2.client().globalRenderer().shaderRegistry;
 
         return new CapturedShaderPrograms(
-                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, this.tilePosTechnique, this.textureQuadsTechnique, false, false)).get(),
-                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, this.tilePosTechnique, this.textureQuadsTechnique, true, false)).get(),
-                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, this.tilePosTechnique, this.textureQuadsTechnique, false, true)).get());
+                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, fogMode, this.tilePosTechnique, this.textureQuadsTechnique, false, false)).get(),
+                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, fogMode, this.tilePosTechnique, this.textureQuadsTechnique, true, false)).get(),
+                shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, fogMode, this.tilePosTechnique, this.textureQuadsTechnique, false, true)).get());
     }
 
     /**
@@ -372,7 +377,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         //determine which shader programs we're going to use
         FP2Config.Debug.DebugColorMode debugColorMode = FP2_DEBUG ? this.fp2.globalConfig().debug().debugColors() : FP2Config.Debug.DebugColorMode.DISABLED;
-        val capturedShaderPrograms = this.captureShaderPrograms(debugColorMode);
+        val capturedShaderPrograms = this.captureShaderPrograms(debugColorMode, drawState.fogMode);
 
         try (val ignored = this.statePreserverDraw.backup()) { //back up opengl state prior to rendering
             this.preRender();

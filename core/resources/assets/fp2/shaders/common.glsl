@@ -26,23 +26,6 @@
 //
 //
 
-// Fog
-
-//literally just no fog
-#define FP2_FOG_MODE_DISABLED (0)
-
-//f = (end - c) / (end - start)
-#define FP2_FOG_MODE_LINEAR (9729)
-
-//f = e ^ (-density * c)
-#define FP2_FOG_MODE_EXP (2048)
-
-//f = e ^ (-density * c ^ 2)
-#define FP2_FOG_MODE_EXP2 (2049)
-
-//f = <user code included from resource at this macro>
-//#define FP2_FOG_MODE_USER fp2:shaders/frag/fog/placeholder_user_fog.frag
-
 // FP2 constants
 
 //the following macros is defined from java code:

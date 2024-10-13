@@ -20,8 +20,12 @@
 package net.daporkchop.fp2.core.client.render.state;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.lib.common.misc.Cloneable;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * Encapsulates non-camera draw state during rendering.
@@ -36,7 +40,7 @@ public final class DrawState implements Cloneable<DrawState> {
     public float fogColorG;
     public float fogColorB;
     public float fogColorA;
-    public int fogMode;
+    public FogMode fogMode;
     public float fogDensity;
     public float fogStart;
     public float fogEnd;
@@ -57,7 +61,6 @@ public final class DrawState implements Cloneable<DrawState> {
     public void configureUniforms(DrawStateUniforms uniforms) {
         //fog
         uniforms.fogColor(this.fogColorR, this.fogColorG, this.fogColorB, this.fogColorA);
-        uniforms.fogMode(this.fogMode);
         uniforms.fogDensity(this.fogDensity);
         uniforms.fogStart(this.fogStart);
         uniforms.fogEnd(this.fogEnd);
@@ -65,5 +68,51 @@ public final class DrawState implements Cloneable<DrawState> {
 
         //misc. GL state
         uniforms.alphaRefCutout(this.alphaRefCutout);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    @Getter
+    public enum FogMode { //synced with resources/assets/fp2/shaders/util/fog_mode.glsl
+        /**
+         * Fog effects are disabled.
+         */
+        DISABLED,
+        /**
+         * {@code f = (end - c) / (end - start)}
+         */
+        LINEAR,
+        /**
+         * {@code f = e ^ (-density * c)}
+         */
+        EXP,
+        /**
+         * {@code f = e ^ (-density * c ^ 2)}
+         */
+        EXP2,
+        ;
+
+        /**
+         * Gets the {@link FogMode} corresponding to the given OpenGL fog mode name.
+         * <p>
+         * Note: this cannot return {@link #DISABLED}; user code must separately check if fog is enabled.
+         *
+         * @param glName the OpenGL fog mode name
+         * @return the corresponding {@link FogMode}
+         */
+        public static FogMode fromGlName(int glName) {
+            switch (glName) {
+                case GL_LINEAR:
+                    return LINEAR;
+                case /*GL_EXP*/ 0x0800:
+                    return EXP;
+                case /*GL_EXP2*/ 0x0801:
+                    return EXP2;
+                default:
+                    throw new IllegalArgumentException("invalid OpenGL fog mode: " + glName);
+            }
+        }
     }
 }

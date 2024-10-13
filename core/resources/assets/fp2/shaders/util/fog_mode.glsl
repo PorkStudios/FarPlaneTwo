@@ -20,27 +20,26 @@
 
 #pragma once
 
-#include <"fp2:shaders/common.glsl">
-
-#include <"fp2:shaders/util/fog_mode.glsl"> // FP2_FOG_MODE_*
-
 //
 //
-// OUTPUTS
+// MACROS
 //
 //
 
-out float vs_out_fog_depth;
+#ifndef FP2_FOG_MODE
+#   error "FP2_FOG_MODE must be defined!"
+#endif // FP2_FOG_MODE
 
-//
-//
-// UTILITIES
-//
-//
+//synced with net.daporkchop.fp2.core.client.render.state.DrawState$FogMode
+#define FP2_FOG_MODE_DISABLED (0)
+#define FP2_FOG_MODE_LINEAR (1)
+#define FP2_FOG_MODE_EXP (2)
+#define FP2_FOG_MODE_EXP2 (3)
 
-void setFog(in vec3 relativePos) {
-    if (FP2_FOG_MODE != FP2_FOG_MODE_DISABLED) {
-        //set fog depth based on vertex distance to camera
-        vs_out_fog_depth = length(relativePos);
-    }
-}
+#if FP2_FOG_MODE == FP2_FOG_MODE_DISABLED
+#elif FP2_FOG_MODE == FP2_FOG_MODE_LINEAR
+#elif FP2_FOG_MODE == FP2_FOG_MODE_EXP
+#elif FP2_FOG_MODE == FP2_FOG_MODE_EXP2
+#else
+#   error "FP2_FOG_MODE is set to an unsupported value!"
+#endif

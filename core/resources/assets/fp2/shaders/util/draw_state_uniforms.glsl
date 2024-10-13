@@ -29,7 +29,6 @@
 layout(DRAW_STATE_UNIFORMS_UBO_LAYOUT) uniform DRAW_STATE_UNIFORMS_UBO_NAME {
     //fog
     vec4 u_fogColor;
-    int u_fogMode; //TODO: make this a constant and generate specialized shader variants
     float u_fogDensity;
     float u_fogStart;
     float u_fogEnd;

@@ -34,7 +34,6 @@ import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
  */
 //fog
 @Attribute(name = "fogColor", typeVector = @VectorType(components = 4, componentType = @ScalarType(float.class)))
-@Attribute(name = "fogMode", typeScalar = @ScalarType(int.class))
 @Attribute(name = "fogDensity", typeScalar = @ScalarType(float.class))
 @Attribute(name = "fogStart", typeScalar = @ScalarType(float.class))
 @Attribute(name = "fogEnd", typeScalar = @ScalarType(float.class))
@@ -48,9 +47,6 @@ public interface DrawStateUniforms extends AttributeStruct {
 
     @AttributeSetter
     DrawStateUniforms fogColor(float r, float g, float b, float a);
-
-    @AttributeSetter
-    DrawStateUniforms fogMode(int fogMode);
 
     @AttributeSetter
     DrawStateUniforms fogDensity(float fogDensity);

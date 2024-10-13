@@ -22,7 +22,8 @@
 
 #include <"fp2:shaders/common.glsl">
 
-#include <"fp2:shaders/util/draw_state_uniforms.glsl"> // u_fogMode, u_fogColor, u_fogDensity, u_fogStart, u_fogEnd, u_fogScale
+#include <"fp2:shaders/util/draw_state_uniforms.glsl"> // u_fogColor, u_fogDensity, u_fogStart, u_fogEnd, u_fogScale
+#include <"fp2:shaders/util/fog_mode.glsl"> // FP2_FOG_MODE_*
 
 //
 //
@@ -31,8 +32,6 @@
 //
 
 in float vs_out_fog_depth;
-
-#define fs_in_fog_depth (vs_out_fog_depth)
 
 //
 //
@@ -43,18 +42,18 @@ in float vs_out_fog_depth;
 vec4 addFog(in vec4 color) {
     //compute the fog factor (formula depends on the current fog mode)
     float fogFactor;
-    switch (u_fogMode) {
+    switch (FP2_FOG_MODE) {
         case FP2_FOG_MODE_DISABLED:
             //fog is disabled, don't modify the fragment color
             return color;
         case FP2_FOG_MODE_LINEAR:
-            fogFactor = (u_fogEnd - fs_in_fog_depth) * u_fogScale;
+            fogFactor = (u_fogEnd - vs_out_fog_depth) * u_fogScale;
             break;
         case FP2_FOG_MODE_EXP:
-            fogFactor = exp(-u_fogDensity * fs_in_fog_depth);
+            fogFactor = exp(-u_fogDensity * vs_out_fog_depth);
             break;
         case FP2_FOG_MODE_EXP2:
-            fogFactor = exp(-u_fogDensity * (fs_in_fog_depth * fs_in_fog_depth));
+            fogFactor = exp(-u_fogDensity * (vs_out_fog_depth * vs_out_fog_depth));
             break;
     }
 

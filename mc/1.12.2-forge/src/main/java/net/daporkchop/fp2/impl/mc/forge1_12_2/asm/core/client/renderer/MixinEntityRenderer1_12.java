@@ -168,7 +168,7 @@ abstract class MixinEntityRenderer1_12 implements IMixinEntityRenderer1_12 {
         { //fog
             this.fp2_initFogColor(drawState);
 
-            drawState.fogMode = glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0;
+            drawState.fogMode = glGetBoolean(GL_FOG) ? DrawState.FogMode.fromGlName(glGetInteger(GL_FOG_MODE)) : DrawState.FogMode.DISABLED;
             drawState.fogDensity = glGetFloat(GL_FOG_DENSITY);
             drawState.fogStart = glGetFloat(GL_FOG_START);
             drawState.fogEnd = glGetFloat(GL_FOG_END);

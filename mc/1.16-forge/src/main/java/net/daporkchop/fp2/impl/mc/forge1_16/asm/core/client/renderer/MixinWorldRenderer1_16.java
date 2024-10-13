@@ -239,7 +239,7 @@ abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
             drawState.fogColorB = ATFogRenderer1_16.getFogBlue();
             drawState.fogColorA = 1.0f;
 
-            int fogMode = glGetInteger(GL_FOG_MODE);
+            DrawState.FogMode fogMode = DrawState.FogMode.fromGlName(glGetInteger(GL_FOG_MODE));
             float fogDensity = glGetFloat(GL_FOG_DENSITY);
             float fogStart = glGetFloat(GL_FOG_START);
             float fogEnd = glGetFloat(GL_FOG_END);
@@ -247,8 +247,8 @@ abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
             //i can't use glGetBoolean(GL_FOG) to check if fog is enabled because 1.16 turns it on and off again for every chunk section.
             //  instead, i check if fog mode is EXP2 and density is 0, because that's what is configured by FogRenderer.setupNoFog().
             //TODO: figure out if this will still work with OptiFine's option to disable fog
-            if (fogMode == GL_EXP2 && fogDensity == 0.0f) {
-                fogMode = 0;
+            if (fogMode == DrawState.FogMode.EXP2 && fogDensity == 0.0f) {
+                fogMode = DrawState.FogMode.DISABLED;
             }
 
             drawState.fogMode = fogMode;
