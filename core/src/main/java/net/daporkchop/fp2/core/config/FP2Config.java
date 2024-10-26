@@ -202,6 +202,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
                 .performance(this.performance.clone())
                 .compatibility(this.compatibility.clone())
                 .debug(this.debug.clone())
+                .quality(this.quality.clone())
                 .build();
     }
 
@@ -262,6 +263,11 @@ public final class FP2Config implements Cloneable<FP2Config> {
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(1024))
         @Config.GuiCategory(CATEGORY_CLIENT)
         private final int maxBakesProcessedPerFrame = preventInline(256);
+
+        @Builder.Default
+        @Config.RestartRequired(Config.Requirement.WORLD)
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final boolean renderQuads = preventInline(true);
 
         @Builder.Default
         @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))

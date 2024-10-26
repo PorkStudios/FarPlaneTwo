@@ -248,8 +248,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             //If GL_ARB_compatibility is supported, we can draw using quads instead of triangles.
             //Based on tests, this seems to very slightly improve performance - modern GPUs seem to be able to split indexed quads into triangles
             //  in hardware, and it reduces the size of our index buffers.
-            //TODO: Would be nice to make this configurable, though.
-            this.drawMode = this.gl.supports(GLExtension.GL_ARB_compatibility)
+            this.drawMode = this.fp2.globalConfig().performance().renderQuads() && this.gl.supports(GLExtension.GL_ARB_compatibility)
                     ? DrawMode.QUADS
                     : DrawMode.TRIANGLES;
 

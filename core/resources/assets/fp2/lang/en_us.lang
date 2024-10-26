@@ -92,28 +92,6 @@ fp2.config.menu.labelCutoffDistanceLessThanVanilla=§6Warning: Cutoff distance s
 fp2.config.menu.labelCutoffDistanceTooHigh=§6Warning: Cutoff distance is very high! Consider lowering it and increasing the number of LoD levels instead.
 fp2.config.menu.labelCutoffDistanceTooSmall=§cCritical: Cutoff distance should be at least %1$s blocks!
 
-fp2.config.menu.renderModes=Render Modes...
-
-fp2.config.menu.renderModes.title=FarPlaneTwo Render Modes
-fp2.config.menu.renderModes.renderModesEnabled=§n§lEnabled Render Modes
-fp2.config.menu.renderModes.renderModesDisabled=§n§lDisabled Render Modes
-fp2.config.menu.renderModes.noRenderModesEnabled=§cNo render modes enabled!
-fp2.config.menu.renderModes.noRenderModesDisabled=§aNo render modes disabled!
-fp2.config.menu.renderModes.renderModeDisabledOnServer=§cThis render mode is not supported by the server!
-fp2.config.menu.renderModes.listAdd=+
-fp2.config.menu.renderModes.listAdd.tooltip=Enable this render mode
-fp2.config.menu.renderModes.listRemove=-
-fp2.config.menu.renderModes.listRemove.tooltip=Disable this render mode
-fp2.config.menu.renderModes.listUp=⬆
-fp2.config.menu.renderModes.listUp.tooltip=Increase this render mode's priority
-fp2.config.menu.renderModes.listDown=⬇
-fp2.config.menu.renderModes.listDown.tooltip=Decrease this render mode's priority
-
-fp2.config.menu.renderModes.heightmap=Heightmap
-fp2.config.menu.renderModes.heightmap.tooltip=Only renders the top block layer.\nFastest, but looks worst and can't display overhangs.
-fp2.config.menu.renderModes.voxel=Voxel
-fp2.config.menu.renderModes.voxel.tooltip=Renders actual 3D terrain data.\nNotably slower than heightmap, but looks best.
-
 fp2.config.menu.performance=Performance
 fp2.config.menu.performance.title=FarPlaneTwo Performance Options
 
@@ -122,6 +100,8 @@ fp2.config.menu.performance.gpuFrustumCulling=GPU Frustum Culling
 fp2.config.menu.performance.gpuFrustumCulling.tooltip=Allows frustum culling to be done on the GPU instead of the CPU.\nThis can significantly increase FPS, especially on high-end GPUs.
 fp2.config.menu.performance.maxBakesProcessedPerFrame=Max. Bakes/Frame
 fp2.config.menu.performance.maxBakesProcessedPerFrame.tooltip=Limits the maximum number of baked tiles for the client to process per frame.\nIncreasing this value will increase the rate at which the client can process terrain data from the server, at the cost of more stutters when loading terrain. Lowering this value will reduce or eliminate stutters, but may cause higher tile update latency and client memory usage.
+fp2.config.menu.performance.renderQuads=Render Quads
+fp2.config.menu.performance.renderQuads.tooltip=If supported, draw terrain using quads instead of triangles.\nEnabling this will slightly reduce VRAM usage, and may slightly increase FPS. However, some GPU hardware may perform worse with this option enabled.
 
 fp2.config.menu.performance.threads.category=Multithreading
 fp2.config.menu.performance.trackingThreads=Tracking Threads
@@ -182,6 +162,12 @@ fp2.config.menu.debug.exactGeneration=Exact Generation
 fp2.config.menu.debug.exactGeneration.tooltip=Allows FP2 to do exact generation in places where vanilla terrain already exists.\nDisabling this will force the rough generator to be used everywhere and prevent terrain updates from running. If no rough generator is available, nothing will load.
 fp2.config.menu.debug.levelZeroTracking=Level-0 Tracking
 fp2.config.menu.debug.levelZeroTracking.tooltip=If disabled, FP2 will not track terrain tiles at the maximum detail level.
+
+fp2.config.menu.quality=Quality
+fp2.config.menu.quality.title=FarPlaneTwo Render Quality Options
+
+fp2.config.menu.quality.forceBlockyMesh=Force Blocky Mesh
+fp2.config.menu.quality.forceBlockyMesh.tooltip=Forces FP2 terrain at all detail levels to be rendered as a blocky mesh, ignoring all sloped/angled geometry.
 
 #
 # Misc. Debug
