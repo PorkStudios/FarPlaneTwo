@@ -28,6 +28,9 @@ import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -44,12 +47,20 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class DirectBufferHackery {
-    static {
-        PUnsafe.requireUnalignedAccess();
-    }
+    private static final MethodHandle BUFFER_ADDRESS_GET;
+    private static final MethodHandle BUFFER_ADDRESS_SET;
+    private static final MethodHandle BUFFER_CAPACITY_SET;
 
-    private final long BUFFER_CAPACITY_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "capacity");
-    private final long BUFFER_ADDRESS_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "address");
+    static {
+        Field _Buffer_address = Buffer.class.getDeclaredField("address");
+        _Buffer_address.setAccessible(true);
+        BUFFER_ADDRESS_GET = MethodHandles.publicLookup().unreflectGetter(_Buffer_address);
+        BUFFER_ADDRESS_SET = MethodHandles.publicLookup().unreflectSetter(_Buffer_address);
+
+        Field _Buffer_capacity = Buffer.class.getDeclaredField("capacity");
+        _Buffer_capacity.setAccessible(true);
+        BUFFER_CAPACITY_SET = MethodHandles.publicLookup().unreflectSetter(_Buffer_capacity);
+    }
 
     private final Class<ByteBuffer> BYTE = PorkUtil.classForName("java.nio.DirectByteBuffer");
     private final Class<IntBuffer> INT = PorkUtil.classForName("java.nio.DirectIntBufferU");
@@ -63,25 +74,64 @@ public class DirectBufferHackery {
 
     private static long address(Buffer buffer) {
         checkArg(buffer.isDirect(), "buffer isn't direct! %s", buffer);
-        return PUnsafe.getLong(buffer, BUFFER_ADDRESS_OFFSET);
+        return (long) BUFFER_ADDRESS_GET.invokeExact(buffer);
     }
 
-    public static <B extends Buffer> B reset(B buffer, long address, int capacity) {
+    /**
+     * Clears the given direct {@link Buffer} to point to the null address and have a capacity of 0.
+     * <p>
+     * The target {@link Buffer} must not own its current memory segment, otherwise this may result in unexpected behavior or memory leaks.
+     *
+     * @param buffer the {@link Buffer} to clear
+     * @return the {@link Buffer}
+     */
+    public static <B extends Buffer> B resetEmpty(B buffer) {
         checkArg(buffer.isDirect(), "buffer isn't direct! %s", buffer);
 
-        PUnsafe.putInt(buffer, BUFFER_CAPACITY_OFFSET, capacity);
-        PUnsafe.putLong(buffer, BUFFER_ADDRESS_OFFSET, address);
+        BUFFER_ADDRESS_SET.invokeExact(buffer, 0L);
+        BUFFER_CAPACITY_SET.invokeExact(buffer, 0);
         buffer.clear();
         return buffer;
     }
 
+    /**
+     * Clears the given direct {@link Buffer} to refer to the given memory address with the given capacity.
+     * <p>
+     * The target {@link Buffer} must not own its current memory segment, otherwise this may result in unexpected behavior or memory leaks.
+     *
+     * @param buffer   the {@link Buffer} to clear
+     * @param address  the new memory address
+     * @param capacity the new capacity
+     * @return the {@link Buffer}
+     */
+    public static <B extends Buffer> B reset(B buffer, long address, @NotNegative int capacity) {
+        checkArg(buffer.isDirect(), "buffer isn't direct! %s", buffer);
+        checkArg(address != 0L, "address may not be null");
+        notNegative(capacity, "capacity");
+
+        BUFFER_ADDRESS_SET.invokeExact(buffer, address);
+        BUFFER_CAPACITY_SET.invokeExact(buffer, capacity);
+        buffer.clear();
+        return buffer;
+    }
+
+    /**
+     * @return a new direct {@link static} configured with a null address and a capacity of {@code 0}
+     */
     public static ByteBuffer emptyByte() {
         ByteBuffer buffer = PUnsafe.allocateInstance(BYTE);
         buffer.order(ByteOrder.nativeOrder());
         return buffer;
     }
 
-    public static ByteBuffer wrapByte(long address, int capacity) {
+    /**
+     *
+     * Creates a new direct {@link ByteBuffer} using the native byte order, configured with the given base address and capacity.
+     * @param address the memory address
+     * @param capacity the capacity
+     * @return the created {@link ByteBuffer}
+     */
+    public static ByteBuffer wrapByte(long address, @NotNegative int capacity) {
         ByteBuffer buffer = emptyByte();
         reset(buffer, address, capacity);
         return buffer;
@@ -108,11 +158,20 @@ public class DirectBufferHackery {
         return buffer.remaining();
     }
 
-    public IntBuffer emptyInt() {
+    /**
+     * @return a new direct {@link IntBuffer} configured with a null address and a capacity of {@code 0}
+     */
+    public static IntBuffer emptyInt() {
         return PUnsafe.allocateInstance(INT);
     }
 
-    public static IntBuffer wrapInt(long address, int capacity) {
+    /**
+     * Creates a new direct {@link IntBuffer} using the native byte order, configured with the given base address and capacity.
+     * @param address the memory address
+     * @param capacity the capacity
+     * @return the created {@link IntBuffer}
+     */
+    public static IntBuffer wrapInt(long address, @NotNegative int capacity) {
         IntBuffer buffer = emptyInt();
         reset(buffer, address, capacity);
         return buffer;
@@ -132,18 +191,27 @@ public class DirectBufferHackery {
     }
 
     public static long address(IntBuffer buffer) {
-        return address((Buffer) buffer) + ((long) buffer.position() << 2);
+        return address((Buffer) buffer) + ((long) buffer.position() * Integer.BYTES);
     }
 
     public static long remainingBytes(IntBuffer buffer) {
-        return (long) buffer.remaining() << 2;
+        return (long) buffer.remaining() * Integer.BYTES;
     }
 
-    public FloatBuffer emptyFloat() {
+    /**
+     * @return a new direct {@link FloatBuffer} configured with a null address and a capacity of {@code 0}
+     */
+    public static FloatBuffer emptyFloat() {
         return PUnsafe.allocateInstance(FLOAT);
     }
 
-    public static FloatBuffer wrapFloat(long address, int capacity) {
+    /**
+     * Creates a new direct {@link FloatBuffer} using the native byte order, configured with the given base address and capacity.
+     * @param address the memory address
+     * @param capacity the capacity
+     * @return the created {@link FloatBuffer}
+     */
+    public static FloatBuffer wrapFloat(long address, @NotNegative int capacity) {
         FloatBuffer buffer = emptyFloat();
         reset(buffer, address, capacity);
         return buffer;
@@ -163,18 +231,27 @@ public class DirectBufferHackery {
     }
 
     public static long address(FloatBuffer buffer) {
-        return address((Buffer) buffer) + ((long) buffer.position() << 2);
+        return address((Buffer) buffer) + ((long) buffer.position() * Float.BYTES);
     }
 
     public static long remainingBytes(FloatBuffer buffer) {
-        return (long) buffer.remaining() << 2;
+        return (long) buffer.remaining() * Float.BYTES;
     }
 
-    public DoubleBuffer emptyDouble() {
+    /**
+     * @return a new direct {@link DoubleBuffer} configured with a null address and a capacity of {@code 0}
+     */
+    public static DoubleBuffer emptyDouble() {
         return PUnsafe.allocateInstance(DOUBLE);
     }
 
-    public static DoubleBuffer wrapDouble(long address, int capacity) {
+    /**
+     * Creates a new direct {@link DoubleBuffer} using the native byte order, configured with the given base address and capacity.
+     * @param address the memory address
+     * @param capacity the capacity
+     * @return the created {@link DoubleBuffer}
+     */
+    public static DoubleBuffer wrapDouble(long address, @NotNegative int capacity) {
         DoubleBuffer buffer = emptyDouble();
         reset(buffer, address, capacity);
         return buffer;
@@ -194,11 +271,11 @@ public class DirectBufferHackery {
     }
 
     public static long address(DoubleBuffer buffer) {
-        return address((Buffer) buffer) + ((long) buffer.position() << 3);
+        return address((Buffer) buffer) + ((long) buffer.position() * Double.BYTES);
     }
 
     public static long remainingBytes(DoubleBuffer buffer) {
-        return (long) buffer.remaining() << 3;
+        return (long) buffer.remaining() * Double.BYTES;
     }
 
     /**
