@@ -93,7 +93,7 @@ public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> ext
         }
     }
 
-    //TODO: this isn't even remotely as efficient as it could be, but i don't care
+    //this isn't even remotely as efficient as it could be, but i don't care
     protected final Map<TilePos, BakeStorage.Location[]> allLocations = DirectTilePosAccess.newPositionKeyedHashMap();
     protected final Map<TilePos, BakeStorage.Location[]>[] selectedLocations = uncheckedCast(PArrays.filledFrom(MAX_LODS, Map[]::new, DirectTilePosAccess::newPositionKeyedHashMap));
 

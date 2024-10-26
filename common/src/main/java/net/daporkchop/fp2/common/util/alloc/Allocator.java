@@ -81,42 +81,6 @@ public abstract class Allocator {
     public abstract void free(long address);
 
     /**
-     * Equivalent to {@link #free(long) freeing} an old region followed by {@link #alloc(long) allocating} a new region with the given size.
-     * <p>
-     * Similar to {@link #realloc(long, long)}, except that old contents will not be preserved.
-     *
-     * @param address the starting address of the region to free
-     * @param size    the size of the new region to allocate
-     * @return the starting address of the newly allocated region. May be {@link #nullAddress} if the given size was {@code 0}
-     */
-    public long freealloc(long address, @NotNegative long size) { //TODO: add optimized overrides of this in implementations
-        this.free(address);
-        return this.alloc(size);
-    }
-
-    /**
-     * Allocates multiple regions of the given sizes at once.
-     *
-     * @param sizes an array containing the sizes of the regions to allocate
-     * @return an array containing the starting addresses of the newly allocated regions. Elements may be {@link #nullAddress} if the corresponding size was {@code 0}
-     */
-    public long[] multiAlloc(long @NotNegative [] sizes) {
-        long[] result = PUnsafe.allocateUninitializedLongArray(sizes.length);
-        int i = 0;
-        try {
-            for (; i < sizes.length; i++) {
-                result[i] = this.alloc(sizes[i]);
-            }
-            return result;
-        } catch (Throwable t) {
-            for (int j = 0; j < i; j++) { //free everything we allocated prior to the failure
-                this.free(result[j]);
-            }
-            throw t;
-        }
-    }
-
-    /**
      * @return a {@link Stats} instance describing this allocator's current state
      */
     public abstract Stats stats();

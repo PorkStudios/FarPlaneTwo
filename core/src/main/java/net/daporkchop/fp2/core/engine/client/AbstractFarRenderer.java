@@ -252,8 +252,8 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                     ? DrawMode.QUADS
                     : DrawMode.TRIANGLES;
 
-            //TODO: figure out why i slapped a TODO on this
-            this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO
+            //use the most efficient buffer uploader implementation supported by the current OpenGL context
+            this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS)
                     ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
                     : this.gl.supports(ScratchCopyBufferUploader.REQUIRED_EXTENSIONS)
                     ? new ScratchCopyBufferUploader(this.gl)
@@ -431,7 +431,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     private void renderSolid(CapturedShaderPrograms capturedShaderPrograms, int level) {
         //GlStateManager.disableAlpha();
 
-        this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
+        this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         this.gl.glStencilFunc(GL_LEQUAL, level, 0x7F);
 
         val shader = capturedShaderPrograms.blockShaderProgram;
@@ -466,7 +466,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         val shader = capturedShaderPrograms.blockStencilShaderProgram;
         val uniformSetter = shader.bindUnsafe();
 
-        this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
+        this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
             this.gl.glStencilFunc(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
             this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);

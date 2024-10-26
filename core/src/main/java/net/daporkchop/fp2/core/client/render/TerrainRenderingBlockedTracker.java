@@ -318,7 +318,7 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
      */
     @GLRequires({ GLExtension.GL_ARB_uniform_buffer_object, GLExtension.GL_ARB_shader_storage_buffer_object })
     public final void bindGlBuffers(OpenGL gl, int uboBindingIndex, int ssboBindingIndex) throws UnsupportedOperationException {
-        gl.checkSupported(REQUIRED_EXTENSIONS_GPU); //TODO: check if glBuffer is null instead?
+        gl.checkSupported(REQUIRED_EXTENSIONS_GPU);
 
         gl.glBindBufferRange(GL_UNIFORM_BUFFER, uboBindingIndex, this.glBuffer.id(), 0L, FLAGS_OFFSET);
         gl.glBindBufferRange(GL_SHADER_STORAGE_BUFFER, ssboBindingIndex, this.glBuffer.id(), FLAGS_OFFSET, this.sizeBytes - FLAGS_OFFSET);
