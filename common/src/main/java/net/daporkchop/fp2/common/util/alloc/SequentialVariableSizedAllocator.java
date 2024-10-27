@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util.alloc;
@@ -59,6 +58,7 @@ public final class SequentialVariableSizedAllocator implements Allocator {
     protected final long blockSize;
     protected final GrowFunction growFunction;
     protected final SequentialHeapManager manager;
+    private long allocatedSpace;
     protected long capacity;
 
     protected final NavigableSet<Node> emptyNodes = new TreeSet<>((Comparator<Object>) (_a, _b) -> {
@@ -117,6 +117,7 @@ public final class SequentialVariableSizedAllocator implements Allocator {
         }
 
         found.used(true);
+        this.allocatedSpace += found.size;
         this.usedNodes.put(found.base, found);
         return found.base;
     }
@@ -127,6 +128,7 @@ public final class SequentialVariableSizedAllocator implements Allocator {
         checkArg(node != null, "invalid address for free(): %d (allocator state: %s)", address, this);
 
         node.used(false);
+        this.allocatedSpace -= node.size;
         if (node.next != null && !node.next.used) { //next node isn't used either, we can merge forwards
             Node next = node.next;
             this.emptyNodes.remove(next);
@@ -184,12 +186,11 @@ public final class SequentialVariableSizedAllocator implements Allocator {
     @Override
     public Stats stats() {
         long allocations = this.usedNodes.size();
-        long allocatedSpace = this.usedNodes.values().stream().mapToLong(Node::size).sum();
 
         return Stats.builder()
                 .heapRegions(1L)
                 .allocations(allocations)
-                .allocatedSpace(allocatedSpace)
+                .allocatedSpace(this.allocatedSpace)
                 .totalSpace(this.capacity)
                 .build();
     }
