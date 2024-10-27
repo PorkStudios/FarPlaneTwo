@@ -365,6 +365,14 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                 shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, fogMode, this.tilePosTechnique, this.textureQuadsTechnique, false, true)).get());
     }
 
+    private int minLevelToRender() {
+        if (FP2_DEBUG && !this.fp2.globalConfig().debug().levelZeroRendering()) {
+            return 1;
+        }
+
+        return 0;
+    }
+
     /**
      * Renders a frame.
      */
@@ -387,7 +395,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
             //  from rendering over vanilla water
 
-            for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
                 this.renderSolid(capturedShaderPrograms, level);
                 this.renderCutout(capturedShaderPrograms, level);
             }
@@ -467,7 +475,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         val uniformSetter = shader.bindUnsafe();
 
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+        for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
             this.gl.glStencilFunc(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
             this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
         }
@@ -487,7 +495,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         this.gl.glStencilMask(0);
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+        for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
             this.gl.glStencilFunc(GL_EQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
             this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
         }
