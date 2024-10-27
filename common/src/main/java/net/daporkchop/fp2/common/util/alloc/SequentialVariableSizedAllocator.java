@@ -63,6 +63,7 @@ public final class SequentialVariableSizedAllocator extends Allocator {
     private final long blockSize;
     private final GrowFunction growFunction;
     private final SequentialHeapManager manager;
+    private long allocatedSpace;
     private long capacity;
 
     private final NavigableSet<Node> emptyNodes = new TreeSet<>((Comparator<Object>) (_a, _b) -> {
@@ -126,6 +127,7 @@ public final class SequentialVariableSizedAllocator extends Allocator {
         }
 
         found.used(true);
+        this.allocatedSpace += found.size;
         this.usedNodes.put(found.base, found);
         return found.base;
     }
@@ -140,6 +142,7 @@ public final class SequentialVariableSizedAllocator extends Allocator {
         checkArg(node != null, "invalid address for free(): %d (allocator state: %s)", address, this);
 
         node.used(false);
+        this.allocatedSpace -= node.size;
         if (node.next != null && !node.next.used) { //next node isn't used either, we can merge forwards
             Node next = node.next;
             this.emptyNodes.remove(next);
@@ -197,12 +200,11 @@ public final class SequentialVariableSizedAllocator extends Allocator {
     @Override
     public Stats stats() {
         long allocations = this.usedNodes.size();
-        long allocatedSpace = this.usedNodes.values().stream().mapToLong(Node::size).sum();
 
         return Stats.builder()
                 .heapRegions(1L)
                 .allocations(allocations)
-                .allocatedSpace(allocatedSpace)
+                .allocatedSpace(this.allocatedSpace)
                 .totalSpace(this.capacity)
                 .build();
     }

@@ -282,14 +282,14 @@ public class CWGContext1_12 {
         double yFrac = yFracI * (1.0d / GTV_SIZE);
         double zFrac = zFracI * (1.0d / GTH_SIZE);
 
-        double v000 = this.get(x + 0 * GTH_SIZE, y + 0 * GTV_SIZE, z + 0 * GTH_SIZE);
-        double v001 = this.get(x + 0 * GTH_SIZE, y + 0 * GTV_SIZE, z + 1 * GTH_SIZE);
-        double v010 = this.get(x + 0 * GTH_SIZE, y + 1 * GTV_SIZE, z + 0 * GTH_SIZE);
-        double v011 = this.get(x + 0 * GTH_SIZE, y + 1 * GTV_SIZE, z + 1 * GTH_SIZE);
-        double v100 = this.get(x + 1 * GTH_SIZE, y + 0 * GTV_SIZE, z + 0 * GTH_SIZE);
-        double v101 = this.get(x + 1 * GTH_SIZE, y + 0 * GTV_SIZE, z + 1 * GTH_SIZE);
-        double v110 = this.get(x + 1 * GTH_SIZE, y + 1 * GTV_SIZE, z + 0 * GTH_SIZE);
-        double v111 = this.get(x + 1 * GTH_SIZE, y + 1 * GTV_SIZE, z + 1 * GTH_SIZE);
+        double v000 = this.get_resampleNone(x + 0 * GTH_SIZE, y + 0 * GTV_SIZE, z + 0 * GTH_SIZE, cacheIndex);
+        double v001 = this.get_resampleNone(x + 0 * GTH_SIZE, y + 0 * GTV_SIZE, z + 1 * GTH_SIZE, cacheIndex);
+        double v010 = this.get_resampleNone(x + 0 * GTH_SIZE, y + 1 * GTV_SIZE, z + 0 * GTH_SIZE, cacheIndex);
+        double v011 = this.get_resampleNone(x + 0 * GTH_SIZE, y + 1 * GTV_SIZE, z + 1 * GTH_SIZE, cacheIndex);
+        double v100 = this.get_resampleNone(x + 1 * GTH_SIZE, y + 0 * GTV_SIZE, z + 0 * GTH_SIZE, cacheIndex);
+        double v101 = this.get_resampleNone(x + 1 * GTH_SIZE, y + 0 * GTV_SIZE, z + 1 * GTH_SIZE, cacheIndex);
+        double v110 = this.get_resampleNone(x + 1 * GTH_SIZE, y + 1 * GTV_SIZE, z + 0 * GTH_SIZE, cacheIndex);
+        double v111 = this.get_resampleNone(x + 1 * GTH_SIZE, y + 1 * GTV_SIZE, z + 1 * GTH_SIZE, cacheIndex);
 
         double v000_001 = lerp(v000, v001, zFrac);
         double v010_011 = lerp(v010, v011, zFrac);
@@ -381,23 +381,38 @@ public class CWGContext1_12 {
         ArrayAllocator<double[]> alloc = GlobalAllocators.ALLOC_DOUBLE.get();
 
         int cacheBaseY = baseY & ~GTV_MASK;
-        int cacheHeight = asrCeil(this.size, 1);
+        int cacheHeight = asrCeil(this.size, 1) + 2; //TODO: why +2? for some reason +1 isn't enough, even though we're only accessing one layer higher...
 
         double[] tmp = alloc.atLeast(sq(this.size) * cacheHeight);
         try {
             //generate 3d noise at full resolution
-            this.configuredNoiseGen.generate3d(this.heights, this.variations, this.depth, tmp, this.cacheBaseX, cacheBaseY, this.cacheBaseZ, GTH_SIZE, GTV_SIZE, GTH_SIZE, this.size, cacheHeight, this.size);
+            this.configuredNoiseGen.generate3d(this.heights, this.variations, this.depth, tmp,
+                    this.cacheBaseX, cacheBaseY, this.cacheBaseZ,
+                    GTH_SIZE, GTV_SIZE, GTH_SIZE,
+                    this.size, cacheHeight, this.size);
 
             //resample noise values
             for (int i = 0, dx = 0; dx < this.size; dx++) {
-                for (int dy = 0; dy < this.size; dy++) {
-                    if (((dy + (baseY >> GTH_SHIFT)) & 1) != 0) {
-                        for (int dz = 0, lowIdx = (dx * cacheHeight + (dy >> 1)) * this.size, highIdx = (dx * cacheHeight + (dy >> 1) + 1) * this.size; dz < this.size; dz++, lowIdx++, highIdx++, i++) {
-                            out[i] = (tmp[lowIdx] + tmp[highIdx]) * 0.5d;
-                        }
+                for (int dy = 0; dy < this.size; dy++, i += this.size) {
+                    int y = baseY + (dy << this.level);
+                    int yFracI = y & GTV_MASK;
+                    double yFrac = yFracI * (1.0d / GTV_SIZE);
+
+                    int cacheY0 = (y - cacheBaseY) >> GTV_SHIFT;
+                    int cacheY1 = cacheY0 + 1;
+                    assert cacheY0 >= 0 && cacheY1 >= 0 && cacheY0 < cacheHeight && cacheY1 < cacheHeight;
+
+                    int srcIndex0 = (dx * cacheHeight + cacheY0) * this.size;
+                    int srcIndex1 = (dx * cacheHeight + cacheY1) * this.size;
+
+                    if (yFracI == 0) {
+                        //we don't need to do any interpolation, just copy the entire row as-is
+                        System.arraycopy(tmp, srcIndex0, out, i, this.size);
                     } else {
-                        System.arraycopy(tmp, (dx * cacheHeight + (dy >> 1)) * this.size, out, i, this.size);
-                        i += this.size;
+                        //interpolate between the samples above and below
+                        for (int dz = 0; dz < this.size; dz++) {
+                            out[i + dz] = lerp(tmp[srcIndex0 + dz], tmp[srcIndex1 + dz], yFrac);
+                        }
                     }
                 }
             }
@@ -410,7 +425,10 @@ public class CWGContext1_12 {
         checkState(this.cacheSize == this.size, "cacheSize (%d) != size (%d)", this.cacheSize, this.size);
 
         //generate 3d noise directly at full resolution, no resampling required
-        this.configuredNoiseGen.generate3d(this.heights, this.variations, out, this.baseX, baseY, this.baseZ, 1 << this.level, 1 << this.level, 1 << this.level, this.size, this.size, this.size);
+        this.configuredNoiseGen.generate3d(this.heights, this.variations, out,
+                this.baseX, baseY, this.baseZ,
+                1 << this.level, 1 << this.level, 1 << this.level,
+                this.size, this.size, this.size);
     }
 
     //
