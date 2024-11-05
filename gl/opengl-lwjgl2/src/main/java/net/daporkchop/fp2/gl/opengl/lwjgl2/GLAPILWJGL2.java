@@ -28,10 +28,12 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctions;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctionsProvider;
 import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.BufferChecks;
 import org.lwjgl.LWJGLUtil;
+import org.lwjgl.MemoryUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.ARBDebugOutput;
 import org.lwjgl.opengl.ARBDebugOutputCallback;
@@ -69,6 +71,7 @@ import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
@@ -129,18 +132,69 @@ public final class GLAPILWJGL2 extends OpenGL {
         return addr;
     }
 
-    private static final MethodHandle APIUtil_getBufferInt;
+    private static final MethodHandle APIUtil_getBufferByte; // (ContextCapabilities, int) -> ByteBuffer
+    private static final MethodHandle APIUtil_getBufferInt; // (ContextCapabilities) -> IntBuffer
+    private static final MethodHandle APIUtil_getBufferLong; // (ContextCapabilities) -> LongBuffer
+    private static final MethodHandle APIUtil_getBufferFloat; // (ContextCapabilities) -> FloatBuffer
+    private static final MethodHandle APIUtil_getBufferDouble; // (ContextCapabilities) -> DoubleBuffer
+
+    static {
+        Class<?> _APIUtil = Class.forName("org.lwjgl.opengl.APIUtil");
+
+        Method _APIUtil_getBufferByte = _APIUtil.getDeclaredMethod("getBufferByte", ContextCapabilities.class, int.class);
+        _APIUtil_getBufferByte.setAccessible(true);
+        APIUtil_getBufferByte = MethodHandles.publicLookup().unreflect(_APIUtil_getBufferByte);
+
+        Method _APIUtil_getBufferInt = _APIUtil.getDeclaredMethod("getBufferInt", ContextCapabilities.class);
+        _APIUtil_getBufferInt.setAccessible(true);
+        APIUtil_getBufferInt = MethodHandles.publicLookup().unreflect(_APIUtil_getBufferInt);
+
+        Method _APIUtil_getBufferLong = _APIUtil.getDeclaredMethod("getBufferLong", ContextCapabilities.class);
+        _APIUtil_getBufferLong.setAccessible(true);
+        APIUtil_getBufferLong = MethodHandles.publicLookup().unreflect(_APIUtil_getBufferLong);
+
+        Method _APIUtil_getBufferFloat = _APIUtil.getDeclaredMethod("getBufferFloat", ContextCapabilities.class);
+        _APIUtil_getBufferFloat.setAccessible(true);
+        APIUtil_getBufferFloat = MethodHandles.publicLookup().unreflect(_APIUtil_getBufferFloat);
+
+        Method _APIUtil_getBufferDouble = _APIUtil.getDeclaredMethod("getBufferDouble", ContextCapabilities.class);
+        _APIUtil_getBufferDouble.setAccessible(true);
+        APIUtil_getBufferDouble = MethodHandles.publicLookup().unreflect(_APIUtil_getBufferDouble);
+    }
+
+    private ByteBuffer getBufferByte(@NotNegative int capacity) {
+        return (ByteBuffer) APIUtil_getBufferByte.invokeExact(GLContext.getCapabilities(), capacity);
+    }
+
+    private IntBuffer getBufferInt(@NotNegative int capacity) {
+        IntBuffer buffer = (IntBuffer) APIUtil_getBufferInt.invokeExact(GLContext.getCapabilities());
+        checkArg(capacity <= buffer.capacity(), "capacity (%s) <= %s", capacity, buffer.capacity());
+        return buffer;
+    }
+
+    private LongBuffer getBufferLong(@NotNegative int capacity) {
+        LongBuffer buffer = (LongBuffer) APIUtil_getBufferLong.invokeExact(GLContext.getCapabilities());
+        checkArg(capacity <= buffer.capacity(), "capacity (%s) <= %s", capacity, buffer.capacity());
+        return buffer;
+    }
+
+    private FloatBuffer getBufferFloat(@NotNegative int capacity) {
+        FloatBuffer buffer = (FloatBuffer) APIUtil_getBufferFloat.invokeExact(GLContext.getCapabilities());
+        checkArg(capacity <= buffer.capacity(), "capacity (%s) <= %s", capacity, buffer.capacity());
+        return buffer;
+    }
+
+    private DoubleBuffer getBufferDouble(@NotNegative int capacity) {
+        DoubleBuffer buffer = (DoubleBuffer) APIUtil_getBufferDouble.invokeExact(GLContext.getCapabilities());
+        checkArg(capacity <= buffer.capacity(), "capacity (%s) <= %s", capacity, buffer.capacity());
+        return buffer;
+    }
 
     private static final MethodHandle StateTracker_getIndirectBuffer;
     private static final MethodHandle StateTracker_createVAO; // (ContextCapabilities, int) -> void
     private static final MethodHandle StateTracker_setVAOElementArrayBuffer; // (ContextCapabilities, int, int) -> void
 
     static {
-        Class<?> _APIUtil = Class.forName("org.lwjgl.opengl.APIUtil");
-        Method _APIUtil_getBufferInt = _APIUtil.getDeclaredMethod("getBufferInt", ContextCapabilities.class);
-        _APIUtil_getBufferInt.setAccessible(true);
-        APIUtil_getBufferInt = MethodHandles.publicLookup().unreflect(_APIUtil_getBufferInt);
-        
         Class<?> _StateTracker = Class.forName("org.lwjgl.opengl.StateTracker");
         Method _StateTracker_getReferences = _StateTracker.getDeclaredMethod("getReferences", ContextCapabilities.class);
         _StateTracker_getReferences.setAccessible(true);
@@ -805,7 +859,7 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public int[] glGetProgramiv(int program, int pname, int count) {
-        IntBuffer buffer = (IntBuffer) APIUtil_getBufferInt.invokeExact(GLContext.getCapabilities());
+        IntBuffer buffer = this.getBufferInt(count);
         GL20.glGetProgram(program, pname, buffer);
         super.debugCheckError();
         int[] res = new int[count];
@@ -859,38 +913,30 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public String glGetActiveAttrib(int program, int index, int bufSize, @NonNull IntBuffer size, @NonNull IntBuffer type) {
-        long allocSize = 2L * Integer.BYTES;
-        long address = DirectBufferHackery.allocateTemporary(allocSize);
-        try {
-            IntBuffer sizeType = DirectBufferHackery.wrapInt(address, 2);
-            val res = GL20.glGetActiveAttrib(program, index, bufSize, sizeType);
-            super.debugCheckError();
+        //get temporary direct buffer for storing the results
+        //we can safely use APIUtil.getBufferInt() here: GL20.glGetActiveAttrib() uses getBufferByte() and getLengths(), but getBufferInt() is untouched
+        IntBuffer sizeType = this.getBufferInt(2);
+        val res = GL20.glGetActiveAttrib(program, index, bufSize, sizeType);
+        super.debugCheckError();
 
-            //copy size and type into the destination buffers
-            size.put(size.position(), sizeType.get(0));
-            type.put(type.position(), sizeType.get(1));
-            return res;
-        } finally {
-            DirectBufferHackery.freeTemporary(address, allocSize);
-        }
+        //copy size and type into the destination buffers
+        size.put(size.position(), sizeType.get(0));
+        type.put(type.position(), sizeType.get(1));
+        return res;
     }
 
     @Override
     public String glGetActiveAttrib(int program, int index, int bufSize, @NonNull int[] size, @NonNull int[] type) {
-        long allocSize = 2L * Integer.BYTES;
-        long address = DirectBufferHackery.allocateTemporary(allocSize);
-        try {
-            IntBuffer sizeType = DirectBufferHackery.wrapInt(address, 2);
-            val res = GL20.glGetActiveAttrib(program, index, bufSize, sizeType);
-            super.debugCheckError();
+        //get temporary direct buffer for storing the results
+        //we can safely use APIUtil.getBufferInt() here: GL20.glGetActiveAttrib() uses getBufferByte() and getLengths(), but getBufferInt() is untouched
+        IntBuffer sizeType = this.getBufferInt(2);
+        val res = GL20.glGetActiveAttrib(program, index, bufSize, sizeType);
+        super.debugCheckError();
 
-            //copy size and type into the destination arrays
-            size[0] = sizeType.get(0);
-            type[0] = sizeType.get(1);
-            return res;
-        } finally {
-            DirectBufferHackery.freeTemporary(address, allocSize);
-        }
+        //copy size and type into the destination arrays
+        size[0] = sizeType.get(0);
+        type[0] = sizeType.get(1);
+        return res;
     }
 
     @Override
@@ -1251,21 +1297,18 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public int[] glGetUniformIndices(int program, CharSequence[] uniformNames) {
-        long address = PUnsafe.allocateMemory(uniformNames.length * (long) Integer.BYTES);
-        try {
-            IntBuffer wrapped = DirectBufferHackery.wrapInt(address, uniformNames.length);
-            if (this.OpenGL31 | this.GL_ARB_uniform_buffer_object) {
-                GL31.glGetUniformIndices(program, uniformNames, wrapped);
-                super.debugCheckError();
-            } else {
-                throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
-            }
+        if (this.OpenGL31 | this.GL_ARB_uniform_buffer_object) {
+            //get temporary direct buffer for storing the results
+            //we can safely use APIUtil.getBufferInt() here: GL31.glGetUniformIndices() only uses getBufferByte()
+            IntBuffer tmpBuffer = this.getBufferInt(uniformNames.length);
+            GL31.glGetUniformIndices(program, uniformNames, tmpBuffer);
+            super.debugCheckError();
 
             int[] result = new int[uniformNames.length];
-            wrapped.get(result);
+            tmpBuffer.duplicate().get(result);
             return result;
-        } finally {
-            PUnsafe.freeMemory(address);
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
         }
     }
 
@@ -1858,6 +1901,10 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glGetProgramResourceiv(int program, int programInterface, int index, @NonNull IntBuffer props, IntBuffer length, @NonNull IntBuffer params) {
+        if (LWJGLUtil.CHECKS) {
+            checkArg(props.remaining() == params.remaining(), "props (%s) and params (%s) must have the same length!", props.remaining(), params.remaining());
+        }
+
         if (this.OpenGL43 | this.GL_ARB_program_interface_query) {
             GL43.glGetProgramResource(program, programInterface, index, props, length, params);
             super.debugCheckError();
@@ -1868,28 +1915,24 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glGetProgramResourceiv(int program, int programInterface, int index, @NonNull int[] props, int[] length, @NonNull int[] params) {
-        long size = (long) (props.length + params.length + (length != null ? length.length : 0)) * Integer.BYTES;
-        long address = DirectBufferHackery.allocateTemporary(size);
-        try {
-            //prepare IntBuffers to wrap the temporary allocation
-            IntBuffer propsBuffer = DirectBufferHackery.wrapInt(address, props.length);
-            IntBuffer paramsBuffer = DirectBufferHackery.wrapInt(address + (long) props.length * Integer.BYTES, params.length);
-            IntBuffer lengthBuffer = length != null
-                    ? DirectBufferHackery.wrapInt(address + (long) (props.length + params.length) * Integer.BYTES, length.length)
-                    : null;
+        //get temporary direct buffer for storing the arguments and results
+        //we can safely use APIUtil.getBufferInt() here: GL43.glGetProgramResource() doesn't use it
+        IntBuffer tmpBuffer = this.getBufferInt(props.length + params.length + (length != null ? 1 : 0));
 
-            //copy the props array off-heap
-            propsBuffer.put(props).clear();
+        //copy props array to the direct buffer, and prepare IntBuffers for the params and length data to be returned into
+        IntBuffer propsBuffer = (IntBuffer) tmpBuffer.duplicate().put(props).position(0).limit(props.length);
+        IntBuffer paramsBuffer = (IntBuffer) tmpBuffer.duplicate().position(props.length).limit(props.length + params.length);
+        IntBuffer lengthBuffer = length != null ? (IntBuffer) tmpBuffer.duplicate().position(props.length + params.length).limit(props.length + params.length + 1) : null;
 
-            this.glGetProgramResourceiv(program, programInterface, index, propsBuffer, lengthBuffer, paramsBuffer);
+        //copy the parameters to the direct buffer
+        propsBuffer.put(props).flip();
 
-            //copy the results back to the heap arrays
-            paramsBuffer.get(params);
-            if (length != null) {
-                lengthBuffer.get(length);
-            }
-        } finally {
-            DirectBufferHackery.freeTemporary(address, size);
+        this.glGetProgramResourceiv(program, programInterface, index, propsBuffer, lengthBuffer, paramsBuffer);
+
+        //copy the results back to the heap arrays
+        paramsBuffer.get(params);
+        if (length != null) {
+            lengthBuffer.get(length);
         }
     }
 
@@ -1973,14 +2016,11 @@ public final class GLAPILWJGL2 extends OpenGL {
         if (ids == null) {
             this.glDebugMessageControl(source, type, severity, (IntBuffer) null, enabled);
         } else {
-            long address = PUnsafe.allocateMemory(ids.length * (long) Long.BYTES);
-            try {
-                IntBuffer wrapped = DirectBufferHackery.wrapInt(address, ids.length);
-                wrapped.put(ids).clear();
-                this.glDebugMessageControl(source, type, severity, wrapped, enabled);
-            } finally {
-                PUnsafe.freeMemory(address);
-            }
+            //get temporary direct buffer for storing the arguments
+            //we can safely use APIUtil.getBufferInt() here: GL43.glDebugMessageControl() doesn't use it
+            IntBuffer idsBuffer = this.getBufferInt(ids.length).duplicate();
+            idsBuffer.put(ids).flip();
+            this.glDebugMessageControl(source, type, severity, idsBuffer, enabled);
         }
     }
 
@@ -2092,14 +2132,11 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glBindBuffersBase(int target, int first, @NonNull int[] buffers) {
-        long size = buffers.length * (long) Integer.BYTES;
-        long address = DirectBufferHackery.allocateTemporary(size);
-        try {
-            DirectBufferHackery.wrapInt(address, buffers.length).put(buffers);
-            this.glBindBuffersBase(target, first, DirectBufferHackery.wrapInt(address, buffers.length));
-        } finally {
-            DirectBufferHackery.freeTemporary(address, size);
-        }
+        //get temporary direct buffer for storing the arguments
+        //we can safely use APIUtil.getBufferInt() here: GL44.glBindBuffersBase() doesn't use it
+        IntBuffer buffersBuffer = this.getBufferInt(buffers.length).duplicate();
+        buffersBuffer.put(buffers).flip();
+        this.glBindBuffersBase(target, first, buffersBuffer);
     }
 
     //
@@ -2469,23 +2506,20 @@ public final class GLAPILWJGL2 extends OpenGL {
         if (buffers == null) {
             this.glVertexArrayVertexBuffers(vaobj, first, count, 0L, 0L, 0L);
         } else {
-            long size = count * (long) (Integer.BYTES + Integer.BYTES + PUnsafe.addressSize());
-            long address = DirectBufferHackery.allocateTemporary(size);
-            try {
-                long buffersAddress = address;
-                long stridesAddress = buffersAddress + (long) count * Integer.BYTES;
-                long offsetsAddress = stridesAddress + (long) count * Integer.BYTES;
+            //get temporary direct buffer for storing the results
+            //we can safely use APIUtil.getBufferByte() here: GL45.glVertexArrayVertexBuffers() doesn't use either of them
+            ByteBuffer tmpBuffer = this.getBufferByte(count * (Integer.BYTES + Integer.BYTES + PUnsafe.addressSize()));
 
-                for (int i = 0; i < count; i++) {
-                    PUnsafe.putInt(buffersAddress + (long) i * Integer.BYTES, buffers[i]);
-                    PUnsafe.putInt(stridesAddress + (long) i * Integer.BYTES, strides[i]);
-                    PUnsafe.putAddress(offsetsAddress + (long) i * PUnsafe.addressSize(), offsets[i]);
-                }
+            IntBuffer buffersBuffer = (IntBuffer) tmpBuffer.asIntBuffer().position(0).limit(count);
+            IntBuffer stridesBuffer = (IntBuffer) tmpBuffer.asIntBuffer().position(count).limit(2 * count);
+            PointerBuffer offsetsBuffer = new PointerBuffer((ByteBuffer) tmpBuffer.duplicate().position(2 * count * Integer.BYTES).limit(2 * count * Integer.BYTES + count * PUnsafe.addressSize()));
 
-                this.glVertexArrayVertexBuffers(vaobj, first, count, buffersAddress, offsetsAddress, stridesAddress);
-            } finally {
-                DirectBufferHackery.freeTemporary(address, size);
-            }
+            //copy the heap arrays to the direct buffer
+            buffersBuffer.put(buffers, 0, count).flip();
+            stridesBuffer.put(strides, 0, count).flip();
+            offsetsBuffer.put(offsets, 0, count).flip();
+
+            this.glVertexArrayVertexBuffers(vaobj, first, count, MemoryUtil.getAddress(buffersBuffer), MemoryUtil.getAddress(offsetsBuffer), MemoryUtil.getAddress(stridesBuffer));
         }
     }
 
@@ -2565,14 +2599,11 @@ public final class GLAPILWJGL2 extends OpenGL {
         if (ids == null) {
             this.glDebugMessageControlARB(source, type, severity, (IntBuffer) null, enabled);
         } else {
-            long address = PUnsafe.allocateMemory(ids.length * (long) Long.BYTES);
-            try {
-                IntBuffer wrapped = DirectBufferHackery.wrapInt(address, ids.length);
-                wrapped.put(ids).clear();
-                this.glDebugMessageControlARB(source, type, severity, wrapped, enabled);
-            } finally {
-                PUnsafe.freeMemory(address);
-            }
+            //get temporary direct buffer for storing the arguments
+            //we can safely use APIUtil.getBufferInt() here: ARBDebugOutput.glDebugMessageControlARB() doesn't use it
+            IntBuffer idsBuffer = this.getBufferInt(ids.length).duplicate();
+            idsBuffer.put(ids).flip();
+            this.glDebugMessageControlARB(source, type, severity, idsBuffer, enabled);
         }
     }
 
