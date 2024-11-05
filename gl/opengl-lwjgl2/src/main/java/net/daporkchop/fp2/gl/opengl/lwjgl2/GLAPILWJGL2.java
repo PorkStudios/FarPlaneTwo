@@ -72,6 +72,7 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.nio.ShortBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
@@ -188,6 +189,76 @@ public final class GLAPILWJGL2 extends OpenGL {
         DoubleBuffer buffer = (DoubleBuffer) APIUtil_getBufferDouble.invokeExact(GLContext.getCapabilities());
         checkArg(capacity <= buffer.capacity(), "capacity (%s) <= %s", capacity, buffer.capacity());
         return buffer;
+    }
+
+    private ShortBuffer getBufferForUpload(short[] data) {
+        ShortBuffer dataBuffer = this.getBufferByte(data.length * Short.BYTES).asShortBuffer();
+        dataBuffer.put(data).flip();
+        return dataBuffer;
+    }
+
+    private IntBuffer getBufferForUpload(int[] data) {
+        IntBuffer dataBuffer = this.getBufferByte(data.length * Integer.BYTES).asIntBuffer();
+        dataBuffer.put(data).flip();
+        return dataBuffer;
+    }
+
+    private ByteBuffer getBufferForUpload(long[] data) {
+        ByteBuffer dataBuffer = (ByteBuffer) this.getBufferByte(data.length * Long.BYTES).duplicate().position(0).limit(data.length * Long.BYTES);
+        dataBuffer.asLongBuffer().put(data);
+        return dataBuffer;
+    }
+
+    private FloatBuffer getBufferForUpload(float[] data) {
+        FloatBuffer dataBuffer = this.getBufferByte(data.length * Float.BYTES).asFloatBuffer();
+        dataBuffer.put(data).flip();
+        return dataBuffer;
+    }
+
+    private DoubleBuffer getBufferForUpload(double[] data) {
+        DoubleBuffer dataBuffer = this.getBufferByte(data.length * Double.BYTES).asDoubleBuffer();
+        dataBuffer.put(data).flip();
+        return dataBuffer;
+    }
+
+    private ShortBuffer beginHeapDownload(short[] data) {
+        return (ShortBuffer) this.getBufferByte(data.length * Short.BYTES).asShortBuffer().position(0).limit(data.length);
+    }
+
+    private void finishHeapDownload(short[] data, ShortBuffer dataBuffer) {
+        dataBuffer.get(data);
+    }
+
+    private IntBuffer beginHeapDownload(int[] data) {
+        return (IntBuffer) this.getBufferByte(data.length * Integer.BYTES).asIntBuffer().position(0).limit(data.length);
+    }
+
+    private void finishHeapDownload(int[] data, IntBuffer dataBuffer) {
+        dataBuffer.get(data);
+    }
+
+    private ByteBuffer beginHeapDownload(long[] data) {
+        return (ByteBuffer) this.getBufferByte(data.length * Long.BYTES).duplicate().position(0).limit(data.length * Long.BYTES);
+    }
+
+    private void finishHeapDownload(long[] data, ByteBuffer dataBuffer) {
+        dataBuffer.asLongBuffer().get(data);
+    }
+
+    private FloatBuffer beginHeapDownload(float[] data) {
+        return (FloatBuffer) this.getBufferByte(data.length * Float.BYTES).asFloatBuffer().position(0).limit(data.length);
+    }
+
+    private void finishHeapDownload(float[] data, FloatBuffer dataBuffer) {
+        dataBuffer.get(data);
+    }
+
+    private DoubleBuffer beginHeapDownload(double[] data) {
+        return (DoubleBuffer) this.getBufferByte(data.length * Double.BYTES).asDoubleBuffer().position(0).limit(data.length);
+    }
+
+    private void finishHeapDownload(double[] data, DoubleBuffer dataBuffer) {
+        dataBuffer.get(data);
     }
 
     private static final MethodHandle StateTracker_getIndirectBuffer;
@@ -682,6 +753,36 @@ public final class GLAPILWJGL2 extends OpenGL {
         super.debugCheckError();
     }
 
+    @Override
+    public void glBufferData(int target, @NonNull short[] data, int usage) {
+        GL15.glBufferData(target, this.getBufferForUpload(data), usage);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferData(int target, @NonNull int[] data, int usage) {
+        GL15.glBufferData(target, this.getBufferForUpload(data), usage);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferData(int target, @NonNull long[] data, int usage) {
+        GL15.glBufferData(target, this.getBufferForUpload(data), usage);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferData(int target, @NonNull float[] data, int usage) {
+        GL15.glBufferData(target, this.getBufferForUpload(data), usage);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferData(int target, @NonNull double[] data, int usage) {
+        GL15.glBufferData(target, this.getBufferForUpload(data), usage);
+        super.debugCheckError();
+    }
+
     //LWJGL2 doesn't expose glBufferSubData with 64-bit data_size...
     private static final MethodHandle glBufferSubData;
     private static final MethodHandle nglBufferSubData;
@@ -708,6 +809,36 @@ public final class GLAPILWJGL2 extends OpenGL {
     @Override
     public void glBufferSubData(int target, long offset, @NonNull ByteBuffer data) {
         GL15.glBufferSubData(target, offset, data);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferSubData(int target, long offset, @NonNull short[] data) {
+        GL15.glBufferSubData(target, offset, this.getBufferForUpload(data));
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferSubData(int target, long offset, @NonNull int[] data) {
+        GL15.glBufferSubData(target, offset, this.getBufferForUpload(data));
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferSubData(int target, long offset, @NonNull long[] data) {
+        GL15.glBufferSubData(target, offset, this.getBufferForUpload(data));
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferSubData(int target, long offset, @NonNull float[] data) {
+        GL15.glBufferSubData(target, offset, this.getBufferForUpload(data));
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferSubData(int target, long offset, @NonNull double[] data) {
+        GL15.glBufferSubData(target, offset, this.getBufferForUpload(data));
         super.debugCheckError();
     }
 
@@ -738,6 +869,46 @@ public final class GLAPILWJGL2 extends OpenGL {
     public void glGetBufferSubData(int target, long offset, @NonNull ByteBuffer data) {
         GL15.glGetBufferSubData(target, offset, data);
         super.debugCheckError();
+    }
+
+    @Override
+    public void glGetBufferSubData(int target, long offset, @NonNull short[] data) {
+        val dataBuffer = this.beginHeapDownload(data);
+        GL15.glGetBufferSubData(target, offset, dataBuffer);
+        super.debugCheckError();
+        this.finishHeapDownload(data, dataBuffer);
+    }
+
+    @Override
+    public void glGetBufferSubData(int target, long offset, @NonNull int[] data) {
+        val dataBuffer = this.beginHeapDownload(data);
+        GL15.glGetBufferSubData(target, offset, dataBuffer);
+        super.debugCheckError();
+        this.finishHeapDownload(data, dataBuffer);
+    }
+
+    @Override
+    public void glGetBufferSubData(int target, long offset, @NonNull long[] data) {
+        val dataBuffer = this.beginHeapDownload(data);
+        GL15.glGetBufferSubData(target, offset, dataBuffer);
+        super.debugCheckError();
+        this.finishHeapDownload(data, dataBuffer);
+    }
+
+    @Override
+    public void glGetBufferSubData(int target, long offset, @NonNull float[] data) {
+        val dataBuffer = this.beginHeapDownload(data);
+        GL15.glGetBufferSubData(target, offset, dataBuffer);
+        super.debugCheckError();
+        this.finishHeapDownload(data, dataBuffer);
+    }
+
+    @Override
+    public void glGetBufferSubData(int target, long offset, @NonNull double[] data) {
+        val dataBuffer = this.beginHeapDownload(data);
+        GL15.glGetBufferSubData(target, offset, dataBuffer);
+        super.debugCheckError();
+        this.finishHeapDownload(data, dataBuffer);
     }
 
     @Override
@@ -2111,6 +2282,56 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
+    public void glBufferStorage(int target, @NonNull short[] data, int flags) {
+        if (this.OpenGL44 | this.GL_ARB_buffer_storage) {
+            GL44.glBufferStorage(target, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glBufferStorage(int target, @NonNull int[] data, int flags) {
+        if (this.OpenGL44 | this.GL_ARB_buffer_storage) {
+            GL44.glBufferStorage(target, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glBufferStorage(int target, @NonNull long[] data, int flags) {
+        if (this.OpenGL44 | this.GL_ARB_buffer_storage) {
+            GL44.glBufferStorage(target, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glBufferStorage(int target, @NonNull float[] data, int flags) {
+        if (this.OpenGL44 | this.GL_ARB_buffer_storage) {
+            GL44.glBufferStorage(target, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glBufferStorage(int target, @NonNull double[] data, int flags) {
+        if (this.OpenGL44 | this.GL_ARB_buffer_storage) {
+            GL44.glBufferStorage(target, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
     public void glBindBuffersBase(int target, int first, int count) {
         if (this.OpenGL44 | this.GL_ARB_multi_bind) {
             GL44.glBindBuffersBase(target, first, count, null);
@@ -2203,6 +2424,56 @@ public final class GLAPILWJGL2 extends OpenGL {
         }
     }
 
+    @Override
+    public void glNamedBufferData(int buffer, @NonNull short[] data, int usage) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferData(buffer, this.getBufferForUpload(data), usage);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedBufferData(int buffer, @NonNull int[] data, int usage) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferData(buffer, this.getBufferForUpload(data), usage);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedBufferData(int buffer, @NonNull long[] data, int usage) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferData(buffer, this.getBufferForUpload(data), usage);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedBufferData(int buffer, @NonNull float[] data, int usage) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferData(buffer, this.getBufferForUpload(data), usage);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedBufferData(int buffer, @NonNull double[] data, int usage) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferData(buffer, this.getBufferForUpload(data), usage);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
     //LWJGL2 doesn't expose glNamedBufferStorage with 64-bit data_size...
     private static final MethodHandle glNamedBufferStorage;
     private static final MethodHandle nglNamedBufferStorage;
@@ -2234,6 +2505,56 @@ public final class GLAPILWJGL2 extends OpenGL {
     public void glNamedBufferStorage(int buffer, @NonNull ByteBuffer data, int flags) {
         if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_buffer_storage)) {
             GL45.glNamedBufferStorage(buffer, data, flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, @NonNull short[] data, int flags) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_buffer_storage)) {
+            GL45.glNamedBufferStorage(buffer, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, @NonNull int[] data, int flags) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_buffer_storage)) {
+            GL45.glNamedBufferStorage(buffer, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, @NonNull long[] data, int flags) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_buffer_storage)) {
+            GL45.glNamedBufferStorage(buffer, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, @NonNull float[] data, int flags) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_buffer_storage)) {
+            GL45.glNamedBufferStorage(buffer, this.getBufferForUpload(data), flags);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, @NonNull double[] data, int flags) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_buffer_storage)) {
+            GL45.glNamedBufferStorage(buffer, this.getBufferForUpload(data), flags);
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage));
@@ -2277,6 +2598,56 @@ public final class GLAPILWJGL2 extends OpenGL {
         }
     }
 
+    @Override
+    public void glNamedBufferSubData(int buffer, long offset, @NonNull short[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferSubData(buffer, offset, this.getBufferForUpload(data));
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedBufferSubData(int buffer, long offset, @NonNull int[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferSubData(buffer, offset, this.getBufferForUpload(data));
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedBufferSubData(int buffer, long offset, @NonNull long[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferSubData(buffer, offset, this.getBufferForUpload(data));
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedBufferSubData(int buffer, long offset, @NonNull float[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferSubData(buffer, offset, this.getBufferForUpload(data));
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedBufferSubData(int buffer, long offset, @NonNull double[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glNamedBufferSubData(buffer, offset, this.getBufferForUpload(data));
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
     //LWJGL2 doesn't expose glGetNamedBufferSubData with 64-bit data_size...
     private static final MethodHandle glGetNamedBufferSubData;
     private static final MethodHandle nglGetNamedBufferSubData;
@@ -2309,6 +2680,66 @@ public final class GLAPILWJGL2 extends OpenGL {
         if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
             GL45.glGetNamedBufferSubData(buffer, offset, data);
             super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull short[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val dataBuffer = this.beginHeapDownload(data);
+            GL45.glGetNamedBufferSubData(buffer, offset, dataBuffer);
+            super.debugCheckError();
+            this.finishHeapDownload(data, dataBuffer);
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull int[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val dataBuffer = this.beginHeapDownload(data);
+            GL45.glGetNamedBufferSubData(buffer, offset, dataBuffer);
+            super.debugCheckError();
+            this.finishHeapDownload(data, dataBuffer);
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull long[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val dataBuffer = this.beginHeapDownload(data);
+            GL45.glGetNamedBufferSubData(buffer, offset, dataBuffer);
+            super.debugCheckError();
+            this.finishHeapDownload(data, dataBuffer);
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull float[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val dataBuffer = this.beginHeapDownload(data);
+            GL45.glGetNamedBufferSubData(buffer, offset, dataBuffer);
+            super.debugCheckError();
+            this.finishHeapDownload(data, dataBuffer);
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull double[] data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val dataBuffer = this.beginHeapDownload(data);
+            GL45.glGetNamedBufferSubData(buffer, offset, dataBuffer);
+            super.debugCheckError();
+            this.finishHeapDownload(data, dataBuffer);
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
