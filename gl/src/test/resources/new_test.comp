@@ -1,5 +1,3 @@
-#version 460 core
-
 layout(local_size_x = 3, local_size_y = 7, local_size_z = 11) in;
 
 void main() {

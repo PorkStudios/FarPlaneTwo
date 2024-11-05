@@ -23,7 +23,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.val;
-import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -58,6 +57,7 @@ import org.lwjgl.opengl.GL46C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLDebugMessageARBCallback;
 import org.lwjgl.opengl.GLDebugMessageCallback;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.lang.invoke.MethodHandles;
@@ -697,20 +697,22 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public String glGetActiveAttrib(int program, int index, int bufSize, @NonNull int[] size, @NonNull int[] type) {
-        long allocSize = 2L * Integer.BYTES;
-        long address = DirectBufferHackery.allocateTemporary(allocSize);
+        MemoryStack stack = MemoryStack.stackGet();
+        int stackPointer = stack.getPointer();
         try {
-            IntBuffer sizeBuffer = DirectBufferHackery.wrapInt(address, 1);
-            IntBuffer typeBuffer = DirectBufferHackery.wrapInt(address + Integer.BYTES, 1);
+            //allocate temporary direct buffer for results
+            IntBuffer sizeBuffer = stack.mallocInt(1);
+            IntBuffer typeBuffer = stack.mallocInt(1);
 
-            val res = this.glGetActiveAttrib(program, index, bufSize, sizeBuffer, typeBuffer);
+            val res = GL20C.glGetActiveAttrib(program, index, bufSize, sizeBuffer, typeBuffer);
+            super.debugCheckError();
 
             //copy size and type into the destination arrays
             size[0] = sizeBuffer.get(0);
             type[0] = typeBuffer.get(0);
             return res;
         } finally {
-            DirectBufferHackery.freeTemporary(address, allocSize);
+            stack.setPointer(stackPointer);
         }
     }
 
@@ -1072,21 +1074,25 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public int[] glGetUniformIndices(int program, CharSequence[] uniformNames) {
-        long address = PUnsafe.allocateMemory(uniformNames.length * (long) Integer.BYTES);
-        try {
-            IntBuffer wrapped = DirectBufferHackery.wrapInt(address, uniformNames.length);
-            if (this.OpenGL31 | this.GL_ARB_uniform_buffer_object) {
-                GL31C.glGetUniformIndices(program, uniformNames, wrapped);
-                super.debugCheckError();
-            } else {
-                throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
-            }
+        if (this.OpenGL31 | this.GL_ARB_uniform_buffer_object) {
+            MemoryStack stack = MemoryStack.stackGet();
+            int stackPointer = stack.getPointer();
+            try {
+                //allocate temporary direct buffer for results
+                IntBuffer resultBuffer = stack.mallocInt(uniformNames.length);
 
-            int[] result = new int[uniformNames.length];
-            wrapped.get(result);
-            return result;
-        } finally {
-            PUnsafe.freeMemory(address);
+                GL31C.glGetUniformIndices(program, uniformNames, resultBuffer);
+                super.debugCheckError();
+
+                //copy results to an array
+                int[] result = new int[uniformNames.length];
+                resultBuffer.get(result);
+                return result;
+            } finally {
+                stack.setPointer(stackPointer);
+            }
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
         }
     }
 
@@ -2102,21 +2108,25 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public void glVertexArrayVertexBuffers(int vaobj, int first, int count, int[] buffers, long[] offsets, int[] strides) {
-        if (buffers == null) {
-            this.glVertexArrayVertexBuffers(vaobj, first, count, 0L, 0L, 0L);
-        } else {
-            long address = PUnsafe.allocateMemory((long) count * PUnsafe.addressSize());
-            try {
-                PointerBuffer wrappedOffsets = PointerBuffer.create(address, count).put(offsets, 0, count).clear();
-                if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
-                    GL45C.glVertexArrayVertexBuffers(vaobj, first, buffers, wrappedOffsets, strides);
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            if (buffers == null) {
+                GL45C.nglVertexArrayVertexBuffers(vaobj, first, count, 0L, 0L, 0L);
+                super.debugCheckError();
+            } else {
+                MemoryStack stack = MemoryStack.stackGet();
+                int stackPointer = stack.getPointer();
+                try {
+                    //allocate temporary direct buffer for offsets
+                    PointerBuffer offsetsBuffer = stack.pointers(offsets);
+
+                    GL45C.glVertexArrayVertexBuffers(vaobj, first, buffers, offsetsBuffer, strides);
                     super.debugCheckError();
-                } else {
-                    throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+                } finally {
+                    stack.setPointer(stackPointer);
                 }
-            } finally {
-                PUnsafe.freeMemory(address);
             }
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 

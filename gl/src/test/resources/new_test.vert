@@ -1,5 +1,3 @@
-#version 330
-
 layout(std140) uniform Uniforms {
     vec2 u_scale;
 };
