@@ -27,6 +27,10 @@ layout(local_size_x = 256) in;
 #include <"fp2:shaders/util/indirect_draw.glsl"> // DrawElementsIndirectCommand
 #include <"fp2:shaders/util/vanilla_renderability.glsl"> // isVanillaRenderableLevel0()
 
+#ifndef FP2_DEBUG_SELECTED_COUNTERS
+    #error "FP2_DEBUG_SELECTED_COUNTERS must be set!"
+#endif
+
 layout(std140) readonly restrict buffer B_TilePositions {
     ivec4 b_tilePositions[];
 };
@@ -38,6 +42,10 @@ layout(std430) readonly restrict buffer B_RawDrawLists {
 layout(std430) writeonly restrict buffer B_CulledDrawLists {
     DrawElementsIndirectCommand b_culledDrawLists[];
 };
+
+#if FP2_DEBUG_SELECTED_COUNTERS
+    layout(binding = 0) uniform atomic_uint ac_selectedTiles;
+#endif
 
 bool select(uint tileIndex) {
     ivec4 pos = b_tilePositions[tileIndex];
@@ -65,4 +73,10 @@ void main() {
         uint commandIndex = tileIndex + pass * stride;
         b_culledDrawLists[commandIndex] = selected ? b_rawDrawLists[commandIndex] : DrawElementsIndirectCommand(0, 0, 0, 0, 0);
     }
+
+    #if FP2_DEBUG_SELECTED_COUNTERS
+        if (selected) {
+            atomicCounterIncrement(ac_selectedTiles);
+        }
+    #endif
 }

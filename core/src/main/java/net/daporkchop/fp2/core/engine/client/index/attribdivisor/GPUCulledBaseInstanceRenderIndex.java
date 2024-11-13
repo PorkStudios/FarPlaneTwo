@@ -19,7 +19,11 @@
 
 package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
 
+import com.google.common.collect.ImmutableMap;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import lombok.val;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.util.Identifier;
@@ -64,8 +68,12 @@ import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
+import net.daporkchop.fp2.gl.util.GPUIntegerStatistics;
 import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
@@ -110,8 +118,32 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private static final String CULLED_DRAW_LISTS_SSBO_NAME = "B_CulledDrawLists"; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
     private static final int CULLED_DRAW_LISTS_SSBO_BINDING = RAW_DRAW_LISTS_SSBO_BINDING + 1;
 
-    private static final String CULLING_SHADER_KEY = "indirect_tile_frustum_culling";
     private static final int CULLING_SHADER_WORK_GROUP_SIZE = 256; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    @EqualsAndHashCode
+    @ToString
+    private static final class CullingShaderVariant {
+        final boolean debugCounters;
+
+        public ImmutableMap<String, Object> defines() {
+            ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+            builder.put("FP2_DEBUG_SELECTED_COUNTERS", this.debugCounters);
+            return builder.build();
+        }
+
+        public static List<CullingShaderVariant> allVariants(@NonNull OpenGL gl) {
+            List<CullingShaderVariant> result = new ArrayList<>(2);
+            result.add(new CullingShaderVariant(false));
+            if (gl.supports(GPUIntegerStatistics.REQUIRED_EXTENSIONS)) {
+                result.add(new CullingShaderVariant(true));
+            }
+            return result;
+        }
+    }
 
     /**
      * @author DaPorkchop_
@@ -123,15 +155,17 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
         @Override
         public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
-            shaderRegistry.createCompute(CULLING_SHADER_KEY, shaderMacros, null)
-                    .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
-                    .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
-                    .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
-                    .addSSBO(RAW_DRAW_LISTS_SSBO_BINDING, RAW_DRAW_LISTS_SSBO_NAME)
-                    .addSSBO(CULLED_DRAW_LISTS_SSBO_BINDING, CULLED_DRAW_LISTS_SSBO_NAME)
-                    .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
-                    .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
-                    .build();
+            for (CullingShaderVariant variant : CullingShaderVariant.allVariants(gl)) {
+                shaderRegistry.createCompute(variant, shaderMacros.withDefined(variant.defines()), null)
+                        .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
+                        .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
+                        .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
+                        .addSSBO(RAW_DRAW_LISTS_SSBO_BINDING, RAW_DRAW_LISTS_SSBO_NAME)
+                        .addSSBO(CULLED_DRAW_LISTS_SSBO_BINDING, CULLED_DRAW_LISTS_SSBO_NAME)
+                        .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
+                        .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
+                        .build();
+            }
         }
     }
 
@@ -158,7 +192,9 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     private final LevelArray<Level> levels;
 
-    private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
+    private final ReloadableShaderRegistry shaderRegistry;
+
+    private final GPUIntegerStatistics<Integer> culledStatistics;
 
     public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer,
                                             UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
@@ -167,10 +203,12 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         try {
             this.cameraStateUniformsBuffer = cameraStateUniformsBuffer;
 
-            this.cullingShader = globalRenderer.shaderRegistry.get(CULLING_SHADER_KEY);
+            this.shaderRegistry = globalRenderer.shaderRegistry;
             //this.workGroupSize = this.cullingShader.get().workGroupSize().invocations();
 
             this.levels = new LevelArray<>(level -> new Level(gl, alloc));
+
+            this.culledStatistics = gl.supports(GPUIntegerStatistics.REQUIRED_EXTENSIONS) ? new GPUIntegerStatistics<>(gl, 1, 10) : null;
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -178,7 +216,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     @Override
     public void close() {
-        try (val ignored = this.levels) {
+        try (val ignored0 = this.levels;
+             val ignored1 = this.culledStatistics) {
             super.close();
         }
     }
@@ -239,6 +278,10 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, CULLED_DRAW_LISTS_SSBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, VANILLA_RENDERABILITY_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, VANILLA_RENDERABILITY_SSBO_BINDING));
+
+        if (this.culledStatistics != null) {
+            builder.indexedBuffer(IndexedBufferTarget.ATOMIC_COUNTER_BUFFER, 0);
+        }
     }
 
     @Override
@@ -251,12 +294,17 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         //bind terrain rendering blocked tracker, so that level-0 tiles can be skipped if they overlap with vanilla terrain
         blockedTracker.bindGlBuffers(this.gl, VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_SSBO_BINDING);
 
-        val cullingShaderProgram = this.cullingShader.get();
+        if (this.culledStatistics != null) {
+            this.culledStatistics.beginFrame(0);
+        }
+
+        val cullingShaderProgram = this.shaderRegistry.<ComputeShaderProgram>get(new CullingShaderVariant(this.culledStatistics != null)).get();
         val uniformSetter = cullingShaderProgram.bindUnsafe(); // active program binding will be restored by StatePreserver
 
         //configure frustum uniforms
         frustum.configureClippingPlanes(uniformSetter, new IFrustum.UniformLocations(cullingShaderProgram));
 
+        int totalIndexedTiles = 0;
         for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
             val levelInstance = this.levels.get(level);
             val tilePosArray = this.renderPosTable.vertexBuffer(level);
@@ -267,6 +315,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 //skip empty detail levels
                 continue;
             }
+
+            totalIndexedTiles += capacity; //TODO: this isn't as accurate as i would like
 
             levelInstance.flushRawDrawLists();
             levelInstance.orphanCulledDrawLists();
@@ -280,6 +330,10 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
             //cull the tiles!
             this.gl.glDispatchCompute(capacity / CULLING_SHADER_WORK_GROUP_SIZE, 1, 1);
+        }
+
+        if (this.culledStatistics != null) {
+            this.culledStatistics.endFrame(totalIndexedTiles);
         }
     }
 
@@ -307,16 +361,35 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
+    public void postDraw() {
+        super.postDraw();
+
+        if (this.culledStatistics != null) {
+            this.culledStatistics.tick();
+        }
+    }
+
+    @Override
     public PosTechnique posTechnique() {
         return PosTechnique.VERTEX_ATTRIBUTE;
     }
 
     @Override
     public DebugStats.Renderer stats() {
+        long selectedTiles = -1L;
+        long indexedTiles = -1L;
+
+        if (this.culledStatistics != null) { //if possible, pull selected tile statistics from the GPU
+            val result = this.culledStatistics.get();
+            if (result.getA() != null) {
+                indexedTiles = result.getA();
+                selectedTiles = result.getB()[0];
+            }
+        }
+
         return DebugStats.Renderer.builder()
-                // TODO: some way of feeding this data back from the GPU
-                .selectedTiles(-1L)
-                .indexedTiles(-1L)
+                .selectedTiles(selectedTiles)
+                .indexedTiles(indexedTiles)
                 .build();
     }
 
