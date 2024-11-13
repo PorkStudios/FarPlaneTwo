@@ -1235,6 +1235,18 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glClearBufferData(int target, int internalformat, int format, int type, ByteBuffer data) {
+        super.checkSupported(GLExtension.GL_ARB_clear_buffer_object);
+        this.delegate.glClearBufferData(target, internalformat, format, type, data);
+    }
+
+    @Override
+    public void glClearBufferSubData(int target, int internalformat, long offset, long size, int format, int type, ByteBuffer data) {
+        super.checkSupported(GLExtension.GL_ARB_clear_buffer_object);
+        this.delegate.glClearBufferSubData(target, internalformat, offset, size, format, type, data);
+    }
+
+    @Override
     public void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding) {
         super.checkSupported(GLExtension.GL_ARB_shader_storage_buffer_object);
         this.delegate.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
@@ -1606,6 +1618,22 @@ final class LegacyOpenGL extends OpenGL {
     public void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size) {
         super.checkSupported(direct_state_access_AND_copy_buffer);
         this.delegate.glCopyNamedBufferSubData(readBuffer, writeBuffer, readOffset, writeOffset, size);
+    }
+
+    private static final GLExtensionSet direct_state_access_AND_clear_buffer_object = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_direct_state_access)
+            .add(GLExtension.GL_ARB_clear_buffer_object);
+
+    @Override
+    public void glClearNamedBufferData(int buffer, int internalformat, int format, int type, ByteBuffer data) {
+        super.checkSupported(direct_state_access_AND_clear_buffer_object);
+        this.delegate.glClearNamedBufferData(buffer, internalformat, format, type, data);
+    }
+
+    @Override
+    public void glClearNamedBufferSubData(int buffer, int internalformat, long offset, long size, int format, int type, ByteBuffer data) {
+        super.checkSupported(direct_state_access_AND_clear_buffer_object);
+        this.delegate.glClearNamedBufferSubData(buffer, internalformat, offset, size, format, type, data);
     }
 
     @Override

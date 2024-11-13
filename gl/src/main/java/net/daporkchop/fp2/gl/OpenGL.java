@@ -180,6 +180,7 @@ public abstract class OpenGL {
 
     // OpenGL 4.3
     protected final boolean OpenGL43;
+    protected final boolean GL_ARB_clear_buffer_object;
     protected final boolean GL_ARB_compute_shader;
     protected final boolean GL_ARB_invalidate_subdata;
     protected final boolean GL_ARB_multi_draw_indirect;
@@ -321,6 +322,7 @@ public abstract class OpenGL {
 
         // OpenGL 4.3
         this.OpenGL43 = version.compareTo(GLVersion.OpenGL43) >= 0;
+        this.GL_ARB_clear_buffer_object = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_clear_buffer_object);
         this.GL_ARB_compute_shader = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_compute_shader);
         this.GL_ARB_invalidate_subdata = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_invalidate_subdata);
         this.GL_ARB_multi_draw_indirect = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_multi_draw_indirect);
@@ -1801,6 +1803,20 @@ public abstract class OpenGL {
     public abstract void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding);
 
     /**
+     * @apiNote requires {@link GLExtension#GL_ARB_clear_buffer_object GL_ARB_clear_buffer_object}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_clear_buffer_object)
+    public abstract void glClearBufferData(int target, int internalformat, int format, int type, ByteBuffer data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_clear_buffer_object GL_ARB_clear_buffer_object}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_clear_buffer_object)
+    public abstract void glClearBufferSubData(int target, int internalformat, long offset, long size, int format, int type, ByteBuffer data);
+
+    /**
      * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
      * @since OpenGL 4.3
      */
@@ -2217,6 +2233,20 @@ public abstract class OpenGL {
      */
     @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_copy_buffer })
     public abstract void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_clear_buffer_object GL_ARB_clear_buffer_object}
+     * @since OpenGL 4.3
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_clear_buffer_object })
+    public abstract void glClearNamedBufferData(int buffer, int internalformat, int format, int type, ByteBuffer data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_clear_buffer_object GL_ARB_clear_buffer_object}
+     * @since OpenGL 4.3
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_clear_buffer_object })
+    public abstract void glClearNamedBufferSubData(int buffer, int internalformat, long offset, long size, int format, int type, ByteBuffer data);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}

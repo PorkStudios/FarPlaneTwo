@@ -2128,6 +2128,58 @@ public final class GLAPILWJGL2 extends OpenGL {
         }
     }
 
+    //LWJGL2 doesn't let us call these functions with a null data buffer
+    private static final MethodHandle glClearBufferData;
+    private static final MethodHandle nglClearBufferData;
+    private static final MethodHandle glClearBufferSubData;
+    private static final MethodHandle nglClearBufferSubData;
+
+    static {
+        Field _glClearBufferData = ContextCapabilities.class.getDeclaredField("glClearBufferData");
+        _glClearBufferData.setAccessible(true);
+        glClearBufferData = MethodHandles.publicLookup().unreflectGetter(_glClearBufferData);
+
+        Method _nglClearBufferData = GL43.class.getDeclaredMethod("nglClearBufferData", int.class, int.class, int.class, int.class, long.class, long.class);
+        _nglClearBufferData.setAccessible(true);
+        nglClearBufferData = MethodHandles.publicLookup().unreflect(_nglClearBufferData);
+
+        Field _glClearBufferSubData = ContextCapabilities.class.getDeclaredField("glClearBufferSubData");
+        _glClearBufferSubData.setAccessible(true);
+        glClearBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glClearBufferSubData);
+
+        Method _nglClearBufferSubData = GL43.class.getDeclaredMethod("nglClearBufferSubData", int.class, int.class, long.class, long.class, int.class, int.class, long.class, long.class);
+        _nglClearBufferSubData.setAccessible(true);
+        nglClearBufferSubData = MethodHandles.publicLookup().unreflect(_nglClearBufferSubData);
+    }
+
+    @Override
+    public void glClearBufferData(int target, int internalformat, int format, int type, ByteBuffer data) {
+        if (this.OpenGL43 | this.GL_ARB_clear_buffer_object) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glClearBufferData.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+
+            nglClearBufferData.invokeExact(target, internalformat, format, type, MemoryUtil.getAddressSafe(data), function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_clear_buffer_object));
+        }
+    }
+
+    @Override
+    public void glClearBufferSubData(int target, int internalformat, long offset, long size, int format, int type, ByteBuffer data) {
+        if (this.OpenGL43 | this.GL_ARB_clear_buffer_object) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glClearBufferSubData.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+
+            nglClearBufferSubData.invokeExact(target, internalformat, offset, size, format, type, MemoryUtil.getAddressSafe(data), function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_clear_buffer_object));
+        }
+    }
+
     @Override
     public void glObjectLabel(int identifier, int name, @NonNull CharSequence label) {
         if (this.OpenGL43 | this.GL_KHR_debug) {
@@ -2828,6 +2880,58 @@ public final class GLAPILWJGL2 extends OpenGL {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_copy_buffer));
+        }
+    }
+
+    //LWJGL2 doesn't let us call these functions with a null data buffer
+    private static final MethodHandle glClearNamedBufferData;
+    private static final MethodHandle nglClearNamedBufferData;
+    private static final MethodHandle glClearNamedBufferSubData;
+    private static final MethodHandle nglClearNamedBufferSubData;
+
+    static {
+        Field _glClearNamedBufferData = ContextCapabilities.class.getDeclaredField("glClearNamedBufferData");
+        _glClearNamedBufferData.setAccessible(true);
+        glClearNamedBufferData = MethodHandles.publicLookup().unreflectGetter(_glClearNamedBufferData);
+
+        Method _nglClearNamedBufferData = GL45.class.getDeclaredMethod("nglClearNamedBufferData", int.class, int.class, int.class, int.class, long.class, long.class);
+        _nglClearNamedBufferData.setAccessible(true);
+        nglClearNamedBufferData = MethodHandles.publicLookup().unreflect(_nglClearNamedBufferData);
+
+        Field _glClearNamedBufferSubData = ContextCapabilities.class.getDeclaredField("glClearNamedBufferSubData");
+        _glClearNamedBufferSubData.setAccessible(true);
+        glClearNamedBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glClearNamedBufferSubData);
+
+        Method _nglClearNamedBufferSubData = GL45.class.getDeclaredMethod("nglClearNamedBufferSubData", int.class, int.class, long.class, long.class, int.class, int.class, long.class, long.class);
+        _nglClearNamedBufferSubData.setAccessible(true);
+        nglClearNamedBufferSubData = MethodHandles.publicLookup().unreflect(_nglClearNamedBufferSubData);
+    }
+
+    @Override
+    public void glClearNamedBufferData(int buffer, int internalformat, int format, int type, ByteBuffer data) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_clear_buffer_object)) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glClearNamedBufferData.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+
+            nglClearNamedBufferData.invokeExact(buffer, internalformat, format, type, MemoryUtil.getAddressSafe(data), function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_clear_buffer_object));
+        }
+    }
+
+    @Override
+    public void glClearNamedBufferSubData(int buffer, int internalformat, long offset, long size, int format, int type, ByteBuffer data) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_clear_buffer_object)) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glClearNamedBufferSubData.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+
+            nglClearNamedBufferSubData.invokeExact(buffer, internalformat, offset, size, format, type, MemoryUtil.getAddressSafe(data), function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_clear_buffer_object));
         }
     }
 

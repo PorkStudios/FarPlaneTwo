@@ -1756,6 +1756,26 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public void glClearBufferData(int target, int internalformat, int format, int type, ByteBuffer data) {
+        if (this.OpenGL43 | this.GL_ARB_clear_buffer_object) {
+            GL43C.glClearBufferData(target, internalformat, format, type, data);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_clear_buffer_object));
+        }
+    }
+
+    @Override
+    public void glClearBufferSubData(int target, int internalformat, long offset, long size, int format, int type, ByteBuffer data) {
+        if (this.OpenGL43 | this.GL_ARB_clear_buffer_object) {
+            GL43C.glClearBufferSubData(target, internalformat, offset, size, format, type, data);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_clear_buffer_object));
+        }
+    }
+
+    @Override
     public void glObjectLabel(int identifier, int name, @NonNull CharSequence label) {
         if (this.OpenGL43 | this.GL_KHR_debug) {
             GL43C.glObjectLabel(identifier, name, label);
@@ -2369,6 +2389,26 @@ public final class GLAPILWJGL3 extends OpenGL {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_copy_buffer));
+        }
+    }
+
+    @Override
+    public void glClearNamedBufferData(int buffer, int internalformat, int format, int type, ByteBuffer data) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_clear_buffer_object)) {
+            GL45C.glClearNamedBufferData(buffer, internalformat, format, type, data);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_clear_buffer_object));
+        }
+    }
+
+    @Override
+    public void glClearNamedBufferSubData(int buffer, int internalformat, long offset, long size, int format, int type, ByteBuffer data) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_clear_buffer_object)) {
+            GL45C.glClearNamedBufferSubData(buffer, internalformat, offset, size, format, type, data);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_clear_buffer_object));
         }
     }
 

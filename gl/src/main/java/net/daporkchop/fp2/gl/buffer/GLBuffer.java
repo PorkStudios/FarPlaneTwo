@@ -26,13 +26,11 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.fp2.gl.util.GLRequires;
-import net.daporkchop.fp2.gl.util.debug.DebugLabel;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.LongConsumer;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -43,6 +41,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class GLBuffer extends GLObject.Normal {
+    protected final boolean clearBufferObject;
     protected final boolean dsa;
     protected final boolean invalidateSubdata;
 
@@ -51,6 +50,7 @@ public abstract class GLBuffer extends GLObject.Normal {
 
     protected GLBuffer(OpenGL gl) {
         super(gl, gl.supports(GLExtension.GL_ARB_direct_state_access) ? gl.glCreateBuffer() : gl.glGenBuffer());
+        this.clearBufferObject = gl.supports(GLExtension.GL_ARB_clear_buffer_object);
         this.dsa = gl.supports(GLExtension.GL_ARB_direct_state_access);
         this.invalidateSubdata = gl.supports(GLExtension.GL_ARB_invalidate_subdata);
     }
@@ -221,6 +221,52 @@ public abstract class GLBuffer extends GLObject.Normal {
     }
 
     /**
+     * Clears the buffer contents to zero bytes.
+     */
+    public final void clearBufferDataZero() {
+        this.checkOpen();
+        if (this.dsa & this.clearBufferObject) {
+            this.gl.glClearNamedBufferData(this.id, GL_R8, GL_RED, GL_UNSIGNED_BYTE, null);
+        } else if (this.clearBufferObject) {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glClearBufferData(target.id(), GL_R8, GL_RED, GL_UNSIGNED_BYTE, null);
+            });
+        } else {
+            this.clearBufferSubDataZero(0L, this.capacity);
+        }
+    }
+
+    /**
+     * Clears the buffer contents in a certain range to zero bytes.
+     *
+     * @param start the offset of the range inside the buffer (in bytes)
+     * @param size  the number of bytes to clear
+     */
+    public final void clearBufferSubDataZero(long start, long size) {
+        this.checkOpen();
+        checkRangeLen(this.capacity, start, size);
+        if (size > 0L) {
+            if (this.dsa & this.clearBufferObject) {
+                this.gl.glClearNamedBufferSubData(this.id, GL_R8, start, size, GL_RED, GL_UNSIGNED_BYTE, null);
+            } else if (this.clearBufferObject) {
+                this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                    this.gl.glClearBufferSubData(target.id(), GL_R8, start, size, GL_RED, GL_UNSIGNED_BYTE, null);
+                });
+            } else {
+                //allocate a temporary buffer which we'll fill with zeroes and then upload
+                long addr = PUnsafe.allocateMemory(size);
+                try {
+                    PUnsafe.setMemory(addr, size, (byte) 0);
+                    //TODO: if this is an immutable buffer this may fail...
+                    this.bufferSubData(start, addr, size);
+                } finally {
+                    PUnsafe.freeMemory(addr);
+                }
+            }
+        }
+    }
+
+    /**
      * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
      * <p>
      * This will restore the previously bound buffer when the operation completes.
@@ -335,12 +381,12 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param access   the ways in which the buffer data may be accessed
      * @param callback the callback function
      */
-    public final void map(BufferAccess access, LongConsumer callback) {
+    public final void map(BufferAccess access, Consumer<ByteBuffer> callback) {
         this.checkNotMapped();
         ByteBuffer buffer = this.mapRange(0L, this.capacity, access.flags());
         try {
             this.mapped = true;
-            callback.accept(PUnsafe.pork_directBufferAddress(buffer) + buffer.position());
+            callback.accept(buffer);
         } finally {
             this.mapped = false;
             this.unmap();
@@ -353,13 +399,13 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param access   the ways in which the buffer data may be accessed
      * @param callback the callback function
      */
-    public final void mapRange(BufferAccess access, int flags, long offset, long length, LongConsumer callback) {
+    public final void mapRange(BufferAccess access, int flags, long offset, long length, Consumer<ByteBuffer> callback) {
         checkRangeLen(this.capacity, offset, length);
         this.checkNotMapped();
         ByteBuffer buffer = this.mapRange(offset, length, access.flags() | flags);
         try {
             this.mapped = true;
-            callback.accept(PUnsafe.pork_directBufferAddress(buffer) + buffer.position());
+            callback.accept(buffer);
         } finally {
             this.mapped = false;
             this.unmap();
@@ -391,7 +437,9 @@ public abstract class GLBuffer extends GLObject.Normal {
         return new Mapping(this.mapRange(0L, this.capacity, access.flags() | flags));
     }
 
-    protected final ByteBuffer mapRange(long offset, long length, int access) {
+    private ByteBuffer mapRange(long offset, long length, int access) {
+        checkArg(length <= Integer.MAX_VALUE, "requested mapping length cannot be represented in an int: %s", length);
+
         if (this.dsa) {
             return this.gl.glMapNamedBufferRange(this.id, offset, length, access, null);
         } else {
@@ -432,10 +480,6 @@ public abstract class GLBuffer extends GLObject.Normal {
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     public final class Mapping implements AutoCloseable {
         public final ByteBuffer buffer;
-
-        public long address() {
-            return PUnsafe.pork_directBufferAddress(this.buffer);
-        }
 
         @Override
         public void close() {
