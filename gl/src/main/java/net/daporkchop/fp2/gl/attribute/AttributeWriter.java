@@ -21,7 +21,7 @@ package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.util.AbstractTypedWriter;
+import net.daporkchop.fp2.gl.util.AbstractDirectVector;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
@@ -33,7 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @param <STRUCT> the struct type
  * @author DaPorkchop_
  */
-public abstract class AttributeWriter<STRUCT extends AttributeStruct> extends AbstractTypedWriter {
+public abstract class AttributeWriter<STRUCT extends AttributeStruct> extends AbstractDirectVector {
     private final AttributeFormat<STRUCT> format;
 
     protected AttributeWriter(@NonNull AttributeFormat<STRUCT> format, @NonNull DirectMemoryAllocator alloc, @Positive int initialCapacity, @Positive int elementSize) {
@@ -123,62 +123,4 @@ public abstract class AttributeWriter<STRUCT extends AttributeStruct> extends Ab
         this.copy(src, index);
         return this.at(index);
     }
-
-    /**
-     * Copies the element at the given source index to the given destination index.
-     *
-     * @param src the source index
-     * @param dst the destination index
-     */
-    public void copy(@NotNegative int src, @NotNegative int dst) {
-        this.copy(src, dst, 1);
-    }
-
-    /**
-     * Copies the elements starting at the given source index to the given destination index.
-     * <p>
-     * The behavior of this method is undefined if the two ranges overlap.
-     *
-     * @param src    the source index
-     * @param dst    the destination index
-     * @param length the number of elements to copy
-     */
-    public abstract void copy(@NotNegative int src, @NotNegative int dst, @NotNegative int length);
-
-    @Override
-    @Deprecated
-    @SuppressWarnings("unchecked")
-    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex) {
-        this.copyTo(srcIndex, (AttributeWriter<STRUCT>) dstWriter, dstIndex);
-    }
-
-    @Override
-    @Deprecated
-    @SuppressWarnings("unchecked")
-    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length) {
-        this.copyTo(srcIndex, (AttributeWriter<STRUCT>) dstWriter, dstIndex, length);
-    }
-
-    /**
-     * Copies the element at the given source index to the given destination index in the given destination writer.
-     *
-     * @param srcIndex  the source index
-     * @param dstWriter the destination writer
-     * @param dstIndex  the destination index
-     */
-    public void copyTo(@NotNegative int srcIndex, @NonNull AttributeWriter<STRUCT> dstWriter, @NotNegative int dstIndex) {
-        this.copyTo(srcIndex, dstWriter, dstIndex, 1);
-    }
-
-    /**
-     * Copies the elements starting at the given source index to the given destination index. in the given destination writer
-     * <p>
-     * The behavior of this method is undefined if the two ranges overlap.
-     *
-     * @param srcIndex  the source index
-     * @param dstWriter the destination writer
-     * @param dstIndex  the destination index
-     * @param length    the number of elements to copy
-     */
-    public abstract void copyTo(@NotNegative int srcIndex, @NonNull AttributeWriter<STRUCT> dstWriter, @NotNegative int dstIndex, @NotNegative int length);
 }

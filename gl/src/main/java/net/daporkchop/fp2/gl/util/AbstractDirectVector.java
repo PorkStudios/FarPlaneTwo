@@ -188,6 +188,75 @@ public abstract class AbstractDirectVector implements AutoCloseable {
     }
 
     /**
+     * Copies the element at the given source index to the given destination index.
+     *
+     * @param src the source index
+     * @param dst the destination index
+     */
+    public void copy(@NotNegative int src, @NotNegative int dst) {
+        this.copy(src, dst, 1);
+    }
+
+    /**
+     * Copies the elements starting at the given source index to the given destination index.
+     * <p>
+     * The behavior of this method is undefined if the two ranges overlap.
+     *
+     * @param src    the source index
+     * @param dst    the destination index
+     * @param length the number of elements to copy
+     */
+    public final void copy(@NotNegative int src, @NotNegative int dst, @NotNegative int length) {
+        checkRangeLen(this.size, src, length);
+        checkRangeLen(this.size, dst, length);
+        if (src != dst && length > 0) {
+            PUnsafe.copyMemory(
+                    this.address + (long) src * this.elementSize,
+                    this.address + (long) dst * this.elementSize,
+                    (long) length * this.elementSize);
+        }
+    }
+
+    protected boolean canCopyTo(AbstractDirectVector dst) {
+        return this.getClass() == dst.getClass();
+    }
+
+    /**
+     * Copies the element at the given source index to the given destination index in the given destination writer.
+     *
+     * @param srcIndex  the source index
+     * @param dstWriter the destination writer
+     * @param dstIndex  the destination index
+     */
+    //TODO: optimize implementations
+    public void copyTo(@NotNegative int srcIndex, @NonNull AbstractDirectVector dstWriter, @NotNegative int dstIndex) {
+        this.copyTo(srcIndex, dstWriter, dstIndex, 1);
+    }
+
+    /**
+     * Copies the elements starting at the given source index to the given destination index. in the given destination writer
+     * <p>
+     * The behavior of this method is undefined if the two ranges overlap.
+     *
+     * @param srcIndex  the source index
+     * @param dstWriter the destination writer
+     * @param dstIndex  the destination index
+     * @param length    the number of elements to copy
+     */
+    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractDirectVector dstWriter, @NotNegative int dstIndex, @NotNegative int length) {
+        checkArg(this.canCopyTo(dstWriter), "incompatible direct vectors: this=%s, dst=%s", this, dstWriter);
+
+        checkRangeLen(this.size, srcIndex, length);
+        checkRangeLen(dstWriter.size, dstIndex, length);
+        if (notNegative(length, "length") > 0) {
+            PUnsafe.copyMemory(
+                    this.address + (long) srcIndex * this.elementSize,
+                    dstWriter.address + (long) dstIndex * this.elementSize,
+                    (long) length * this.elementSize);
+        }
+    }
+
+    /**
      * @return a view of this vector's contents as a direct {@link ByteBuffer}
      * @throws RuntimeException if this vector's contents are too large to be stored in a single {@link ByteBuffer}
      */
@@ -210,7 +279,7 @@ public abstract class AbstractDirectVector implements AutoCloseable {
      */
     protected final long getElementPtr(@NotNegative int index, @Positive long elementSize) {
         checkIndex(this.size, index);
-        return this.address + index * elementSize;
+        return this.address + (long) index * elementSize;
     }
 
     /**
@@ -224,6 +293,6 @@ public abstract class AbstractDirectVector implements AutoCloseable {
      */
     protected final long getElementRangeBasePtr(@NotNegative int index, @NotNegative int count, @Positive long elementSize) {
         checkRangeLen(this.size, index, count);
-        return this.address + index * elementSize;
+        return this.address + (long) index * elementSize;
     }
 }

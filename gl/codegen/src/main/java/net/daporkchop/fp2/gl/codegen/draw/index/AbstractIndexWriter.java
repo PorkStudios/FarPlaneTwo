@@ -24,7 +24,6 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -82,29 +81,6 @@ public abstract class AbstractIndexWriter extends IndexWriter {
      * @param dst     the destination index
      */
     protected abstract void copySingle(long address, long src, long dst);
-
-    @Override
-    public final void copy(@NotNegative int src, @NotNegative int dst, @NotNegative int length) {
-        checkRangeLen(this.size, src, length);
-        checkRangeLen(this.size, dst, length);
-        long size = this.format().size();
-        if (src != dst && length > 0) {
-            PUnsafe.copyMemory(this.getElementPtr(src, size), this.getElementPtr(dst, size), length * size);
-        }
-    }
-
-    @Override
-    public final void copyTo(@NotNegative int srcIndex, IndexWriter dstWriterIn, @NotNegative int dstIndex, @NotNegative int length) {
-        checkArg(this.getClass() == dstWriterIn.getClass(), "incompatible index formats: %s\n%s", this.format(), dstWriterIn.format());
-        AbstractIndexWriter dstWriter = (AbstractIndexWriter) dstWriterIn;
-
-        checkRangeLen(this.size, srcIndex, length);
-        checkRangeLen(dstWriter.size, dstIndex, length);
-        long size = this.format().size();
-        if (length > 0) {
-            PUnsafe.copyMemory(this.address + srcIndex * size, dstWriter.address + dstIndex * size, length * size);
-        }
-    }
 
     @Override
     public final void offsetIndices(int delta) {

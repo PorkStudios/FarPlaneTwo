@@ -26,7 +26,6 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -85,30 +84,4 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
      * @param dst the destination address
      */
     protected abstract void copySingle(long src, long dst);
-
-    @Override
-    public abstract void copy(@NotNegative int src, @NotNegative int dst, @NotNegative int length);
-
-    //called by generated code
-    @SuppressWarnings("unused")
-    protected final void copy(@NotNegative int src, @NotNegative int dst, @NotNegative int length, @Positive long stride) {
-        checkRangeLen(this.size, src, length);
-        checkRangeLen(this.size, dst, length);
-        if (src != dst && length > 0) {
-            PUnsafe.copyMemory(this.address + src * stride, this.address + dst * stride, length * stride);
-        }
-    }
-
-    @Override
-    public final void copyTo(@NotNegative int srcIndex, AttributeWriter<STRUCT> dstWriterIn, @NotNegative int dstIndex, @NotNegative int length) {
-        checkArg(this.getClass() == dstWriterIn.getClass(), "incompatible index formats: %s\n%s", this.format(), dstWriterIn.format());
-        AbstractInterleavedAttributeWriter<STRUCT> dstWriter = (AbstractInterleavedAttributeWriter<STRUCT>) dstWriterIn;
-
-        checkRangeLen(this.size, srcIndex, length);
-        checkRangeLen(dstWriter.size, dstIndex, length);
-        long size = this.format().size();
-        if (length > 0) {
-            PUnsafe.copyMemory(this.address + srcIndex * size, dstWriter.address + dstIndex * size, length * size);
-        }
-    }
 }

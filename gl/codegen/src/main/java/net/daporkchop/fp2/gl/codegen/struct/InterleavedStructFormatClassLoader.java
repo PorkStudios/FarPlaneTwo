@@ -236,17 +236,6 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
                 generateMemcpy(mv, 1, 3, this.layoutInfo.rootLayout().size());
                 return RETURN;
             });
-
-            //void copy(int src, int dst, int length)
-            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "copy", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), mv -> {
-                mv.visitVarInsn(ALOAD, 0);
-                mv.visitVarInsn(ILOAD, 1);
-                mv.visitVarInsn(ILOAD, 2);
-                mv.visitVarInsn(ILOAD, 3);
-                mv.visitLdcInsn(this.layoutInfo.rootLayout().size());
-                mv.visitMethodInsn(INVOKEVIRTUAL, this.attributeWriterClassInternalName, "copy", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, LONG_TYPE), false);
-                return RETURN;
-            });
         });
     }
 

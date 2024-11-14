@@ -19,18 +19,15 @@
 
 package net.daporkchop.fp2.gl.draw.index;
 
-import lombok.AccessLevel;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.util.AbstractTypedWriter;
-import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.fp2.gl.util.AbstractDirectVector;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class IndexWriter extends AbstractTypedWriter {
+public abstract class IndexWriter extends AbstractDirectVector {
     private final IndexFormat format;
 
     protected IndexWriter(@NonNull IndexFormat format, @NonNull DirectMemoryAllocator alloc, @Positive int initialCapacity, @Positive int elementSize) {
@@ -102,41 +99,6 @@ public abstract class IndexWriter extends AbstractTypedWriter {
      * @return the index value
      */
     public abstract int get(int index);
-
-    @Override
-    @Deprecated
-    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex) {
-        this.copyTo(srcIndex, (IndexWriter) dstWriter, dstIndex);
-    }
-
-    @Override
-    @Deprecated
-    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length) {
-        this.copyTo(srcIndex, (IndexWriter) dstWriter, dstIndex, length);
-    }
-
-    /**
-     * Copies the element at the given source index to the given destination index in the given destination writer.
-     *
-     * @param srcIndex  the source index
-     * @param dstWriter the destination writer
-     * @param dstIndex  the destination index
-     */
-    public void copyTo(@NotNegative int srcIndex, @NonNull IndexWriter dstWriter, @NotNegative int dstIndex) {
-        this.copyTo(srcIndex, dstWriter, dstIndex, 1);
-    }
-
-    /**
-     * Copies the elements starting at the given source index to the given destination index in the given destination writer
-     * <p>
-     * The behavior of this method is undefined if the two ranges overlap.
-     *
-     * @param srcIndex  the source index
-     * @param dstWriter the destination writer
-     * @param dstIndex  the destination index
-     * @param length    the number of elements to copy
-     */
-    public abstract void copyTo(@NotNegative int srcIndex, @NonNull IndexWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length);
 
     /**
      * Adds the given value to each of the index values in this writer.
