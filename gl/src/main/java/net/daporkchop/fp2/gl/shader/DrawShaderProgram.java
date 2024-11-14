@@ -167,10 +167,9 @@ public final class DrawShaderProgram extends ShaderProgram {
             }
 
             int occupiedVertexAttributes = format.occupiedVertexAttributes();
-            checkRange(maxAttribBindings, bindingIndex, bindingIndex + occupiedVertexAttributes);
+            checkRangeLen(maxAttribBindings, bindingIndex, occupiedVertexAttributes);
             BitSet alreadyUsedBindingLocations = this.occupiedBindingLocations.get(bindingIndex, bindingIndex + occupiedVertexAttributes);
             checkArg(alreadyUsedBindingLocations.isEmpty(), "binding index %s is already configured", alreadyUsedBindingLocations);
-            //TODO: check that the given binding index range is valid
 
             this.occupiedBindingLocations.set(bindingIndex, bindingIndex + occupiedVertexAttributes);
             this.bindings.put(bindingIndex, format);

@@ -81,8 +81,7 @@ public final class Shader extends GLObject.Normal {
         return this.gl.glGetObjectLabel(GL_SHADER, this.id);
     }
 
-    //TODO: make this private
-    public static String formatInfoLog(String text, List<SourceLocation> locations) {
+    private static String formatInfoLog(String text, List<SourceLocation> locations) {
         try {
             for (Pattern pattern : new Pattern[]{ //different patterns for various error formats i've encountered so far
                     Pattern.compile("^(?<file>\\d+)\\((?<line>\\d+)\\) (?<text>: .+)", Pattern.MULTILINE),

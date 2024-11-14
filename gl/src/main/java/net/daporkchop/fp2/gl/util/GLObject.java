@@ -42,10 +42,18 @@ public abstract class GLObject implements AutoCloseable {
     public void close() {
         this.checkOpen();
         this.closed = true;
-        this.delete(); //TODO: warn if garbage-collected
+        this.delete();
     }
 
     protected abstract void delete();
+
+    //might be neat to use a Cleaner for this instead, but OpenGL objects are typically pretty long-lived so the finalizer should have negligible GC overhead
+    @Override
+    protected final void finalize() {
+        if (!this.closed) {
+            new Throwable("OpenGL object " + this + " leaked!").printStackTrace();
+        }
+    }
 
     /**
      * Asserts that this OpenGL object is open, i.e. hasn't been {@link #close() closed} yet.
