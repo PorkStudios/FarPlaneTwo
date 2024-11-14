@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.buffer.upload;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 
 import java.nio.ByteBuffer;
@@ -36,21 +37,9 @@ public abstract class BufferUploader implements AutoCloseable {
      *
      * @param buffer the {@link GLBuffer} to upload into
      * @param offset the offset in the given buffer for the data to be uploaded to
-     * @param addr   a pointer to the data
-     * @param size   the size of the data, in bytes
-     */
-    public abstract void uploadRange(GLBuffer buffer, long offset, long addr, long size);
-
-    /**
-     * Uploads the given data into the given buffer at the given offset.
-     * <p>
-     * The uploaded data is not guaranteed to be visible until this uploader is {@link #flush() flushed}.
-     *
-     * @param buffer the {@link GLBuffer} to upload into
-     * @param offset the offset in the given buffer for the data to be uploaded to
      * @param data   a {@link ByteBuffer} containing the data to upload
      */
-    public abstract void uploadRange(GLBuffer buffer, long offset, ByteBuffer data);
+    public abstract void uploadRange(@NonNull GLBuffer buffer, long offset, @NonNull ByteBuffer data);
 
     /**
      * Flushes all pending buffer uploads.

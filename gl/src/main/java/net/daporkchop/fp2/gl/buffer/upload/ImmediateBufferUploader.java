@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.buffer.upload;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 
 import java.nio.ByteBuffer;
@@ -44,12 +45,7 @@ public final class ImmediateBufferUploader extends AbstractImmediateBufferUpload
     }
 
     @Override
-    public void uploadRange(GLBuffer buffer, long offset, long addr, long size) {
-        buffer.bufferSubData(offset, addr, size);
-    }
-
-    @Override
-    public void uploadRange(GLBuffer buffer, long offset, ByteBuffer data) {
+    public void uploadRange(@NonNull GLBuffer buffer, long offset, @NonNull ByteBuffer data) {
         buffer.bufferSubData(offset, data);
     }
 }

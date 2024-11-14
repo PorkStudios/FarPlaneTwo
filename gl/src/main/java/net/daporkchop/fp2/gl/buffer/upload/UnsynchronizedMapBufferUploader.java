@@ -19,8 +19,8 @@
 
 package net.daporkchop.fp2.gl.buffer.upload;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -79,19 +79,7 @@ public final class UnsynchronizedMapBufferUploader extends BufferUploader {
     }
 
     @Override
-    public void uploadRange(GLBuffer buffer, long offset, long addr, long size) {
-        if (size > this.freeSize) { //we don't have enough space available to upload this data, use the fallback uploader
-            this.fallback.uploadRange(buffer, offset, addr, size);
-            return;
-        }
-
-        //delegate to the ByteBuffer overload
-        //TODO: would be much cleaner to have the ByteBuffer version delegate to this one instead
-        this.uploadRange(buffer, offset, DirectBufferHackery.wrapByte(addr, toInt(size)));
-    }
-
-    @Override
-    public void uploadRange(GLBuffer buffer, long offset, ByteBuffer data) {
+    public void uploadRange(@NonNull GLBuffer buffer, long offset, @NonNull ByteBuffer data) {
         int size = data.remaining();
         checkRangeLen(buffer.capacity(), offset, size);
         if (size > 0) {

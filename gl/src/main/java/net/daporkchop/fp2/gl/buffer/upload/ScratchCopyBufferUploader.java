@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.buffer.upload;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -50,13 +51,7 @@ public final class ScratchCopyBufferUploader extends AbstractImmediateBufferUplo
     }
 
     @Override
-    public void uploadRange(GLBuffer buffer, long offset, long addr, long size) {
-        this.scratchBuffer.upload(addr, size, BufferUsage.STREAM_COPY);
-        this.scratchBuffer.copyRange(0L, buffer, offset, this.scratchBuffer.capacity());
-    }
-
-    @Override
-    public void uploadRange(GLBuffer buffer, long offset, ByteBuffer data) {
+    public void uploadRange(@NonNull GLBuffer buffer, long offset, @NonNull ByteBuffer data) {
         this.scratchBuffer.upload(data, BufferUsage.STREAM_COPY);
         this.scratchBuffer.copyRange(0L, buffer, offset, this.scratchBuffer.capacity());
     }
