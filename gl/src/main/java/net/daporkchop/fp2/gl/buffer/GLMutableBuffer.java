@@ -24,6 +24,8 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.OpenGLException;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
@@ -39,20 +41,53 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public final class GLMutableBuffer extends GLBuffer {
     /**
-     * Creates a new buffer.
+     * Creates a new buffer with an initial capacity of {@code 0}.
      *
      * @param gl the OpenGL context
      * @return the created buffer
      */
     public static GLMutableBuffer create(OpenGL gl) {
-        return new GLMutableBuffer(gl);
+        return create(gl, 0L, BufferUsage.STATIC_DRAW);
+    }
+
+    /**
+     * Creates a new buffer with the given initial capacity and uninitialized data.
+     *
+     * @param gl              the OpenGL context
+     * @param initialCapacity the buffer's initial capacity
+     * @param usage           the buffer's usage
+     * @return the created buffer
+     */
+    public static GLMutableBuffer create(OpenGL gl, @NotNegative long initialCapacity, BufferUsage usage) {
+        GLMutableBuffer result = new GLMutableBuffer(gl);
+        try {
+            result.capacity(initialCapacity, usage);
+            return result;
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, result);
+        }
+    }
+
+    /**
+     * Creates a new buffer with the given initial data.
+     *
+     * @param gl          the OpenGL context
+     * @param initialData the buffer's initial data
+     * @param usage       the buffer's usage
+     * @return the created buffer
+     */
+    public static GLMutableBuffer create(OpenGL gl, ByteBuffer initialData, BufferUsage usage) {
+        GLMutableBuffer result = new GLMutableBuffer(gl);
+        try {
+            result.upload(initialData, usage);
+            return result;
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, result);
+        }
     }
 
     private GLMutableBuffer(OpenGL gl) {
         super(gl);
-
-        //TODO: figure out if i can safely get rid of this
-        this.capacity(0L, BufferUsage.STATIC_DRAW);
     }
 
     /**

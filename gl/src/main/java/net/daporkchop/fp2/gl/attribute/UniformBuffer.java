@@ -38,7 +38,7 @@ public abstract class UniformBuffer<STRUCT extends AttributeStruct> implements A
         this.format = format;
         this.gl = format.gl();
 
-        this.buffer = GLMutableBuffer.create(this.gl);
+        this.buffer = GLMutableBuffer.create(this.gl, format.size(), BufferUsage.STATIC_DRAW);
     }
 
     /**
