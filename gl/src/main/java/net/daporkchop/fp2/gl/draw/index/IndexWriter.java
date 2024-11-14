@@ -22,15 +22,21 @@ package net.daporkchop.fp2.gl.draw.index;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.util.AbstractTypedWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class IndexWriter extends AbstractTypedWriter {
     private final IndexFormat format;
+
+    protected IndexWriter(@NonNull IndexFormat format, @NonNull DirectMemoryAllocator alloc, @Positive int initialCapacity, @Positive int elementSize) {
+        super(alloc, initialCapacity, elementSize);
+        this.format = format;
+    }
 
     /**
      * @return the {@link IndexFormat} which this writer can write indices for

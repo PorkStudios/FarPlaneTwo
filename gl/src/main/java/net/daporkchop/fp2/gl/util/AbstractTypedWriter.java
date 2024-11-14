@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.util;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
@@ -33,101 +34,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-//TODO: make this extend from AbstractDirectVector
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class AbstractTypedWriter implements AutoCloseable {
-    protected @NotNegative int size;
-    protected @Positive int capacity;
-
-    /**
-     * @return the number of elements written so far
-     */
-    public final int size() {
-        return this.size;
-    }
-
-    /**
-     * @return the number of elements which can be stored in this writer before it needs to be resized
-     */
-    public final int capacity() {
-        return this.capacity;
-    }
-
-    /**
-     * Clears this writer instance, discarding all previously written elements.
-     */
-    public final void clear() {
-        this.size = 0;
-    }
-
-    /**
-     * Ensures that this writer has sufficient remaining capacity to append at least the given number of elements.
-     *
-     * @param count the number of additional elements to reserve capacity for
-     */
-    public final void reserve(@NotNegative int count) {
-        int requiredCapacity = Math.addExact(this.size, notNegative(count, "count"));
-        if (this.capacity < requiredCapacity) {
-            this.grow(requiredCapacity);
-
-            //this will theoretically help the JIT if we have a reserve followed by a fixed number of appends
-            if (this.capacity < Math.addExact(this.size, count)) {
-                throw new IllegalStateException();
-            }
-        }
-    }
-
-    /**
-     * Resizes the internal buffer to fit at least the given number of elements.
-     *
-     * @param requiredCapacity the minimum required capacity
-     */
-    protected final void grow(@NotNegative int requiredCapacity) {
-        int oldCapacity = this.capacity;
-        if (oldCapacity < requiredCapacity) {
-            //TODO: a more efficient method of computing the new capacity???
-            do {
-                this.capacity = Math.multiplyExact(this.capacity, 2);
-            } while (requiredCapacity > this.capacity);
-
-            this.grow(oldCapacity, this.capacity);
-        }
-    }
-
-    /**
-     * Grows the internal buffer to the given capacity.
-     *
-     * @param oldCapacity the previous capacity
-     * @param newCapacity the new capacity
-     */
-    protected abstract void grow(@NotNegative int oldCapacity, @NotNegative int newCapacity);
-
-    /**
-     * Appends a new element to the writer by incrementing its position by one. The element's contents are initially undefined.
-     * <p>
-     * Any existing handles to other elements in this writer will be invalidated by this operation.
-     */
-    public final void appendUninitialized() {
-        int newSize = Math.incrementExact(this.size);
-        if (newSize > this.capacity) {
-            this.grow(newSize);
-        }
-        this.size = newSize;
-    }
-
-    /**
-     * Appends new elements to the writer by incrementing its position by the given {@code count}. The element's contents are initially undefined.
-     * <p>
-     * Any existing handles to other elements in this writer will be invalidated by this operation.
-     *
-     * @param count the number of elements to append
-     */
-    public final void appendUninitialized(@Positive int count) {
-        int newSize = Math.addExact(this.size, positive(count, "count"));
-        if (newSize > this.capacity) {
-            this.grow(newSize);
-        }
-        this.size = newSize;
+public abstract class AbstractTypedWriter extends AbstractDirectVector {
+    protected AbstractTypedWriter(@NonNull DirectMemoryAllocator alloc, @Positive int initialCapacity, @Positive int elementSize) {
+        super(alloc, initialCapacity, elementSize);
     }
 
     /**
@@ -173,7 +82,4 @@ public abstract class AbstractTypedWriter implements AutoCloseable {
      * @param length    the number of elements to copy
      */
     public abstract void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length);
-
-    @Override
-    public abstract void close();
 }

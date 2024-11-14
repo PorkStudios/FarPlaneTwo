@@ -21,8 +21,8 @@ package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
@@ -43,15 +43,8 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
      * will allow it to be treated as a constant in the writer code after inlining.
      */
 
-    protected final DirectMemoryAllocator alloc;
-    protected long address;
-
     protected AbstractInterleavedAttributeWriter(@NonNull AttributeFormat<STRUCT> format, @NonNull DirectMemoryAllocator alloc) {
-        super(format);
-        this.alloc = alloc;
-
-        this.capacity = 16;
-        this.address = alloc.alloc(this.capacity * format.size());
+        super(format, alloc, DEFAULT_INITIAL_CAPACITY, Math.toIntExact(format.size()));
     }
 
     /**
@@ -70,11 +63,6 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
     public final STRUCT append() {
         this.appendUninitialized();
         return this.handle(this.address, this.size - 1);
-    }
-
-    @Override
-    protected final void grow(@NotNegative int oldCapacity, @NotNegative int newCapacity) {
-        this.address = this.alloc.realloc(this.address, newCapacity * this.format().size());
     }
 
     @Override
@@ -122,10 +110,5 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
         if (length > 0) {
             PUnsafe.copyMemory(this.address + srcIndex * size, dstWriter.address + dstIndex * size, length * size);
         }
-    }
-
-    @Override
-    public void close() {
-        this.alloc.free(this.address);
     }
 }

@@ -76,19 +76,16 @@ public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeSt
         checkArg(this.format().getClass() == writer.format().getClass(), "incompatible vertex formats: %s\n%s", this.format(), writer.format());
 
         int count = writer.size();
-        this.buffer.upload(((AbstractInterleavedAttributeWriter<STRUCT>) writer).address, count * this.format().size(), usage);
+        this.buffer.upload(writer.byteBufferView(), usage);
         this.capacity = count;
     }
 
     @Override
     public void setRange(@NotNegative int startIndex, AttributeWriter<STRUCT> writer, BufferUploader uploader) {
         checkArg(this.format().getClass() == writer.format().getClass(), "incompatible vertex formats: %s\n%s", this.format(), writer.format());
-        int count = writer.size();
-        checkRangeLen(this.capacity(), startIndex, count);
+        checkRangeLen(this.capacity(), startIndex, writer.size());
 
-        long address = ((AbstractInterleavedAttributeWriter<STRUCT>) writer).address;
-        long size = this.format().size();
-        uploader.uploadRange(this.buffer, startIndex * size, address, count * size);
+        uploader.uploadRange(this.buffer, (long) startIndex * this.format().size(), writer.byteBufferView());
     }
 
     @Override

@@ -71,19 +71,16 @@ public final class IndexBufferImpl extends IndexBuffer {
         checkArg(this.format() == writer.format(), "incompatible index formats: %s\n%s", this.format(), writer.format());
 
         int count = writer.size();
-        this.buffer.upload(((AbstractIndexWriter) writer).address, count * this.format().size(), usage);
+        this.buffer.upload(writer.byteBufferView(), usage);
         this.capacity = count;
     }
 
     @Override
     public void setRange(@NotNegative int startIndex, IndexWriter writer, BufferUploader uploader) {
         checkArg(this.format() == writer.format(), "incompatible index formats: %s\n%s", this.format(), writer.format());
-        int count = writer.size();
-        checkRangeLen(this.capacity(), startIndex, count);
+        checkRangeLen(this.capacity(), startIndex, writer.size());
 
-        long address = ((AbstractIndexWriter) writer).address;
-        long size = this.format().size();
-        uploader.uploadRange(this.buffer, startIndex * size, address, count * size);
+        uploader.uploadRange(this.buffer, (long) startIndex * this.format().size(), writer.byteBufferView());
     }
 
     @Override

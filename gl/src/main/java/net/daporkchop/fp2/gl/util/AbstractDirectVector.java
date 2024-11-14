@@ -24,6 +24,7 @@ import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
+import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
@@ -48,7 +49,7 @@ public abstract class AbstractDirectVector implements AutoCloseable {
         this.size = 0;
         this.capacity = positive(initialCapacity, "initialCapacity");
         this.elementSize = positive(elementSize, "elementSize");
-        this.address = alloc.alloc(Math.multiplyExact(initialCapacity, (long) elementSize));
+        this.address = alloc.alloc((long) initialCapacity * elementSize);
     }
 
     /**
@@ -181,27 +182,16 @@ public abstract class AbstractDirectVector implements AutoCloseable {
      * @param start the index of the first element to fill with zero bytes
      * @param count the number of elements to fill with zero bytes
      */
-    public void setZero(@NotNegative int start, @NotNegative int count) {
+    public final void setZero(@NotNegative int start, @NotNegative int count) {
         checkRangeLen(this.size, start, count);
         PUnsafe.setMemory(this.address + start * (long) this.elementSize, count * (long) this.elementSize, (byte) 0);
-    }
-
-    /**
-     * Fills the elements starting at the given index with zero bytes.
-     *
-     * @param start the index of the first element to fill with zero bytes
-     * @param count the number of elements to fill with zero bytes
-     */
-    protected final void setZero(@NotNegative int start, @NotNegative int count, @Positive long elementSize) {
-        checkRangeLen(this.size, start, count);
-        PUnsafe.setMemory(this.address + start * elementSize, count * elementSize, (byte) 0);
     }
 
     /**
      * @return a view of this vector's contents as a direct {@link ByteBuffer}
      * @throws RuntimeException if this vector's contents are too large to be stored in a single {@link ByteBuffer}
      */
-    public ByteBuffer byteBufferView() {
+    public final ByteBuffer byteBufferView() {
         return DirectBufferHackery.wrapByte(this.address, Math.multiplyExact(this.size, this.elementSize));
     }
 

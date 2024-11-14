@@ -19,12 +19,11 @@
 
 package net.daporkchop.fp2.gl.attribute;
 
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.util.AbstractTypedWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -34,10 +33,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @param <STRUCT> the struct type
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-@Getter
 public abstract class AttributeWriter<STRUCT extends AttributeStruct> extends AbstractTypedWriter {
     private final AttributeFormat<STRUCT> format;
+
+    protected AttributeWriter(@NonNull AttributeFormat<STRUCT> format, @NonNull DirectMemoryAllocator alloc, @Positive int initialCapacity, @Positive int elementSize) {
+        super(alloc, initialCapacity, elementSize);
+        this.format = format;
+    }
 
     /**
      * @return the {@link AttributeFormat} which this writer can write vertex attributes for

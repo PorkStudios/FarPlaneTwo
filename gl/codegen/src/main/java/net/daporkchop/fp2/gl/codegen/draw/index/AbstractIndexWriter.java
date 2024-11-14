@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.codegen.draw.index;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
@@ -31,15 +32,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractIndexWriter extends IndexWriter {
-    protected final DirectMemoryAllocator alloc;
-    protected long address;
-
-    protected AbstractIndexWriter(IndexFormat format, DirectMemoryAllocator alloc) {
-        super(format);
-        this.alloc = alloc;
-
-        this.capacity = 16;
-        this.address = alloc.alloc(this.capacity * format.size());
+    protected AbstractIndexWriter(@NonNull IndexFormat format, @NonNull DirectMemoryAllocator alloc) {
+        super(format, alloc, DEFAULT_INITIAL_CAPACITY, Math.toIntExact(format.size()));
     }
 
     @Override
@@ -74,11 +68,6 @@ public abstract class AbstractIndexWriter extends IndexWriter {
     protected abstract int get(long address, long index);
 
     @Override
-    protected final void grow(@NotNegative int oldCapacity, @NotNegative int newCapacity) {
-        this.address = this.alloc.realloc(this.address, newCapacity * this.format().size());
-    }
-
-    @Override
     public final void copy(@NotNegative int src, @NotNegative int dst) {
         checkIndex(this.size, src);
         checkIndex(this.size, dst);
@@ -100,7 +89,7 @@ public abstract class AbstractIndexWriter extends IndexWriter {
         checkRangeLen(this.size, dst, length);
         long size = this.format().size();
         if (src != dst && length > 0) {
-            PUnsafe.copyMemory(this.address + src * size, this.address + dst * size, length * size);
+            PUnsafe.copyMemory(this.getElementPtr(src, size), this.getElementPtr(dst, size), length * size);
         }
     }
 
@@ -123,9 +112,4 @@ public abstract class AbstractIndexWriter extends IndexWriter {
     }
 
     protected abstract void offsetIndices(long address, int size, int delta);
-
-    @Override
-    public void close() {
-        this.alloc.free(this.address);
-    }
 }
