@@ -80,41 +80,26 @@ public abstract class AbstractDirectVector implements AutoCloseable {
      */
     public final void reserve(@NotNegative int count) {
         int requiredCapacity = Math.addExact(this.size, notNegative(count, "count"));
-        if (this.capacity < requiredCapacity) {
-            this.grow(requiredCapacity);
+        if (requiredCapacity > this.capacity) {
+            this.growBy(requiredCapacity - this.capacity);
 
             //this will theoretically help the JIT if we have a reserve followed by a fixed number of appends
-            if (this.capacity < Math.addExact(this.size, count)) {
+            if (this.size + count > this.capacity) {
                 throw new IllegalStateException();
             }
         }
+        assert this.capacity - this.size >= count;
     }
 
     /**
-     * Resizes the internal buffer to fit at least the given number of elements.
+     * Resizes the internal buffer to fit at least the given number of additional elements.
      *
-     * @param requiredCapacity the minimum required capacity
+     * @param increment the minimum amount by which the capacity should be increased
      */
-    protected final void grow(@NotNegative int requiredCapacity) {
-        int oldCapacity = this.capacity;
-        if (oldCapacity < requiredCapacity) {
-            //TODO: a more efficient method of computing the new capacity???
-            do {
-                this.capacity = Math.multiplyExact(this.capacity, 2);
-            } while (requiredCapacity > this.capacity);
-
-            this.grow(oldCapacity, this.capacity);
-        }
-    }
-
-    /**
-     * Grows the internal buffer to the given capacity.
-     *
-     * @param oldCapacity the previous capacity
-     * @param newCapacity the new capacity
-     */
-    protected void grow(@NotNegative int oldCapacity, @NotNegative int newCapacity) {
+    private void growBy(@NotNegative int increment) {
+        int newCapacity = PMath.growCapacityBy(this.capacity, increment);
         this.address = this.alloc.realloc(this.address, newCapacity * (long) this.elementSize);
+        this.capacity = newCapacity;
     }
 
     /**
@@ -123,11 +108,11 @@ public abstract class AbstractDirectVector implements AutoCloseable {
      * Any existing handles to other elements in this vector will be invalidated by this operation.
      */
     public final void appendUninitialized() {
-        int newSize = Math.incrementExact(this.size);
-        if (newSize > this.capacity) {
-            this.grow(newSize);
+        if (this.size == this.capacity) {
+            this.growBy(1);
         }
-        this.size = newSize;
+        assert this.size < this.capacity;
+        this.size++;
     }
 
     /**
@@ -138,11 +123,8 @@ public abstract class AbstractDirectVector implements AutoCloseable {
      * @param count the number of elements to append
      */
     public final void appendUninitialized(@Positive int count) {
-        int newSize = Math.addExact(this.size, positive(count, "count"));
-        if (newSize > this.capacity) {
-            this.grow(newSize);
-        }
-        this.size = newSize;
+        this.reserve(count);
+        this.size += count;
     }
 
     /**
