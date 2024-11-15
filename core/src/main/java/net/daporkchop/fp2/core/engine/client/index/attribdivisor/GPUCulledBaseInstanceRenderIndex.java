@@ -34,7 +34,6 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
@@ -118,6 +117,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private static final String CULLED_DRAW_LISTS_SSBO_NAME = "B_CulledDrawLists"; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
     private static final int CULLED_DRAW_LISTS_SSBO_BINDING = RAW_DRAW_LISTS_SSBO_BINDING + 1;
 
+    private static final int DEBUG_STATISTICS_COUNTER_BINDING = 0;
+
     private static final int CULLING_SHADER_WORK_GROUP_SIZE = 256; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
 
     /**
@@ -127,11 +128,14 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     @EqualsAndHashCode
     @ToString
     private static final class CullingShaderVariant {
-        final boolean debugCounters;
+        final boolean debugStatistics;
 
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-            builder.put("FP2_DEBUG_SELECTED_COUNTERS", this.debugCounters);
+            builder.put("FP2_DEBUG_STATISTICS", this.debugStatistics);
+            if (this.debugStatistics) {
+                builder.put("DEBUG_STATISTICS_COUNTER_BINDING", DEBUG_STATISTICS_COUNTER_BINDING);
+            }
             return builder.build();
         }
 
@@ -279,8 +283,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, VANILLA_RENDERABILITY_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, VANILLA_RENDERABILITY_SSBO_BINDING));
 
-        if (this.culledStatistics != null) {
-            builder.indexedBuffer(IndexedBufferTarget.ATOMIC_COUNTER_BUFFER, 0);
+        if (this.culledStatistics != null) { //if debug statistics are supported, we need to preserve the atomic counter binding
+            builder.indexedBuffer(IndexedBufferTarget.ATOMIC_COUNTER_BUFFER, DEBUG_STATISTICS_COUNTER_BINDING);
         }
     }
 
@@ -294,8 +298,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         //bind terrain rendering blocked tracker, so that level-0 tiles can be skipped if they overlap with vanilla terrain
         blockedTracker.bindGlBuffers(this.gl, VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_SSBO_BINDING);
 
-        if (this.culledStatistics != null) {
-            this.culledStatistics.beginFrame(0);
+        if (this.culledStatistics != null) { //if debug statistics are supported, reset the counters and begin recording statistics for this frame
+            this.culledStatistics.beginFrame(DEBUG_STATISTICS_COUNTER_BINDING);
         }
 
         val cullingShaderProgram = this.shaderRegistry.<ComputeShaderProgram>get(new CullingShaderVariant(this.culledStatistics != null)).get();
@@ -329,7 +333,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             this.gl.glDispatchCompute(capacity / CULLING_SHADER_WORK_GROUP_SIZE, 1, 1);
         }
 
-        if (this.culledStatistics != null) {
+        if (this.culledStatistics != null) { //if debug statistics are supported, finish recording statistics for this frame
             this.culledStatistics.endFrame(this.renderPosTable.size());
         }
     }
@@ -361,7 +365,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     public void postDraw() {
         super.postDraw();
 
-        if (this.culledStatistics != null) {
+        if (this.culledStatistics != null) { //if debug statistics are supported, tick the statistics object to fetch the values from the latest frame
             this.culledStatistics.tick();
         }
     }
