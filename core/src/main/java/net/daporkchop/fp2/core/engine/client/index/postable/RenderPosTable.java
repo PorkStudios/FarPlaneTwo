@@ -56,6 +56,11 @@ public abstract class RenderPosTable implements AutoCloseable {
     public abstract void flush();
 
     /**
+     * @return the number of tile positions in this table
+     */
+    public abstract int size();
+
+    /**
      * @param level the detail level
      * @return a reference to the vertex buffer containing the list of tile positions for the given detail level
      */

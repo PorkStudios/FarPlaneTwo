@@ -71,6 +71,15 @@ public final class PerLevelRenderPosTable extends RenderPosTable {
     }
 
     @Override
+    public int size() {
+        int size = 0;
+        for (val table : this.tables) {
+            size += table.size();
+        }
+        return size;
+    }
+
+    @Override
     public AttributeBuffer<VoxelGlobalAttributes> vertexBuffer(int level) {
         return this.tables[level].vertexBuffer(level);
     }

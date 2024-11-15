@@ -126,6 +126,11 @@ public final class SimpleRenderPosTable extends RenderPosTable {
     }
 
     @Override
+    public int size() {
+        return this.positionToIndex.size();
+    }
+
+    @Override
     public AttributeBuffer<VoxelGlobalAttributes> vertexBuffer(int level) {
         return this.buffer;
     }

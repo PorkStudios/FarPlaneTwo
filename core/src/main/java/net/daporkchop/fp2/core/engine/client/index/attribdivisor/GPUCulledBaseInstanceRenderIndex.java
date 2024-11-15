@@ -304,7 +304,6 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         //configure frustum uniforms
         frustum.configureClippingPlanes(uniformSetter, new IFrustum.UniformLocations(cullingShaderProgram));
 
-        int totalIndexedTiles = 0;
         for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
             val levelInstance = this.levels.get(level);
             val tilePosArray = this.renderPosTable.vertexBuffer(level);
@@ -315,8 +314,6 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 //skip empty detail levels
                 continue;
             }
-
-            totalIndexedTiles += capacity; //TODO: this isn't as accurate as i would like
 
             levelInstance.flushRawDrawLists();
             levelInstance.orphanCulledDrawLists();
@@ -333,7 +330,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         }
 
         if (this.culledStatistics != null) {
-            this.culledStatistics.endFrame(totalIndexedTiles);
+            this.culledStatistics.endFrame(this.renderPosTable.size());
         }
     }
 

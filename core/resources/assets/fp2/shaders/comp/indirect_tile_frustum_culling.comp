@@ -50,6 +50,11 @@ layout(std430) writeonly restrict buffer B_CulledDrawLists {
 bool select(uint tileIndex) {
     ivec4 pos = b_tilePositions[tileIndex];
 
+    // If the tile's level is negative, it indicates that the tile doesn't exist and can definitely be skipped
+    if (pos.w < 0) {
+        return false;
+    }
+
     // Level-0 tiles must not overlap vanilla renderable terrain
     if (pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) {
         return false;
