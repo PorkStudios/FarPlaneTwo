@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.util.AnyMemoryRegion;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.fp2.gl.util.GLRequires;
@@ -43,6 +44,60 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class GLBuffer extends GLObject.Normal {
+    /**
+     * Creates an OpenGL buffer object with "functionally immutable" storage with the given capacity and uninitialized data.
+     * <p>
+     * If supported, creates an {@link GLImmutableBuffer immutable buffer}, otherwise falls back to a {@link GLMutableBuffer mutable buffer}. This is intended to be used in situations where a buffer's
+     * capacity is known to be constant at construction time.
+     *
+     * @param gl             the OpenGL context
+     * @param capacity       the buffer's capacity
+     * @param mutableUsage   the buffer's usage, if it's created with mutable storage
+     * @param immutableFlags the buffer's storage flags, if it's created with immutable storage
+     * @return the created buffer
+     */
+    public static GLBuffer createFunctionallyImmutable(@NonNull OpenGL gl, @NotNegative long capacity, @NonNull BufferUsage mutableUsage, int immutableFlags) {
+        return gl.supports(GLImmutableBuffer.REQUIRED_EXTENSIONS)
+                ? GLImmutableBuffer.create(gl, capacity, immutableFlags)
+                : GLMutableBuffer.create(gl, capacity, mutableUsage);
+    }
+
+    /**
+     * Creates an OpenGL buffer object with "functionally immutable" storage initialized to the given data.
+     * <p>
+     * If supported, creates an {@link GLImmutableBuffer immutable buffer}, otherwise falls back to a {@link GLMutableBuffer mutable buffer}. This is intended to be used in situations where a buffer's
+     * capacity is known to be constant at construction time.
+     *
+     * @param gl             the OpenGL context
+     * @param data           the buffer's initial data, also used to determine the buffer's capacity
+     * @param mutableUsage   the buffer's usage, if it's created with mutable storage
+     * @param immutableFlags the buffer's storage flags, if it's created with immutable storage
+     * @return the created buffer
+     */
+    public static GLBuffer createFunctionallyImmutable(@NonNull OpenGL gl, @NonNull ByteBuffer data, @NonNull BufferUsage mutableUsage, int immutableFlags) {
+        return gl.supports(GLImmutableBuffer.REQUIRED_EXTENSIONS)
+                ? GLImmutableBuffer.create(gl, data, immutableFlags)
+                : GLMutableBuffer.create(gl, data, mutableUsage);
+    }
+
+    /**
+     * Creates an OpenGL buffer object with "functionally immutable" storage initialized to the given data.
+     * <p>
+     * If supported, creates an {@link GLImmutableBuffer immutable buffer}, otherwise falls back to a {@link GLMutableBuffer mutable buffer}. This is intended to be used in situations where a buffer's
+     * capacity is known to be constant at construction time.
+     *
+     * @param gl             the OpenGL context
+     * @param data           the buffer's initial data, also used to determine the buffer's capacity
+     * @param mutableUsage   the buffer's usage, if it's created with mutable storage
+     * @param immutableFlags the buffer's storage flags, if it's created with immutable storage
+     * @return the created buffer
+     */
+    public static GLBuffer createFunctionallyImmutable(@NonNull OpenGL gl, @NonNull AnyMemoryRegion data, @NonNull BufferUsage mutableUsage, int immutableFlags) {
+        return gl.supports(GLImmutableBuffer.REQUIRED_EXTENSIONS)
+                ? GLImmutableBuffer.create(gl, data, immutableFlags)
+                : GLMutableBuffer.create(gl, data, mutableUsage);
+    }
+
     protected final boolean clearBufferObject;
     protected final boolean dsa;
     protected final boolean invalidateSubdata;
