@@ -19,11 +19,14 @@
 
 package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
-import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
+import net.daporkchop.fp2.gl.buffer.BufferAccess;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -42,7 +45,10 @@ public abstract class AbstractInterleavedUniformBuffer<STRUCT extends AttributeS
 
     public final void uploadAndRelease(long address) {
         try {
-            this.buffer.upload(address, this.format.size(), BufferUsage.STATIC_DRAW);
+            //map the buffer using GL_MAP_INVALIDATE_BUFFER_BIT and copy the new data into the mapping.
+            //  this lets us explicitly orphan the buffer, and works whether or not the underlying buffer storage is immutable
+            this.buffer.map(BufferAccess.WRITE_ONLY, GL_MAP_INVALIDATE_BUFFER_BIT,
+                    mapping -> mapping.put(DirectBufferHackery.wrapByte(address, mapping.remaining())));
         } finally {
             PUnsafe.freeMemory(address);
         }

@@ -21,7 +21,9 @@ package net.daporkchop.fp2.gl.attribute;
 
 import lombok.Getter;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @param <STRUCT> the struct type
@@ -32,13 +34,13 @@ public abstract class UniformBuffer<STRUCT extends AttributeStruct> implements A
     protected final AttributeFormat<STRUCT> format;
     protected final OpenGL gl;
 
-    protected final GLMutableBuffer buffer;
+    protected final GLBuffer buffer;
 
     protected UniformBuffer(AttributeFormat<STRUCT> format) {
         this.format = format;
         this.gl = format.gl();
 
-        this.buffer = GLMutableBuffer.create(this.gl, format.size(), BufferUsage.STATIC_DRAW);
+        this.buffer = GLBuffer.createFunctionallyImmutable(this.gl, format.size(), BufferUsage.STATIC_DRAW, GL_MAP_WRITE_BIT);
     }
 
     /**

@@ -492,6 +492,24 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param access   the ways in which the buffer data may be accessed
      * @param callback the callback function
      */
+    public final void map(BufferAccess access, int flags, Consumer<ByteBuffer> callback) {
+        this.checkNotMapped();
+        ByteBuffer buffer = this.mapRange(0L, this.capacity, access.flags() | flags);
+        try {
+            this.mapped = true;
+            callback.accept(buffer);
+        } finally {
+            this.mapped = false;
+            this.unmap();
+        }
+    }
+
+    /**
+     * Maps this buffer's contents into client address space and passes the mapping address to the given callback function before unmapping the buffer again.
+     *
+     * @param access   the ways in which the buffer data may be accessed
+     * @param callback the callback function
+     */
     public final void mapRange(BufferAccess access, int flags, @NotNegative long offset, @NotNegative long length, Consumer<ByteBuffer> callback) {
         checkRangeLen(this.capacity, offset, length);
         this.checkNotMapped();
@@ -515,6 +533,18 @@ public abstract class GLBuffer extends GLObject.Normal {
         this.checkNotMapped();
         this.mapped = true;
         return new Mapping(this.mapRange(0L, this.capacity, access.flags()));
+    }
+
+    /**
+     * Maps this buffer's contents into client address space and returns a reference to the mapping.
+     *
+     * @param access the ways in which the buffer data may be accessed
+     * @return a {@link Mapping}
+     */
+    public final Mapping map(BufferAccess access, int flags) {
+        this.checkNotMapped();
+        this.mapped = true;
+        return new Mapping(this.mapRange(0L, this.capacity, access.flags() | flags));
     }
 
     /**
