@@ -34,6 +34,7 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
@@ -58,8 +59,10 @@ import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferAccess;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
+import net.daporkchop.fp2.gl.buffer.download.AsynchronousSmallBufferDownloader;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
@@ -67,9 +70,9 @@ import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
-import net.daporkchop.fp2.gl.util.GPUIntegerStatistics;
 import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,6 +93,12 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             .addAll(TerrainRenderingBlockedTracker.REQUIRED_EXTENSIONS_GPU)
             .add(GLExtension.GL_ARB_shader_storage_buffer_object)
             .add(GLExtension.GL_ARB_shader_image_load_store); //glMemoryBarrier()
+
+    private static final GLExtensionSet REQUIRED_EXTENSIONS_COUNT_SELECTED = REQUIRED_EXTENSIONS
+            .add(GLExtension.GL_ARB_shader_atomic_counters);
+
+    private static final GLExtensionSet REQUIRED_EXTENSIONS_INDIRECT_COUNT = REQUIRED_EXTENSIONS_COUNT_SELECTED
+            .add(GLExtension.GL_ARB_indirect_parameters);
 
     /*
      * Implementation overview:
@@ -117,7 +126,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private static final String CULLED_DRAW_LISTS_SSBO_NAME = "B_CulledDrawLists"; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
     private static final int CULLED_DRAW_LISTS_SSBO_BINDING = RAW_DRAW_LISTS_SSBO_BINDING + 1;
 
-    private static final int DEBUG_STATISTICS_COUNTER_BINDING = 0;
+    private static final int COUNT_SELECTED_COUNTER_BINDING = 0;
 
     private static final int CULLING_SHADER_WORK_GROUP_SIZE = 256; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
 
@@ -128,22 +137,27 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     @EqualsAndHashCode
     @ToString
     private static final class CullingShaderVariant {
-        final boolean debugStatistics;
+        final boolean countSelected;
+        final boolean indirectCount;
 
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-            builder.put("FP2_DEBUG_STATISTICS", this.debugStatistics);
-            if (this.debugStatistics) {
-                builder.put("DEBUG_STATISTICS_COUNTER_BINDING", DEBUG_STATISTICS_COUNTER_BINDING);
+            builder.put("FP2_COUNT_SELECTED", this.countSelected);
+            builder.put("FP2_INDIRECT_COUNT", this.indirectCount);
+            if (this.countSelected) {
+                builder.put("COUNT_SELECTED_COUNTER_BINDING", COUNT_SELECTED_COUNTER_BINDING);
             }
             return builder.build();
         }
 
         public static List<CullingShaderVariant> allVariants(@NonNull OpenGL gl) {
-            List<CullingShaderVariant> result = new ArrayList<>(2);
-            result.add(new CullingShaderVariant(false));
-            if (gl.supports(GPUIntegerStatistics.REQUIRED_EXTENSIONS)) {
-                result.add(new CullingShaderVariant(true));
+            List<CullingShaderVariant> result = new ArrayList<>(3);
+            result.add(new CullingShaderVariant(false, false));
+            if (gl.supports(REQUIRED_EXTENSIONS_COUNT_SELECTED)) {
+                result.add(new CullingShaderVariant(true, false));
+                if (gl.supports(REQUIRED_EXTENSIONS_INDIRECT_COUNT)) {
+                    result.add(new CullingShaderVariant(true, true));
+                }
             }
             return result;
         }
@@ -196,9 +210,13 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     private final LevelArray<Level> levels;
 
-    private final ReloadableShaderRegistry shaderRegistry;
+    private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
 
-    private final GPUIntegerStatistics<Integer> culledStatistics;
+    private final GLBuffer countSelectedBuffer;
+    private final boolean useIndirectCount;
+    private final AsynchronousSmallBufferDownloader debugStatisticsDownloader;
+
+    private DebugStats.Renderer debugStats = DebugStats.Renderer.builder().selectedTiles(-1L).indexedTiles(-1L).build();
 
     public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer,
                                             UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
@@ -207,12 +225,24 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         try {
             this.cameraStateUniformsBuffer = cameraStateUniformsBuffer;
 
-            this.shaderRegistry = globalRenderer.shaderRegistry;
-            //this.workGroupSize = this.cullingShader.get().workGroupSize().invocations();
-
             this.levels = new LevelArray<>(level -> new Level(gl, alloc));
 
-            this.culledStatistics = gl.supports(GPUIntegerStatistics.REQUIRED_EXTENSIONS) ? new GPUIntegerStatistics<>(gl, 1, 10) : null;
+            boolean canCountSelected = gl.supports(REQUIRED_EXTENSIONS_COUNT_SELECTED);
+            boolean useIndirectCount = canCountSelected && gl.supports(REQUIRED_EXTENSIONS_INDIRECT_COUNT);
+            boolean useStatisticsDownloader = canCountSelected && gl.supports(AsynchronousSmallBufferDownloader.REQUIRED_EXTENSIONS);
+            if (canCountSelected && (useIndirectCount || useStatisticsDownloader)) {
+                //if we can count the number of selected tiles per detail level and at least one of the features which uses that information is also
+                //  supported, then we'll enable selected tile counting
+                this.countSelectedBuffer = GLBuffer.createFunctionallyImmutable(gl, (long) EngineConstants.MAX_LODS * Integer.BYTES, BufferUsage.STREAM_COPY, 0);
+                this.useIndirectCount = useIndirectCount;
+                this.debugStatisticsDownloader = useStatisticsDownloader ? new AsynchronousSmallBufferDownloader(gl, (int) this.countSelectedBuffer.capacity(), 10) : null;
+            } else {
+                this.countSelectedBuffer = null;
+                this.useIndirectCount = false;
+                this.debugStatisticsDownloader = null;
+            }
+
+            this.cullingShader = globalRenderer.shaderRegistry.get(new CullingShaderVariant(this.countSelectedBuffer != null, this.useIndirectCount));
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -221,7 +251,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     @Override
     public void close() {
         try (val ignored0 = this.levels;
-             val ignored1 = this.culledStatistics) {
+             val ignored1 = this.countSelectedBuffer;
+             val ignored2 = this.debugStatisticsDownloader) {
             super.close();
         }
     }
@@ -283,8 +314,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, VANILLA_RENDERABILITY_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, VANILLA_RENDERABILITY_SSBO_BINDING));
 
-        if (this.culledStatistics != null) { //if debug statistics are supported, we need to preserve the atomic counter binding
-            builder.indexedBuffer(IndexedBufferTarget.ATOMIC_COUNTER_BUFFER, DEBUG_STATISTICS_COUNTER_BINDING);
+        if (this.countSelectedBuffer != null) { //if selected tile counting is supported, we need to preserve the atomic counter binding
+            builder.indexedBuffer(IndexedBufferTarget.ATOMIC_COUNTER_BUFFER, COUNT_SELECTED_COUNTER_BINDING);
         }
     }
 
@@ -298,11 +329,11 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         //bind terrain rendering blocked tracker, so that level-0 tiles can be skipped if they overlap with vanilla terrain
         blockedTracker.bindGlBuffers(this.gl, VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_SSBO_BINDING);
 
-        if (this.culledStatistics != null) { //if debug statistics are supported, reset the counters and begin recording statistics for this frame
-            this.culledStatistics.beginFrame(DEBUG_STATISTICS_COUNTER_BINDING);
+        if (this.countSelectedBuffer != null) { //if selected tile counting is supported, reset all the counters to 0
+            this.countSelectedBuffer.clearBufferDataZero();
         }
 
-        val cullingShaderProgram = this.shaderRegistry.<ComputeShaderProgram>get(new CullingShaderVariant(this.culledStatistics != null)).get();
+        val cullingShaderProgram = this.cullingShader.get();
         val uniformSetter = cullingShaderProgram.bindUnsafe(); // active program binding will be restored by StatePreserver
 
         //configure frustum uniforms
@@ -324,6 +355,10 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
             //dispatch the compute shader
 
+            if (this.countSelectedBuffer != null) { //if we're using MultiDraw with indirect counts, bind the atomic counter
+                this.gl.glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, COUNT_SELECTED_COUNTER_BINDING, this.countSelectedBuffer.id(), (long) level * Integer.BYTES, Integer.BYTES);
+            }
+
             //bind the tile positions array and the rawDrawLists+culledDrawLists for each render pass
             this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING, tilePosArray.bufferSSBO().id());
             this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RAW_DRAW_LISTS_SSBO_BINDING, levelInstance.rawDrawListsGPU.id());
@@ -333,8 +368,25 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             this.gl.glDispatchCompute(capacity / CULLING_SHADER_WORK_GROUP_SIZE, 1, 1);
         }
 
-        if (this.culledStatistics != null) { //if debug statistics are supported, finish recording statistics for this frame
-            this.culledStatistics.endFrame(this.renderPosTable.size());
+        if (this.debugStatisticsDownloader != null) { //if debug statistics are supported, download the selected tile count to the CPU and use it to update the debug statistics
+            assert this.countSelectedBuffer != null;
+
+            int indexedTiles = this.renderPosTable.size();
+            this.debugStatisticsDownloader.downloadRange(this.countSelectedBuffer, 0L, (int) this.countSelectedBuffer.capacity(), data -> {
+                //add up the number of selected tiles at each detail level
+                int[] selectedTilesPerLevel = PUnsafe.allocateUninitializedIntArray(EngineConstants.MAX_LODS);
+                data.asIntBuffer().get(selectedTilesPerLevel);
+
+                int selectedTiles = 0;
+                for (int i : selectedTilesPerLevel) {
+                    selectedTiles += i;
+                }
+
+                this.debugStats = DebugStats.Renderer.builder()
+                        .selectedTiles(selectedTiles)
+                        .indexedTiles(indexedTiles)
+                        .build();
+            });
         }
     }
 
@@ -343,6 +395,19 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         super.preservedDrawState(builder
                 .vao()
                 .buffer(BufferTarget.DRAW_INDIRECT_BUFFER));
+
+        if (this.useIndirectCount) { //if we're using MultiDraw with indirect counts, we need to preserve the GL_PARAMETER_BUFFER binding
+            builder.buffer(BufferTarget.PARAMETER_BUFFER);
+        }
+    }
+
+    @Override
+    public void preDraw() {
+        super.preDraw();
+
+        if (this.useIndirectCount) { //if we're using MultiDraw with indirect counts, we need to bind the GL_PARAMETER_BUFFER
+            this.gl.glBindBuffer(GL_PARAMETER_BUFFER, this.countSelectedBuffer.id());
+        }
     }
 
     @Override
@@ -352,12 +417,20 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
             this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, levelInstance.culledDrawListsGPU.id());
             this.gl.glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
-            this.gl.glMultiDrawElementsIndirect(
-                    mode.mode(),
-                    this.bakeStorage.indexFormat.type().type(),
-                    (long) pass * levelInstance.capacityTiles * DrawElementsIndirectCommand._SIZE,
-                    levelInstance.capacityTiles,
-                    0);
+
+            val modeEnum = mode.mode();
+            val type = this.bakeStorage.indexFormat.type().type();
+            val indirect = (long) pass * levelInstance.capacityTiles * DrawElementsIndirectCommand._SIZE;
+            val drawCount = levelInstance.capacityTiles;
+            val stride = 0;
+            if (this.useIndirectCount) {
+                //use indirect MultiDraw with indirect counts!
+                //  glMemoryBarrier(GL_COMMAND_BARRIER_BIT) also works as a barrier on GL_PARAMETER_BUFFER, so our memory ordering is safe
+                this.gl.glMultiDrawElementsIndirectCount(modeEnum, type, indirect, (long) level * Integer.BYTES, drawCount, stride);
+            } else {
+                //use ordinary indirect MultiDraw, with unselected tiles skipped by inserting empty commands on the GPU side
+                this.gl.glMultiDrawElementsIndirect(modeEnum, type, indirect, drawCount, stride);
+            }
         }
     }
 
@@ -365,8 +438,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     public void postDraw() {
         super.postDraw();
 
-        if (this.culledStatistics != null) { //if debug statistics are supported, tick the statistics object to fetch the values from the latest frame
-            this.culledStatistics.tick();
+        if (this.debugStatisticsDownloader != null) { //if debug statistics are supported, tick the statistics downloader to fetch the values from the latest frame
+            this.debugStatisticsDownloader.tick();
         }
     }
 
@@ -377,21 +450,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     @Override
     public DebugStats.Renderer stats() {
-        long selectedTiles = -1L;
-        long indexedTiles = -1L;
-
-        if (this.culledStatistics != null) { //if possible, pull selected tile statistics from the GPU
-            val result = this.culledStatistics.get();
-            if (result.getA() != null) {
-                indexedTiles = result.getA();
-                selectedTiles = result.getB()[0];
-            }
-        }
-
-        return DebugStats.Renderer.builder()
-                .selectedTiles(selectedTiles)
-                .indexedTiles(indexedTiles)
-                .build();
+        //return the latest statistics (this is updated by the callback passed to the statistics downloader)
+        return this.debugStats;
     }
 
     /**

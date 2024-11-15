@@ -27,8 +27,12 @@ layout(local_size_x = 256) in;
 #include <"fp2:shaders/util/indirect_draw.glsl"> // DrawElementsIndirectCommand
 #include <"fp2:shaders/util/vanilla_renderability.glsl"> // isVanillaRenderableLevel0()
 
-#ifndef FP2_DEBUG_STATISTICS
-    #error "FP2_DEBUG_STATISTICS must be set!"
+#ifndef FP2_COUNT_SELECTED
+    #error "FP2_COUNT_SELECTED must be set!"
+#endif
+
+#ifndef FP2_INDIRECT_COUNT
+    #error "FP2_INDIRECT_COUNT must be set!"
 #endif
 
 layout(std140) readonly restrict buffer B_TilePositions {
@@ -43,8 +47,8 @@ layout(std430) writeonly restrict buffer B_CulledDrawLists {
     DrawElementsIndirectCommand b_culledDrawLists[];
 };
 
-#if FP2_DEBUG_STATISTICS
-    layout(binding = DEBUG_STATISTICS_COUNTER_BINDING) uniform atomic_uint ac_selectedTiles;
+#if FP2_COUNT_SELECTED
+    layout(binding = COUNT_SELECTED_COUNTER_BINDING) uniform atomic_uint ac_selectedCount;
 #endif
 
 bool select(uint tileIndex) {
@@ -74,14 +78,29 @@ void main() {
 
     bool selected = select(tileIndex);
 
-    for (uint pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-        uint commandIndex = tileIndex + pass * stride;
-        b_culledDrawLists[commandIndex] = selected ? b_rawDrawLists[commandIndex] : DrawElementsIndirectCommand(0, 0, 0, 0, 0);
-    }
-
-    #if FP2_DEBUG_STATISTICS
+    #if FP2_COUNT_SELECTED
+        //if selected tile counting is enabled and this tile was selected, increment the selected tile count
+        uint selectedIndex;
         if (selected) {
-            atomicCounterIncrement(ac_selectedTiles);
+            selectedIndex = atomicCounterIncrement(ac_selectedCount);
+        }
+    #endif
+
+    #if FP2_INDIRECT_COUNT
+        //if we're rendering using MultiDraw with an indirect count and this tile was selected, copy the commands
+        //  to the culled list at selectedIndex. this will result in the commands for selected tiles being tightly
+        // packed at the front of the list, and unselected tiles will be skipped entirely.
+        if (selected) {
+            for (uint pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                b_culledDrawLists[selectedIndex + pass * stride] = b_rawDrawLists[tileIndex + pass * stride];
+            }
+        }
+    #else
+        //if we're rendering using conventional indirect MultiDraw, copy the command list as-is but replace commands
+        //  with an empty command if this tile isn't selected, so that rendering the commands becomes a no-op.
+        for (uint pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+            uint commandIndex = tileIndex + pass * stride;
+            b_culledDrawLists[commandIndex] = selected ? b_rawDrawLists[commandIndex] : DrawElementsIndirectCommand(0, 0, 0, 0, 0);
         }
     #endif
 }
