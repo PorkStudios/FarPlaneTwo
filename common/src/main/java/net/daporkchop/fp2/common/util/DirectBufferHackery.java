@@ -72,8 +72,20 @@ public class DirectBufferHackery {
     private static final Cached<Recycler<FloatBuffer>> FAKE_FLOATBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyFloat), ReferenceStrength.SOFT);
     private static final Cached<Recycler<DoubleBuffer>> FAKE_DOUBLEBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyDouble), ReferenceStrength.SOFT);
 
-    private static long address(Buffer buffer) {
+    /**
+     * Ensures that the given {@link Buffer} is {@link Buffer#isDirect() direct}.
+     *
+     * @param buffer the {@link Buffer} to check
+     * @return the {@link Buffer}
+     * @throws IllegalArgumentException if the given {@link Buffer} isn't direct
+     */
+    public static <B extends Buffer> B checkDirect(B buffer) {
         checkArg(buffer.isDirect(), "buffer isn't direct! %s", buffer);
+        return buffer;
+    }
+
+    private static long address(Buffer buffer) {
+        checkDirect(buffer);
         return (long) BUFFER_ADDRESS_GET.invokeExact(buffer);
     }
 
@@ -86,7 +98,7 @@ public class DirectBufferHackery {
      * @return the {@link Buffer}
      */
     public static <B extends Buffer> B resetEmpty(B buffer) {
-        checkArg(buffer.isDirect(), "buffer isn't direct! %s", buffer);
+        checkDirect(buffer);
 
         BUFFER_ADDRESS_SET.invokeExact(buffer, 0L);
         BUFFER_CAPACITY_SET.invokeExact(buffer, 0);
@@ -105,7 +117,7 @@ public class DirectBufferHackery {
      * @return the {@link Buffer}
      */
     public static <B extends Buffer> B reset(B buffer, long address, @NotNegative int capacity) {
-        checkArg(buffer.isDirect(), "buffer isn't direct! %s", buffer);
+        checkDirect(buffer);
         checkArg(address != 0L, "address may not be null");
         notNegative(capacity, "capacity");
 

@@ -25,6 +25,7 @@ import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
+import net.daporkchop.fp2.gl.util.AnyMemoryRegion;
 import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.fp2.gl.util.debug.DebugLabel;
 import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
@@ -888,27 +889,7 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.5
      */
-    public abstract void glBufferData(int target, @NonNull short[] data, int usage);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glBufferData(int target, @NonNull int[] data, int usage);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glBufferData(int target, @NonNull long[] data, int usage);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glBufferData(int target, @NonNull float[] data, int usage);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glBufferData(int target, @NonNull double[] data, int usage);
+    public abstract void glBufferData(int target, @NonNull AnyMemoryRegion data, int usage);
 
     /**
      * @since OpenGL 1.5
@@ -923,27 +904,7 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.5
      */
-    public abstract void glBufferSubData(int target, long offset, @NonNull short[] data);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glBufferSubData(int target, long offset, @NonNull int[] data);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glBufferSubData(int target, long offset, @NonNull long[] data);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glBufferSubData(int target, long offset, @NonNull float[] data);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glBufferSubData(int target, long offset, @NonNull double[] data);
+    public abstract void glBufferSubData(int target, long offset, @NonNull AnyMemoryRegion data);
 
     /**
      * @since OpenGL 1.5
@@ -958,27 +919,7 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.5
      */
-    public abstract void glGetBufferSubData(int target, long offset, @NonNull short[] data);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glGetBufferSubData(int target, long offset, @NonNull int[] data);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glGetBufferSubData(int target, long offset, @NonNull long[] data);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glGetBufferSubData(int target, long offset, @NonNull float[] data);
-
-    /**
-     * @since OpenGL 1.5
-     */
-    public abstract void glGetBufferSubData(int target, long offset, @NonNull double[] data);
+    public abstract void glGetBufferSubData(int target, long offset, @NonNull AnyMemoryRegion data);
 
     /**
      * @since OpenGL 1.5
@@ -1915,35 +1856,7 @@ public abstract class OpenGL {
      * @since OpenGL 4.4
      */
     @GLRequires(GLExtension.GL_ARB_buffer_storage)
-    public abstract void glBufferStorage(int target, @NonNull short[] data, int flags);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
-     * @since OpenGL 4.4
-     */
-    @GLRequires(GLExtension.GL_ARB_buffer_storage)
-    public abstract void glBufferStorage(int target, @NonNull int[] data, int flags);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
-     * @since OpenGL 4.4
-     */
-    @GLRequires(GLExtension.GL_ARB_buffer_storage)
-    public abstract void glBufferStorage(int target, @NonNull long[] data, int flags);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
-     * @since OpenGL 4.4
-     */
-    @GLRequires(GLExtension.GL_ARB_buffer_storage)
-    public abstract void glBufferStorage(int target, @NonNull float[] data, int flags);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
-     * @since OpenGL 4.4
-     */
-    @GLRequires(GLExtension.GL_ARB_buffer_storage)
-    public abstract void glBufferStorage(int target, @NonNull double[] data, int flags);
+    public abstract void glBufferStorage(int target, @NonNull AnyMemoryRegion data, int flags);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_multi_bind GL_ARB_multi_bind}
@@ -2005,35 +1918,7 @@ public abstract class OpenGL {
      * @since OpenGL 4.5
      */
     @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferData(int buffer, @NonNull short[] data, int usage);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferData(int buffer, @NonNull int[] data, int usage);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferData(int buffer, @NonNull long[] data, int usage);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferData(int buffer, @NonNull float[] data, int usage);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferData(int buffer, @NonNull double[] data, int usage);
+    public abstract void glNamedBufferData(int buffer, @NonNull AnyMemoryRegion data, int usage);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
@@ -2054,35 +1939,7 @@ public abstract class OpenGL {
      * @since OpenGL 4.5
      */
     @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage })
-    public abstract void glNamedBufferStorage(int buffer, @NonNull short[] data, int flags);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
-     * @since OpenGL 4.5
-     */
-    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage })
-    public abstract void glNamedBufferStorage(int buffer, @NonNull int[] data, int flags);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
-     * @since OpenGL 4.5
-     */
-    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage })
-    public abstract void glNamedBufferStorage(int buffer, @NonNull long[] data, int flags);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
-     * @since OpenGL 4.5
-     */
-    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage })
-    public abstract void glNamedBufferStorage(int buffer, @NonNull float[] data, int flags);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
-     * @since OpenGL 4.5
-     */
-    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_buffer_storage })
-    public abstract void glNamedBufferStorage(int buffer, @NonNull double[] data, int flags);
+    public abstract void glNamedBufferStorage(int buffer, @NonNull AnyMemoryRegion data, int flags);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
@@ -2103,35 +1960,7 @@ public abstract class OpenGL {
      * @since OpenGL 4.5
      */
     @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferSubData(int buffer, long offset, @NonNull short[] data);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferSubData(int buffer, long offset, @NonNull int[] data);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferSubData(int buffer, long offset, @NonNull long[] data);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferSubData(int buffer, long offset, @NonNull float[] data);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glNamedBufferSubData(int buffer, long offset, @NonNull double[] data);
+    public abstract void glNamedBufferSubData(int buffer, long offset, @NonNull AnyMemoryRegion data);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
@@ -2152,35 +1981,7 @@ public abstract class OpenGL {
      * @since OpenGL 4.5
      */
     @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull short[] data);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull int[] data);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull long[] data);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull float[] data);
-
-    /**
-     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
-     * @since OpenGL 4.5
-     */
-    @GLRequires(GLExtension.GL_ARB_direct_state_access)
-    public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull double[] data);
+    public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull AnyMemoryRegion data);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}

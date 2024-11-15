@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.util.AnyMemoryRegion;
 import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
 
 import java.nio.ByteBuffer;
@@ -392,27 +393,7 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
-    public void glBufferData(int target, @NonNull short[] data, int usage) {
-        this.delegate.glBufferData(target, data, usage);
-    }
-
-    @Override
-    public void glBufferData(int target, @NonNull int[] data, int usage) {
-        this.delegate.glBufferData(target, data, usage);
-    }
-
-    @Override
-    public void glBufferData(int target, @NonNull long[] data, int usage) {
-        this.delegate.glBufferData(target, data, usage);
-    }
-
-    @Override
-    public void glBufferData(int target, @NonNull float[] data, int usage) {
-        this.delegate.glBufferData(target, data, usage);
-    }
-
-    @Override
-    public void glBufferData(int target, @NonNull double[] data, int usage) {
+    public void glBufferData(int target, @NonNull AnyMemoryRegion data, int usage) {
         this.delegate.glBufferData(target, data, usage);
     }
 
@@ -427,27 +408,7 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
-    public void glBufferSubData(int target, long offset, @NonNull short[] data) {
-        this.delegate.glBufferSubData(target, offset, data);
-    }
-
-    @Override
-    public void glBufferSubData(int target, long offset, @NonNull int[] data) {
-        this.delegate.glBufferSubData(target, offset, data);
-    }
-
-    @Override
-    public void glBufferSubData(int target, long offset, @NonNull long[] data) {
-        this.delegate.glBufferSubData(target, offset, data);
-    }
-
-    @Override
-    public void glBufferSubData(int target, long offset, @NonNull float[] data) {
-        this.delegate.glBufferSubData(target, offset, data);
-    }
-
-    @Override
-    public void glBufferSubData(int target, long offset, @NonNull double[] data) {
+    public void glBufferSubData(int target, long offset, @NonNull AnyMemoryRegion data) {
         this.delegate.glBufferSubData(target, offset, data);
     }
 
@@ -462,27 +423,7 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
-    public void glGetBufferSubData(int target, long offset, @NonNull short[] data) {
-        this.delegate.glGetBufferSubData(target, offset, data);
-    }
-
-    @Override
-    public void glGetBufferSubData(int target, long offset, @NonNull int[] data) {
-        this.delegate.glGetBufferSubData(target, offset, data);
-    }
-
-    @Override
-    public void glGetBufferSubData(int target, long offset, @NonNull long[] data) {
-        this.delegate.glGetBufferSubData(target, offset, data);
-    }
-
-    @Override
-    public void glGetBufferSubData(int target, long offset, @NonNull float[] data) {
-        this.delegate.glGetBufferSubData(target, offset, data);
-    }
-
-    @Override
-    public void glGetBufferSubData(int target, long offset, @NonNull double[] data) {
+    public void glGetBufferSubData(int target, long offset, @NonNull AnyMemoryRegion data) {
         this.delegate.glGetBufferSubData(target, offset, data);
     }
 
@@ -1331,31 +1272,7 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
-    public void glBufferStorage(int target, @NonNull short[] data, int flags) {
-        super.checkSupported(GLExtension.GL_ARB_buffer_storage);
-        this.delegate.glBufferStorage(target, data, flags);
-    }
-
-    @Override
-    public void glBufferStorage(int target, @NonNull int[] data, int flags) {
-        super.checkSupported(GLExtension.GL_ARB_buffer_storage);
-        this.delegate.glBufferStorage(target, data, flags);
-    }
-
-    @Override
-    public void glBufferStorage(int target, @NonNull long[] data, int flags) {
-        super.checkSupported(GLExtension.GL_ARB_buffer_storage);
-        this.delegate.glBufferStorage(target, data, flags);
-    }
-
-    @Override
-    public void glBufferStorage(int target, @NonNull float[] data, int flags) {
-        super.checkSupported(GLExtension.GL_ARB_buffer_storage);
-        this.delegate.glBufferStorage(target, data, flags);
-    }
-
-    @Override
-    public void glBufferStorage(int target, @NonNull double[] data, int flags) {
+    public void glBufferStorage(int target, @NonNull AnyMemoryRegion data, int flags) {
         super.checkSupported(GLExtension.GL_ARB_buffer_storage);
         this.delegate.glBufferStorage(target, data, flags);
     }
@@ -1409,31 +1326,7 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
-    public void glNamedBufferData(int buffer, @NonNull short[] data, int usage) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glNamedBufferData(buffer, data, usage);
-    }
-
-    @Override
-    public void glNamedBufferData(int buffer, @NonNull int[] data, int usage) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glNamedBufferData(buffer, data, usage);
-    }
-
-    @Override
-    public void glNamedBufferData(int buffer, @NonNull long[] data, int usage) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glNamedBufferData(buffer, data, usage);
-    }
-
-    @Override
-    public void glNamedBufferData(int buffer, @NonNull float[] data, int usage) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glNamedBufferData(buffer, data, usage);
-    }
-
-    @Override
-    public void glNamedBufferData(int buffer, @NonNull double[] data, int usage) {
+    public void glNamedBufferData(int buffer, @NonNull AnyMemoryRegion data, int usage) {
         super.checkSupported(GLExtension.GL_ARB_direct_state_access);
         this.delegate.glNamedBufferData(buffer, data, usage);
     }
@@ -1455,31 +1348,7 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
-    public void glNamedBufferStorage(int buffer, @NonNull short[] data, int flags) {
-        super.checkSupported(direct_state_access_AND_buffer_storage);
-        this.delegate.glNamedBufferStorage(buffer, data, flags);
-    }
-
-    @Override
-    public void glNamedBufferStorage(int buffer, @NonNull int[] data, int flags) {
-        super.checkSupported(direct_state_access_AND_buffer_storage);
-        this.delegate.glNamedBufferStorage(buffer, data, flags);
-    }
-
-    @Override
-    public void glNamedBufferStorage(int buffer, @NonNull long[] data, int flags) {
-        super.checkSupported(direct_state_access_AND_buffer_storage);
-        this.delegate.glNamedBufferStorage(buffer, data, flags);
-    }
-
-    @Override
-    public void glNamedBufferStorage(int buffer, @NonNull float[] data, int flags) {
-        super.checkSupported(direct_state_access_AND_buffer_storage);
-        this.delegate.glNamedBufferStorage(buffer, data, flags);
-    }
-
-    @Override
-    public void glNamedBufferStorage(int buffer, @NonNull double[] data, int flags) {
+    public void glNamedBufferStorage(int buffer, @NonNull AnyMemoryRegion data, int flags) {
         super.checkSupported(direct_state_access_AND_buffer_storage);
         this.delegate.glNamedBufferStorage(buffer, data, flags);
     }
@@ -1497,31 +1366,7 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
-    public void glNamedBufferSubData(int buffer, long offset, @NonNull short[] data) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glNamedBufferSubData(buffer, offset, data);
-    }
-
-    @Override
-    public void glNamedBufferSubData(int buffer, long offset, @NonNull int[] data) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glNamedBufferSubData(buffer, offset, data);
-    }
-
-    @Override
-    public void glNamedBufferSubData(int buffer, long offset, @NonNull long[] data) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glNamedBufferSubData(buffer, offset, data);
-    }
-
-    @Override
-    public void glNamedBufferSubData(int buffer, long offset, @NonNull float[] data) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glNamedBufferSubData(buffer, offset, data);
-    }
-
-    @Override
-    public void glNamedBufferSubData(int buffer, long offset, @NonNull double[] data) {
+    public void glNamedBufferSubData(int buffer, long offset, @NonNull AnyMemoryRegion data) {
         super.checkSupported(GLExtension.GL_ARB_direct_state_access);
         this.delegate.glNamedBufferSubData(buffer, offset, data);
     }
@@ -1539,31 +1384,7 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
-    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull short[] data) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glGetNamedBufferSubData(buffer, offset, data);
-    }
-
-    @Override
-    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull int[] data) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glGetNamedBufferSubData(buffer, offset, data);
-    }
-
-    @Override
-    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull long[] data) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glGetNamedBufferSubData(buffer, offset, data);
-    }
-
-    @Override
-    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull float[] data) {
-        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
-        this.delegate.glGetNamedBufferSubData(buffer, offset, data);
-    }
-
-    @Override
-    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull double[] data) {
+    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull AnyMemoryRegion data) {
         super.checkSupported(GLExtension.GL_ARB_direct_state_access);
         this.delegate.glGetNamedBufferSubData(buffer, offset, data);
     }
