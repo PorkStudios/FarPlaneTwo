@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.util;
 import lombok.NonNull;
 import lombok.ToString;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.nio.ByteBuffer;
 
@@ -32,29 +33,36 @@ import java.nio.ByteBuffer;
  */
 @ToString
 public final class AnyMemoryRegion {
-    public final Object memory;
+    public final @NonNull Object memory;
+    public final @NotNegative long size;
 
     public AnyMemoryRegion(@NonNull ByteBuffer buffer) {
         this.memory = DirectBufferHackery.checkDirect(buffer);
+        this.size = buffer.remaining();
     }
 
     public AnyMemoryRegion(short @NonNull [] array) {
         this.memory = array;
+        this.size = (long) array.length * Short.BYTES;
     }
 
     public AnyMemoryRegion(int @NonNull [] array) {
         this.memory = array;
+        this.size = (long) array.length * Integer.BYTES;
     }
 
     public AnyMemoryRegion(long @NonNull [] array) {
         this.memory = array;
+        this.size = (long) array.length * Long.BYTES;
     }
 
     public AnyMemoryRegion(float @NonNull [] array) {
         this.memory = array;
+        this.size = (long) array.length * Float.BYTES;
     }
 
     public AnyMemoryRegion(double @NonNull [] array) {
         this.memory = array;
+        this.size = (long) array.length * Double.BYTES;
     }
 }

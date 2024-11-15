@@ -24,8 +24,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.util.AnyMemoryRegion;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.fp2.gl.util.GLRequires;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
@@ -84,7 +86,7 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param addr  the base address of the data to upload
      * @param size  the size of the data (in bytes)
      */
-    public final void bufferSubData(long start, long addr, long size) {
+    public final void bufferSubData(@NotNegative long start, long addr, @NotNegative long size) {
         this.checkOpen();
         checkRangeLen(this.capacity, start, size);
         if (this.dsa) {
@@ -100,11 +102,29 @@ public abstract class GLBuffer extends GLObject.Normal {
      * Updates the buffer contents in a certain range.
      *
      * @param start the offset of the range inside the buffer (in bytes)
-     * @param data  the {@link ByteBuffer} containing the data to upload
+     * @param data  the data to upload
      */
-    public final void bufferSubData(long start, @NonNull ByteBuffer data) {
+    public final void bufferSubData(@NotNegative long start, @NonNull ByteBuffer data) {
         this.checkOpen();
         checkRangeLen(this.capacity, start, data.remaining());
+        if (this.dsa) {
+            this.gl.glNamedBufferSubData(this.id, start, data);
+        } else {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glBufferSubData(target.id(), start, data);
+            });
+        }
+    }
+
+    /**
+     * Updates the buffer contents in a certain range.
+     *
+     * @param start the offset of the range inside the buffer (in bytes)
+     * @param data  the data to upload
+     */
+    public final void bufferSubData(@NotNegative long start, @NonNull AnyMemoryRegion data) {
+        this.checkOpen();
+        checkRangeLen(this.capacity, start, data.size);
         if (this.dsa) {
             this.gl.glNamedBufferSubData(this.id, start, data);
         } else {
@@ -121,7 +141,7 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param addr  the base address where the data should be stored
      * @param size  the size of the data (in bytes)
      */
-    public final void getBufferSubData(long start, long addr, long size) {
+    public final void getBufferSubData(@NotNegative long start, long addr, @NotNegative long size) {
         this.checkOpen();
         checkRangeLen(this.capacity, start, size);
         if (this.dsa) {
@@ -137,11 +157,29 @@ public abstract class GLBuffer extends GLObject.Normal {
      * Downloads the buffer contents in a certain range.
      *
      * @param start the offset of the range inside the buffer (in bytes)
-     * @param data  the {@link ByteBuffer} where the data should be stored
+     * @param data  where the data should be stored
      */
-    public final void getBufferSubData(long start, @NonNull ByteBuffer data) {
+    public final void getBufferSubData(@NotNegative long start, @NonNull ByteBuffer data) {
         this.checkOpen();
         checkRangeLen(this.capacity, start, data.remaining());
+        if (this.dsa) {
+            this.gl.glGetNamedBufferSubData(this.id, start, data);
+        } else {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glGetBufferSubData(target.id(), start, data);
+            });
+        }
+    }
+
+    /**
+     * Downloads the buffer contents in a certain range.
+     *
+     * @param start the offset of the range inside the buffer (in bytes)
+     * @param data  where the data should be stored
+     */
+    public final void getBufferSubData(@NotNegative long start, @NonNull AnyMemoryRegion data) {
+        this.checkOpen();
+        checkRangeLen(this.capacity, start, data.size);
         if (this.dsa) {
             this.gl.glGetNamedBufferSubData(this.id, start, data);
         } else {
@@ -162,7 +200,7 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @apiNote requires {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
      */
     @GLRequires(GLExtension.GL_ARB_copy_buffer)
-    public final void copyRange(@NonNull GLBuffer src, long srcOffset, long dstOffset, long size) {
+    public final void copyRange(@NonNull GLBuffer src, @NotNegative long srcOffset, @NotNegative long dstOffset, @NotNegative long size) {
         this.checkOpen();
         checkRangeLen(src.capacity(), srcOffset, size);
         checkRangeLen(this.capacity(), dstOffset, size);
@@ -188,7 +226,7 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @apiNote requires {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
      */
     @GLRequires(GLExtension.GL_ARB_copy_buffer)
-    public final void copyRange(long srcOffset, @NonNull GLBuffer dst, long dstOffset, long size) {
+    public final void copyRange(@NotNegative long srcOffset, @NonNull GLBuffer dst, @NotNegative long dstOffset, @NotNegative long size) {
         dst.copyRange(this, srcOffset, dstOffset, size);
     }
 
@@ -242,7 +280,7 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param start the offset of the range inside the buffer (in bytes)
      * @param size  the number of bytes to clear
      */
-    public final void clearBufferSubDataZero(long start, long size) {
+    public final void clearBufferSubDataZero(@NotNegative long start, @NotNegative long size) {
         this.checkOpen();
         checkRangeLen(this.capacity, start, size);
         if (size > 0L) {
@@ -399,7 +437,7 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param access   the ways in which the buffer data may be accessed
      * @param callback the callback function
      */
-    public final void mapRange(BufferAccess access, int flags, long offset, long length, Consumer<ByteBuffer> callback) {
+    public final void mapRange(BufferAccess access, int flags, @NotNegative long offset, @NotNegative long length, Consumer<ByteBuffer> callback) {
         checkRangeLen(this.capacity, offset, length);
         this.checkNotMapped();
         ByteBuffer buffer = this.mapRange(offset, length, access.flags() | flags);
@@ -430,7 +468,7 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param access the ways in which the buffer data may be accessed
      * @return a {@link Mapping}
      */
-    public final Mapping mapRange(BufferAccess access, int flags, long offset, long length) {
+    public final Mapping mapRange(BufferAccess access, int flags, @NotNegative long offset, @NotNegative long length) {
         checkRangeLen(this.capacity, offset, length);
         this.checkNotMapped();
         this.mapped = true;

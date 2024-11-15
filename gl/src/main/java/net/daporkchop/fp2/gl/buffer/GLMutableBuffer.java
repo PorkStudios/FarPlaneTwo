@@ -24,6 +24,7 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.OpenGLException;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.util.AnyMemoryRegion;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -46,22 +47,22 @@ public final class GLMutableBuffer extends GLBuffer {
      * @param gl the OpenGL context
      * @return the created buffer
      */
-    public static GLMutableBuffer create(OpenGL gl) {
+    public static GLMutableBuffer create(@NonNull OpenGL gl) {
         return create(gl, 0L, BufferUsage.STATIC_DRAW);
     }
 
     /**
      * Creates a new buffer with the given initial capacity and uninitialized data.
      *
-     * @param gl              the OpenGL context
-     * @param initialCapacity the buffer's initial capacity
-     * @param usage           the buffer's usage
+     * @param gl       the OpenGL context
+     * @param capacity the buffer's initial capacity
+     * @param usage    the buffer's usage
      * @return the created buffer
      */
-    public static GLMutableBuffer create(OpenGL gl, @NotNegative long initialCapacity, BufferUsage usage) {
+    public static GLMutableBuffer create(@NonNull OpenGL gl, @NotNegative long capacity, @NonNull BufferUsage usage) {
         GLMutableBuffer result = new GLMutableBuffer(gl);
         try {
-            result.capacity(initialCapacity, usage);
+            result.capacity(capacity, usage);
             return result;
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, result);
@@ -71,15 +72,33 @@ public final class GLMutableBuffer extends GLBuffer {
     /**
      * Creates a new buffer with the given initial data.
      *
-     * @param gl          the OpenGL context
-     * @param initialData the buffer's initial data
-     * @param usage       the buffer's usage
+     * @param gl    the OpenGL context
+     * @param data  the buffer's initial data, also used to determine the buffer's initial capacity
+     * @param usage the buffer's usage
      * @return the created buffer
      */
-    public static GLMutableBuffer create(OpenGL gl, ByteBuffer initialData, BufferUsage usage) {
+    public static GLMutableBuffer create(@NonNull OpenGL gl, @NonNull ByteBuffer data, @NonNull BufferUsage usage) {
         GLMutableBuffer result = new GLMutableBuffer(gl);
         try {
-            result.upload(initialData, usage);
+            result.upload(data, usage);
+            return result;
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, result);
+        }
+    }
+
+    /**
+     * Creates a new buffer with the given initial data.
+     *
+     * @param gl    the OpenGL context
+     * @param data  the buffer's initial data, also used to determine the buffer's initial capacity
+     * @param usage the buffer's usage
+     * @return the created buffer
+     */
+    public static GLMutableBuffer create(@NonNull OpenGL gl, @NonNull AnyMemoryRegion data, @NonNull BufferUsage usage) {
+        GLMutableBuffer result = new GLMutableBuffer(gl);
+        try {
+            result.upload(data, usage);
             return result;
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, result);
@@ -98,7 +117,7 @@ public final class GLMutableBuffer extends GLBuffer {
      * @param capacity the new capacity
      * @param usage    the buffer's usage
      */
-    public void capacity(long capacity, BufferUsage usage) {
+    public void capacity(@NotNegative long capacity, @NonNull BufferUsage usage) {
         this.checkOpen();
         notNegative(capacity, "capacity");
 
@@ -126,7 +145,7 @@ public final class GLMutableBuffer extends GLBuffer {
      * @param capacity the new capacity
      * @param usage    the buffer's usage
      */
-    public void resize(long capacity, @NonNull BufferUsage usage) {
+    public void resize(@NotNegative long capacity, @NonNull BufferUsage usage) {
         this.checkOpen();
         long retainedCapacity = min(this.capacity, notNegative(capacity, "capacity"));
 
@@ -259,7 +278,7 @@ public final class GLMutableBuffer extends GLBuffer {
      * @param size  the size of the data (in bytes)
      * @param usage the buffer's usage
      */
-    public void upload(long addr, long size, @NonNull BufferUsage usage) {
+    public void upload(long addr, @NotNegative long size, @NonNull BufferUsage usage) {
         this.checkOpen();
         notNegative(size, "size");
 
@@ -276,7 +295,7 @@ public final class GLMutableBuffer extends GLBuffer {
     /**
      * Sets the buffer contents.
      *
-     * @param data  the {@link ByteBuffer} containing the data to upload
+     * @param data  the the data to upload
      * @param usage the buffer's usage
      */
     public void upload(@NonNull ByteBuffer data, @NonNull BufferUsage usage) {
@@ -289,5 +308,23 @@ public final class GLMutableBuffer extends GLBuffer {
             });
         }
         this.capacity = data.remaining();
+    }
+
+    /**
+     * Sets the buffer contents.
+     *
+     * @param data  the data to upload
+     * @param usage the buffer's usage
+     */
+    public void upload(@NonNull AnyMemoryRegion data, @NonNull BufferUsage usage) {
+        this.checkOpen();
+        if (this.dsa) {
+            this.gl.glNamedBufferData(this.id, data, usage.usage());
+        } else {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glBufferData(target.id(), data, usage.usage());
+            });
+        }
+        this.capacity = data.size;
     }
 }

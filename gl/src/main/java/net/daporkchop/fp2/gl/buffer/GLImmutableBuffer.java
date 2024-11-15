@@ -20,10 +20,13 @@
 package net.daporkchop.fp2.gl.buffer;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.fp2.gl.util.AnyMemoryRegion;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.nio.ByteBuffer;
 
@@ -38,32 +41,81 @@ public final class GLImmutableBuffer extends GLBuffer {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
             .add(GLExtension.GL_ARB_buffer_storage);
 
-    public static GLImmutableBuffer create(OpenGL gl, @NonNull ByteBuffer buffer, int flags) {
-        return create(gl, buffer.remaining(), PUnsafe.pork_directBufferAddress(buffer) + buffer.position(), flags);
-    }
-
-    public static GLImmutableBuffer create(OpenGL gl, long size, int flags) {
-        return create(gl, size, 0L, flags);
-    }
-
-    public static GLImmutableBuffer create(OpenGL gl, long size, long data, int flags) {
+    /**
+     * Creates a new immutable buffer with the given capacity and uninitialized data.
+     * @param gl the OpenGL context
+     * @param capacity the buffer's capacity
+     * @param flags the buffer's storage flags
+     * @return the created buffer
+     */
+    public static GLImmutableBuffer create(@NonNull OpenGL gl, @NotNegative long capacity, int flags) {
         gl.checkSupported(REQUIRED_EXTENSIONS);
-        return new GLImmutableBuffer(gl, size, data, flags);
+        return new GLImmutableBuffer(gl, notNegative(capacity, "capacity"), 0L, flags);
+    }
+
+    /**
+     * Creates a new immutable buffer initialized to the given data.
+     *
+     * @param gl    the OpenGL context
+     * @param data  the buffer's initial data, also used to determine the buffer's capacity
+     * @param flags the buffer's storage flags
+     * @return the created buffer
+     */
+    public static GLImmutableBuffer create(@NonNull OpenGL gl, @NonNull ByteBuffer data, int flags) {
+        gl.checkSupported(REQUIRED_EXTENSIONS);
+        return new GLImmutableBuffer(gl, data.remaining(), DirectBufferHackery.address(data), flags);
+    }
+
+    /**
+     * Creates a new immutable buffer initialized to the given data.
+     *
+     * @param gl    the OpenGL context
+     * @param data  the buffer's initial data, also used to determine the buffer's capacity
+     * @param flags the buffer's storage flags
+     * @return the created buffer
+     */
+    public static GLImmutableBuffer create(@NonNull OpenGL gl, @NonNull AnyMemoryRegion data, int flags) {
+        gl.checkSupported(REQUIRED_EXTENSIONS);
+        return new GLImmutableBuffer(gl, data, flags);
     }
 
     private final int flags;
 
     private GLImmutableBuffer(OpenGL gl, long size, long data, int flags) {
         super(gl);
-        this.capacity = size;
-        this.flags = flags;
 
-        if (this.dsa) {
-            gl.glNamedBufferStorage(this.id, size, data, flags);
-        } else {
-            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-                this.gl.glBufferStorage(target.id(), size, data, flags);
-            });
+        try {
+            this.capacity = size;
+            this.flags = flags;
+
+            if (this.dsa) {
+                gl.glNamedBufferStorage(this.id, size, data, flags);
+            } else {
+                this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                    gl.glBufferStorage(target.id(), size, data, flags);
+                });
+            }
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
+    }
+
+    private GLImmutableBuffer(OpenGL gl, AnyMemoryRegion data, int flags) {
+        super(gl);
+
+        try {
+            this.capacity = data.size;
+            this.flags = flags;
+
+            if (this.dsa) {
+                gl.glNamedBufferStorage(this.id, data, flags);
+            } else {
+                this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                    gl.glBufferStorage(target.id(), data, flags);
+                });
+            }
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
         }
     }
 
