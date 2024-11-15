@@ -592,27 +592,42 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glPushClientAttrib(int mask) {
-        //TODO: check if supported
-        GL11.glPushClientAttrib(mask);
-        super.debugCheckError();
+        if (this.GL_ARB_compatibility) {
+            GL11.glPushClientAttrib(mask);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_compatibility));
+        }
     }
 
     @Override
     public void glPopClientAttrib() {
-        GL11.glPopClientAttrib();
-        super.debugCheckError();
+        if (this.GL_ARB_compatibility) {
+            GL11.glPopClientAttrib();
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_compatibility));
+        }
     }
 
     @Override
     public void glPushAttrib(int mask) {
-        GL11.glPushAttrib(mask);
-        super.debugCheckError();
+        if (this.GL_ARB_compatibility) {
+            GL11.glPushAttrib(mask);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_compatibility));
+        }
     }
 
     @Override
     public void glPopAttrib() {
-        GL11.glPopAttrib();
-        super.debugCheckError();
+        if (this.GL_ARB_compatibility) {
+            GL11.glPopAttrib();
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_compatibility));
+        }
     }
 
     //

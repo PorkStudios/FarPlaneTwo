@@ -152,6 +152,8 @@ public abstract class OpenGL {
     //
     //
 
+    protected final boolean GL_ARB_compatibility;
+
     // OpenGL 3.1
     protected final boolean OpenGL31;
     protected final boolean GL_ARB_copy_buffer;
@@ -293,6 +295,8 @@ public abstract class OpenGL {
         this.limits = legacy ? limits : new Limits(this);
 
         validateContext(version, profile, forwardCompatibility, nonCoreExtensions, allExtensions);
+
+        this.GL_ARB_compatibility = allExtensions.contains(GLExtension.GL_ARB_compatibility);
 
         // OpenGL 3.1
         this.OpenGL31 = version.compareTo(GLVersion.OpenGL31) >= 0;
