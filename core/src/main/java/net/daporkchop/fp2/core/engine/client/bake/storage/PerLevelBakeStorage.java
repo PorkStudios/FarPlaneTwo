@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.core.engine.client.bake.storage;
 
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
@@ -36,7 +35,6 @@ import net.daporkchop.lib.primitive.lambda.IntBoolObjFunction;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -108,7 +106,7 @@ public final class PerLevelBakeStorage<VertexType extends AttributeStruct> exten
     }
 
     @Override
-    public DebugStats.Renderer stats() {
-        return Arrays.stream(this.storages).map(BakeStorage::stats).reduce(DebugStats.Renderer::add).get();
+    public Stats stats() {
+        return Arrays.stream(this.storages).map(BakeStorage::stats).reduce(Stats::add).get();
     }
 }

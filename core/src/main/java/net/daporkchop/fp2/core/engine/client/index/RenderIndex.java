@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.engine.client.index;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -154,7 +155,38 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
      */
     public abstract PosTechnique posTechnique();
 
-    public abstract DebugStats.Renderer stats();
+    /**
+     * @return debug statistics describing this render index and its current state
+     */
+    public abstract Stats stats();
+
+    /**
+     * Debug statistics for the render index.
+     *
+     * @author DaPorkchop_
+     */
+    @Data
+    public static final class Stats {
+        /**
+         * The number of tiles which were selected during the previous frame. Negative if unknown/unsupported.
+         */
+        private final int selectedTiles;
+
+        /**
+         * The number of tiles which were considered for selection during the previous frame. Negative if unknown/unsupported.
+         */
+        private final int indexedTiles;
+
+        /**
+         * The number of tile positions which are explicitly marked as hidden and are excluded from selection.
+         */
+        private final @NotNegative int hiddenTiles;
+
+        /**
+         * The render index implementation's name.
+         */
+        private final @NonNull String implName;
+    }
 
     /**
      * A technique describing how shaders should access the tile position for a tile.

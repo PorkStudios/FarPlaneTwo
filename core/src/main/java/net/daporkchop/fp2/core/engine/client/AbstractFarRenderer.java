@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.core.engine.client;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -503,8 +504,19 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glDisable(GL_BLEND);
     }
 
-    public DebugStats.Renderer stats() {
-        return this.bakeStorage.stats().add(this.renderIndex.stats());
+    public final Stats stats() {
+        return new Stats(this.bakeStorage.stats(), this.renderIndex.stats());
+    }
+
+    /**
+     * Debug statistics for the renderer.
+     *
+     * @author DaPorkchop_
+     */
+    @Data
+    public static final class Stats {
+        private final @NonNull BakeStorage.Stats bakeStorage;
+        private final @NonNull RenderIndex.Stats renderIndex;
     }
 
     /**

@@ -27,6 +27,7 @@ import lombok.ToString;
 import lombok.val;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.common.util.NIOBufferUtil;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.FP2Client;
@@ -39,7 +40,6 @@ import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
@@ -72,7 +72,6 @@ import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -216,7 +215,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private final boolean useIndirectCount;
     private final AsynchronousSmallBufferDownloader debugStatisticsDownloader;
 
-    private DebugStats.Renderer debugStats = DebugStats.Renderer.builder().selectedTiles(-1L).indexedTiles(-1L).build();
+    private Stats debugStats;
 
     public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer,
                                             UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
@@ -243,6 +242,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             }
 
             this.cullingShader = globalRenderer.shaderRegistry.get(new CullingShaderVariant(this.countSelectedBuffer != null, this.useIndirectCount));
+            this.debugStats = new Stats(-1, -1, 0, this.useIndirectCount ? "GPU culled, glMultiDrawElementsIndirectCount" : "GPU culled, glMultiDrawElementsIndirect");
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -372,20 +372,15 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             assert this.countSelectedBuffer != null;
 
             int indexedTiles = this.renderPosTable.size();
+            int hiddenTiles = this.hiddenPositions.size();
             this.debugStatisticsDownloader.downloadRange(this.countSelectedBuffer, 0L, (int) this.countSelectedBuffer.capacity(), data -> {
                 //add up the number of selected tiles at each detail level
-                int[] selectedTilesPerLevel = PUnsafe.allocateUninitializedIntArray(EngineConstants.MAX_LODS);
-                data.asIntBuffer().get(selectedTilesPerLevel);
-
                 int selectedTiles = 0;
-                for (int i : selectedTilesPerLevel) {
+                for (int i : NIOBufferUtil.toArray(data.asIntBuffer())) {
                     selectedTiles += i;
                 }
 
-                this.debugStats = DebugStats.Renderer.builder()
-                        .selectedTiles(selectedTiles)
-                        .indexedTiles(indexedTiles)
-                        .build();
+                this.debugStats = new Stats(selectedTiles, indexedTiles, hiddenTiles, this.debugStats.implName());
             });
         }
     }
@@ -449,7 +444,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
-    public DebugStats.Renderer stats() {
+    public Stats stats() {
         //return the latest statistics (this is updated by the callback passed to the statistics downloader)
         return this.debugStats;
     }

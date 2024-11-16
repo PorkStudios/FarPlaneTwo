@@ -26,7 +26,6 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
@@ -80,7 +79,7 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     private final Map<TilePos, DrawElementsIndirectCommand[]> drawCommands = DirectTilePosAccess.newPositionKeyedHashMap();
-    private int selectedTilesCount = 0;
+    private int selectedTilesCount = -1;
 
     private final LevelPassArray<DirectDrawElementsIndirectCommandList> commandLists;
     private final GLMutableBuffer commandListBuffer;
@@ -210,10 +209,11 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
-    public DebugStats.Renderer stats() {
-        return DebugStats.Renderer.builder()
-                .selectedTiles(this.selectedTilesCount)
-                .indexedTiles(this.drawCommands.size())
-                .build();
+    public Stats stats() {
+        return new Stats(
+                this.selectedTilesCount,
+                this.drawCommands.size(),
+                this.hiddenPositions.size(),
+                "CPU culled, MultiDrawIndirect");
     }
 }

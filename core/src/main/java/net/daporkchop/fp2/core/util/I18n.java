@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util;
@@ -79,12 +78,16 @@ public interface I18n {
     }
 
     /**
-     * @return a {@link NumberFormat} for percentages which can be used in the current locale
+     * Formats a value as a human-readable percentage of another value in the current locale.
+     *
+     * @param amount the value to format
+     * @param total  the total value
+     * @return the formatted percentage
      */
-    default NumberFormat percentFormat() {
-        NumberFormat numberFormat = NumberFormat.getPercentInstance(this.javaLocale());
-        numberFormat.setMaximumFractionDigits(2);
-        return numberFormat;
+    default String formatPercentOf(long amount, long total) {
+        return total == 0L
+                ? "?%"
+                : ((int) (amount * 100L / total)) + "%";
     }
 
     /**

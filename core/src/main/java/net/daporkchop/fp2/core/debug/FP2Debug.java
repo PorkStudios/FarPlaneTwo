@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.debug;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import lombok.val;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.key.KeyModifier;
@@ -130,7 +131,6 @@ public class FP2Debug {
             I18n i18n = fp2.i18n();
 
             NumberFormat numberFormat = i18n.numberFormat();
-            NumberFormat percentFormat = i18n.percentFormat();
 
             List<String> list = new ArrayList<>();
 
@@ -143,33 +143,50 @@ public class FP2Debug {
                     FarTileCache tileCache = context.tileCache();
                     if (tileCache != null) {
                         DebugStats.TileCache stats = tileCache.stats();
-                        list.add("TileCache: " + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())
-                                 + ' ' + percentFormat.format((stats.allocatedSpace() | stats.totalSpace()) != 0L ? stats.allocatedSpace() / (double) stats.totalSpace() : 1.0d)
+                        list.add("TileCache: "
+                                 + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())
+                                 + ' ' + i18n.formatPercentOf(stats.allocatedSpace(), stats.totalSpace())
                                  + ' ' + i18n.formatByteCount(stats.allocatedSpace()) + '/' + i18n.formatByteCount(stats.totalSpace())
-                                 + " (" + percentFormat.format((stats.allocatedSpace() | stats.uncompressedSize()) != 0L ? stats.allocatedSpace() / (double) stats.uncompressedSize() : 1.0d) + " -> " + i18n.formatByteCount(stats.uncompressedSize()) + ')');
+                                 + " (" + i18n.formatPercentOf(stats.allocatedSpace(), stats.uncompressedSize()) + " -> " + i18n.formatByteCount(stats.uncompressedSize()) + ')');
                     } else {
                         list.add("§oNo TileCache active");
                     }
 
                     AbstractFarRenderer renderer = context.renderer();
                     if (renderer != null) {
-                        DebugStats.Renderer stats = renderer.stats();
-                        list.add("Baked Tiles: " + numberFormat.format(stats.bakedTiles()) + "T " + numberFormat.format(stats.bakedTilesWithData()) + "D "
-                                 + numberFormat.format(stats.bakedTiles() - stats.bakedTilesWithData()) + 'E');
-                        if (stats.selectedTiles() >= 0L) {
-                            list.add("Culled: " + numberFormat.format(stats.indexedTiles() - stats.selectedTiles()) + '/' + numberFormat.format(stats.indexedTiles())
-                                     + " (" + percentFormat.format((stats.indexedTiles() - stats.selectedTiles()) / (double) stats.indexedTiles()) + ')');
+                        val rendererStats = renderer.stats();
+                        val bakeStorageStats = rendererStats.bakeStorage();
+                        val renderIndexStats = rendererStats.renderIndex();
+
+                        /*list.add("Baked Tiles: "
+                                 + numberFormat.format(stats.bakedTiles()) + "T "
+                                 + numberFormat.format(stats.bakedTilesWithData()) + "D "
+                                 + numberFormat.format(stats.bakedTiles() - stats.bakedTilesWithData()) + 'E');*/
+
+                        list.add("Render index: " + renderIndexStats.implName());
+                        if (renderIndexStats.selectedTiles() >= 0 && renderIndexStats.indexedTiles() >= 0) {
+                            val culledTiles = renderIndexStats.indexedTiles() - renderIndexStats.selectedTiles();
+                            list.add("Culled: "
+                                     + i18n.formatPercentOf(culledTiles, renderIndexStats.indexedTiles())
+                                     + ' ' + numberFormat.format(culledTiles) + '/' + numberFormat.format(renderIndexStats.indexedTiles()));
                         }
-                        list.add("All VRAM: " + percentFormat.format(stats.allocatedVRAM() / (double) stats.totalVRAM())
-                                 + ' ' + i18n.formatByteCount(stats.allocatedVRAM()) + '/' + i18n.formatByteCount(stats.totalVRAM()));
-                        list.add("Indices: " + percentFormat.format(stats.allocatedIndices() / (double) stats.totalIndices())
-                                 + ' ' + numberFormat.format(stats.allocatedIndices()) + '/' + numberFormat.format(stats.totalIndices())
-                                 + '@' + i18n.formatByteCount(stats.indexSize())
-                                 + " (" + i18n.formatByteCount(stats.allocatedIndices() * stats.indexSize()) + '/' + i18n.formatByteCount(stats.totalIndices() * stats.indexSize()) + ')');
-                        list.add("Vertices: " + percentFormat.format(stats.allocatedVertices() / (double) stats.totalVertices())
-                                 + ' ' + numberFormat.format(stats.allocatedVertices()) + '/' + numberFormat.format(stats.totalVertices())
-                                 + '@' + i18n.formatByteCount(stats.vertexSize())
-                                 + " (" + i18n.formatByteCount(stats.allocatedVertices() * stats.vertexSize()) + '/' + i18n.formatByteCount(stats.totalVertices() * stats.vertexSize()) + ')');
+
+                        long allocatedVRAM = (long) bakeStorageStats.allocatedIndices() * bakeStorageStats.indexSize() + (long) bakeStorageStats.allocatedVertices() * bakeStorageStats.vertexSize();
+                        long totalVRAM = (long) bakeStorageStats.totalIndices() * bakeStorageStats.indexSize() + (long) bakeStorageStats.totalVertices() * bakeStorageStats.vertexSize();
+
+                        list.add("All VRAM: "
+                                 + i18n.formatPercentOf(allocatedVRAM, totalVRAM)
+                                 + " (" + i18n.formatByteCount(allocatedVRAM) + '/' + i18n.formatByteCount(totalVRAM) + ')');
+                        list.add("Indices: "
+                                 + i18n.formatPercentOf(bakeStorageStats.allocatedIndices(), bakeStorageStats.totalIndices())
+                                 + ' ' + numberFormat.format(bakeStorageStats.allocatedIndices()) + '/' + numberFormat.format(bakeStorageStats.totalIndices())
+                                 + '@' + i18n.formatByteCount(bakeStorageStats.indexSize())
+                                 + " (" + i18n.formatByteCount(bakeStorageStats.allocatedIndices() * bakeStorageStats.indexSize()) + '/' + i18n.formatByteCount(bakeStorageStats.totalIndices() * bakeStorageStats.indexSize()) + ')');
+                        list.add("Vertices: "
+                                 + i18n.formatPercentOf(bakeStorageStats.allocatedVertices(), bakeStorageStats.totalVertices())
+                                 + ' ' + numberFormat.format(bakeStorageStats.allocatedVertices()) + '/' + numberFormat.format(bakeStorageStats.totalVertices())
+                                 + '@' + i18n.formatByteCount(bakeStorageStats.vertexSize())
+                                 + " (" + i18n.formatByteCount(bakeStorageStats.allocatedVertices() * bakeStorageStats.vertexSize()) + '/' + i18n.formatByteCount(bakeStorageStats.totalVertices() * bakeStorageStats.vertexSize()) + ')');
                     } else {
                         list.add("§oNo renderer active");
                     }
@@ -184,7 +201,8 @@ public class FP2Debug {
 
                 DebugStats.Tracking trackingStats = player.debugServerStats();
                 if (trackingStats != null) {
-                    list.add("Tracker: " + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
+                    list.add("Tracker: "
+                             + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
                              + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
                              + numberFormat.format(trackingStats.tilesLoading()) + "P " + numberFormat.format(trackingStats.tilesQueued()) + 'Q');
                     list.add("Updates: " + i18n.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + i18n.formatDuration(trackingStats.lastUpdateDuration()) + " last");

@@ -26,7 +26,6 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
@@ -176,10 +175,11 @@ public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> ext
     }
 
     @Override
-    public DebugStats.Renderer stats() {
-        return DebugStats.Renderer.builder()
-                .selectedTiles(Stream.of(this.selectedLocations).mapToInt(Map::size).sum())
-                .indexedTiles(this.allLocations.size())
-                .build();
+    public Stats stats() {
+        return new Stats(
+                Stream.of(this.selectedLocations).mapToInt(Map::size).sum(),
+                this.allLocations.size(),
+                this.hiddenPositions.size(),
+                this.bakeStorage.absoluteIndices ? "CPU culled, glDrawElements" : "CPU culled, glDrawElementsBaseVertex");
     }
 }

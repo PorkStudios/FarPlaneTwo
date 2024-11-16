@@ -19,7 +19,9 @@
 
 package net.daporkchop.fp2.core.engine.client.bake.storage;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
@@ -32,6 +34,9 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
+import net.daporkchop.lib.common.util.PValidation;
 
 import java.util.Map;
 
@@ -110,7 +115,36 @@ public abstract class BakeStorage<VertexType extends AttributeStruct> implements
     /**
      * @return debug statistics about this storage's current state
      */
-    public abstract DebugStats.Renderer stats();
+    public abstract Stats stats();
+
+    /**
+     * Debug statistics for the bake storage.
+     *
+     * @author DaPorkchop_
+     */
+    @Data
+    public static final class Stats {
+        private final @NotNegative long allocatedIndices;
+        private final @NotNegative long totalIndices;
+        private final @Positive long indexSize;
+
+        private final @NotNegative long allocatedVertices;
+        private final @NotNegative long totalVertices;
+        private final @Positive long vertexSize;
+
+        public Stats add(@NonNull Stats other) {
+            PValidation.checkArg(this.indexSize == other.indexSize && this.vertexSize == other.vertexSize,
+                    "indexSize (%s, %s) and vertexSize (%s, %s) must match!", this.indexSize, other.indexSize, this.vertexSize, other.vertexSize);
+
+            return new Stats(
+                    this.allocatedIndices + other.allocatedIndices,
+                    this.totalIndices + other.totalIndices,
+                    this.indexSize,
+                    this.allocatedVertices + other.allocatedVertices,
+                    this.totalVertices + other.totalVertices,
+                    this.vertexSize);
+        }
+    }
 
     /**
      * The location of the tile data for a given render pass within this storage.

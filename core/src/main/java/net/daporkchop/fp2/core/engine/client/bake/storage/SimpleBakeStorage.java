@@ -22,7 +22,6 @@ package net.daporkchop.fp2.core.engine.client.bake.storage;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.SequentialVariableSizedAllocator;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
@@ -156,23 +155,20 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
     }
 
     @Override
-    public DebugStats.Renderer stats() {
+    public Stats stats() {
         Allocator.Stats vertexStats = this.vertexAlloc.stats();
         Allocator.Stats indexStats = this.indexAlloc.stats();
 
         long vertexSize = this.vertexBuffer.format().size();
         long indexSize = this.indexFormat.size();
 
-        return DebugStats.Renderer.builder()
-                .allocatedVRAM(vertexStats.allocatedSpace() * vertexSize + indexStats.allocatedSpace())
-                .totalVRAM(vertexStats.totalSpace() * vertexSize + indexStats.totalSpace())
-                .allocatedIndices(indexStats.allocatedSpace() / indexSize)
-                .totalIndices(indexStats.totalSpace() / indexSize)
-                .indexSize(indexSize)
-                .allocatedVertices(vertexStats.allocatedSpace())
-                .totalVertices(vertexStats.totalSpace())
-                .vertexSize(vertexSize)
-                .build();
+        return new Stats(
+                indexStats.allocatedSpace() / indexSize,
+                indexStats.totalSpace() / indexSize,
+                indexSize,
+                vertexStats.allocatedSpace(),
+                vertexStats.totalSpace(),
+                vertexSize);
     }
 
     /**
