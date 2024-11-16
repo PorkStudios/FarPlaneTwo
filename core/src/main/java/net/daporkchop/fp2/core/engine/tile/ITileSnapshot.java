@@ -20,13 +20,10 @@
 package net.daporkchop.fp2.core.engine.tile;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
-import net.daporkchop.lib.common.misc.refcount.RefCounted;
-import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 
 /**
  * A snapshot of the data stored at a given tile position.
@@ -67,5 +64,8 @@ public interface ITileSnapshot extends ITileMetadata {
      */
     long dataSize();
 
-    DebugStats.TileSnapshot stats();
+    /**
+     * @return the uncompressed size of the data stored in this snapshot
+     */
+    long uncompressedDataSize();
 }

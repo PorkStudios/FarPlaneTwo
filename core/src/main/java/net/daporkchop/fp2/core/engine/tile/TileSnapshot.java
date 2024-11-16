@@ -21,7 +21,6 @@ package net.daporkchop.fp2.core.engine.tile;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
@@ -142,16 +141,7 @@ public final class TileSnapshot extends AbstractTileSnapshot {
     }
 
     @Override
-    public DebugStats.TileSnapshot stats() {
-        if (this.data == null) { //this tile is empty!
-            return DebugStats.TileSnapshot.ZERO;
-        } else {
-            int length = this.data.length;
-            return DebugStats.TileSnapshot.builder()
-                    .allocatedSpace(length)
-                    .totalSpace(length)
-                    .uncompressedSize(length)
-                    .build();
-        }
+    public long uncompressedDataSize() {
+        return this.dataSize();
     }
 }

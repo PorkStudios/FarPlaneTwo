@@ -142,12 +142,11 @@ public class FP2Debug {
                 if (context != null) {
                     FarTileCache tileCache = context.tileCache();
                     if (tileCache != null) {
-                        DebugStats.TileCache stats = tileCache.stats();
+                        val stats = tileCache.stats();
                         list.add("TileCache: "
                                  + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())
-                                 + ' ' + i18n.formatPercentOf(stats.allocatedSpace(), stats.totalSpace())
-                                 + ' ' + i18n.formatByteCount(stats.allocatedSpace()) + '/' + i18n.formatByteCount(stats.totalSpace())
-                                 + " (" + i18n.formatPercentOf(stats.allocatedSpace(), stats.uncompressedSize()) + " -> " + i18n.formatByteCount(stats.uncompressedSize()) + ')');
+                                 + ' ' + i18n.formatByteCount(stats.totalSize())
+                                 + " (" + i18n.formatPercentOf(stats.totalSize(), stats.uncompressedSize()) + " -> " + i18n.formatByteCount(stats.uncompressedSize()) + ')');
                     } else {
                         list.add("§oNo TileCache active");
                     }

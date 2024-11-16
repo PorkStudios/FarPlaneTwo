@@ -24,8 +24,6 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.common.util.DirectBufferHackery;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
@@ -36,7 +34,6 @@ import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
-import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.io.IOException;
@@ -130,18 +127,9 @@ public final class CompressedTileSnapshot extends AbstractTileSnapshot {
     }
 
     @Override
-    public DebugStats.TileSnapshot stats() {
-        if (this.data == null) { //this tile is empty!
-            return DebugStats.TileSnapshot.ZERO;
-        } else {
-            int compressedLength = this.data.length;
-            int uncompressedLength = Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(this.data));
-
-            return DebugStats.TileSnapshot.builder()
-                    .allocatedSpace(compressedLength)
-                    .totalSpace(compressedLength)
-                    .uncompressedSize(uncompressedLength)
-                    .build();
-        }
+    public long uncompressedDataSize() {
+        return this.data == null
+                ? 0L //this tile is empty!
+                : Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(this.data));
     }
 }

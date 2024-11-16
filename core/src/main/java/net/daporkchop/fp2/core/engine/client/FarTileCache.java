@@ -19,12 +19,13 @@
 
 package net.daporkchop.fp2.core.engine.client;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.tile.CompressedTileSnapshot;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.listener.ListenerList;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
 import java.util.ArrayList;
@@ -33,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 
 /**
@@ -48,8 +48,7 @@ public final class FarTileCache extends AbstractReleasable {
     private final Map<TilePos, ITileSnapshot> tiles = new ConcurrentHashMap<>();
     private final ListenerList<Listener> listeners = ListenerList.create(Listener.class);
 
-    private final AtomicReference<DebugStats.TileSnapshot> debug_tileStats = new AtomicReference<>(DebugStats.TileSnapshot.ZERO);
-    private final LongAdder debug_nonEmptyTileCount = new LongAdder();
+    private final AtomicReference<Stats> debugStats = new AtomicReference<>(new Stats(0, 0, 0L, 0L));
 
     /**
      * Adds the given tile into the cache.
@@ -149,25 +148,74 @@ public final class FarTileCache extends AbstractReleasable {
     }
 
     private void debug_updateStats(ITileSnapshot prev, ITileSnapshot next) {
-        DebugStats.TileSnapshot prevStats = prev != null ? prev.stats() : DebugStats.TileSnapshot.ZERO;
-        DebugStats.TileSnapshot nextStats = next != null ? next.stats() : DebugStats.TileSnapshot.ZERO;
+        int d_tileCount = 0;
+        int d_tileCountWithData = 0;
+        long d_totalSize = 0L;
+        long d_uncompressedSize = 0L;
 
-        this.debug_tileStats.updateAndGet(currStats -> currStats.sub(prevStats).add(nextStats));
-        this.debug_nonEmptyTileCount.add(prev != null
-                ? next != null ? 0L : -1L
-                : next != null ? 1L : 0L);
+        if (prev != null) {
+            d_tileCount--;
+            if (!prev.isEmpty()) {
+                d_tileCountWithData--;
+            }
+            d_totalSize -= prev.dataSize();
+            d_uncompressedSize -= prev.uncompressedDataSize();
+        }
+        if (next != null) {
+            d_tileCount++;
+            if (!next.isEmpty()) {
+                d_tileCountWithData++;
+            }
+            d_totalSize += next.dataSize();
+            d_uncompressedSize += next.uncompressedDataSize();
+        }
+
+        //damn you java
+        int d_tileCount_final = d_tileCount;
+        int d_tileCountWithData_final = d_tileCountWithData;
+        long d_totalSize_final = d_totalSize;
+        long d_uncompressedSize_final = d_uncompressedSize;
+
+        this.debugStats.updateAndGet(currStats -> new Stats(
+                currStats.tileCount() + d_tileCount_final,
+                currStats.tileCountWithData() + d_tileCountWithData_final,
+                currStats.totalSize() + d_totalSize_final,
+                currStats.uncompressedSize() + d_uncompressedSize_final));
     }
 
-    public DebugStats.TileCache stats() {
-        DebugStats.TileSnapshot snapshotStats = this.debug_tileStats.get();
+    /**
+     * @return debug statistics describing this tile cache and its current state
+     */
+    public Stats stats() {
+        return this.debugStats.get();
+    }
 
-        return DebugStats.TileCache.builder()
-                .tileCount(this.tiles.size())
-                .tileCountWithData(this.debug_nonEmptyTileCount.sum())
-                .allocatedSpace(snapshotStats.allocatedSpace())
-                .totalSpace(snapshotStats.allocatedSpace())
-                .uncompressedSize(snapshotStats.uncompressedSize())
-                .build();
+    /**
+     * Debug statistics for the tile cache.
+     *
+     * @author DaPorkchop_
+     */
+    @Data
+    public static final class Stats {
+        /**
+         * The number of tiles which are stored in the cache.
+         */
+        private final @NotNegative int tileCount;
+
+        /**
+         * The number of tiles which are stored in the cache and whose data is non-empty.
+         */
+        private final @NotNegative int tileCountWithData;
+
+        /**
+         * The total amount of memory allocated for all tile data in this cache.
+         */
+        private final @NotNegative long totalSize;
+
+        /**
+         * The total uncompressed size of all tile data in this cache.
+         */
+        private final @NotNegative long uncompressedSize;
     }
 
     @Override

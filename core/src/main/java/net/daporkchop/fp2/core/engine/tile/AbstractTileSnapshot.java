@@ -52,12 +52,12 @@ public abstract class AbstractTileSnapshot implements ITileSnapshot {
     protected byte[] data;
 
     @Override
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
         return this.data == null;
     }
 
     @Override
-    public long dataSize() {
+    public final long dataSize() {
         return this.data != null ? this.data.length : 0;
     }
 }

@@ -21,13 +21,8 @@ package net.daporkchop.fp2.core.debug.util;
 
 import lombok.Builder;
 import lombok.Data;
-import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.common.util.stats.AbstractLongStatistics;
-import net.daporkchop.fp2.common.util.stats.Statistics;
-
-import static java.lang.Math.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Container class for various structs containing statistics useful while debugging.
@@ -36,20 +31,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class DebugStats {
-    /**
-     * @author DaPorkchop_
-     */
-    @Builder
-    @Data
-    public static final class TileSnapshot extends AbstractLongStatistics<TileSnapshot> {
-        public static final TileSnapshot ZERO = builder().build();
-
-        protected final long allocatedSpace;
-        protected final long totalSpace;
-
-        protected final long uncompressedSize;
-    }
-
     /**
      * @author DaPorkchop_
      */
@@ -69,22 +50,5 @@ public class DebugStats {
         public long tilesTotal() {
             return this.tilesLoaded + this.tilesLoading + this.tilesQueued;
         }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @Builder
-    @Data
-    public static final class TileCache extends AbstractLongStatistics<TileCache> {
-        public static final TileCache ZERO = builder().build();
-
-        protected final long tileCount;
-        protected final long tileCountWithData;
-
-        protected final long allocatedSpace;
-        protected final long totalSpace;
-
-        protected final long uncompressedSize;
     }
 }
