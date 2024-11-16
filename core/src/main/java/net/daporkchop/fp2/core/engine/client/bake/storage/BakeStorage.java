@@ -24,7 +24,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
 import net.daporkchop.fp2.gl.OpenGL;

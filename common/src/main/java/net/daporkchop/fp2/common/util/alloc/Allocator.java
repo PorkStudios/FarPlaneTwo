@@ -21,13 +21,10 @@ package net.daporkchop.fp2.common.util.alloc;
 
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.common.util.stats.AbstractLongStatistics;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.math.PMath;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.function.LongConsumer;
 
@@ -181,14 +178,11 @@ public abstract class Allocator {
      */
     @Builder
     @Data
-    @EqualsAndHashCode(callSuper = false)
-    public static final class Stats extends AbstractLongStatistics<Stats> {
-        public static final Stats ZERO = builder().build();
+    public static final class Stats {
+        private final @NotNegative long heapRegions;
+        private final @NotNegative long allocations;
 
-        private final long heapRegions;
-        private final long allocations;
-
-        private final long allocatedSpace;
-        private final long totalSpace;
+        private final @NotNegative long allocatedSpace;
+        private final @NotNegative long totalSpace;
     }
 }

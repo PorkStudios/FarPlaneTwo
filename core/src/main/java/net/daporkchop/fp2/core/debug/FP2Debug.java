@@ -28,7 +28,6 @@ import net.daporkchop.fp2.core.client.key.KeyModifier;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
@@ -198,13 +197,13 @@ public class FP2Debug {
                 list.add("");
                 list.add("§lFarPlaneTwo (Server):");
 
-                DebugStats.Tracking trackingStats = player.debugServerStats();
-                if (trackingStats != null) {
+                val trackerStats = player.debugTrackerStats();
+                if (trackerStats != null) {
                     list.add("Tracker: "
-                             + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
-                             + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
-                             + numberFormat.format(trackingStats.tilesLoading()) + "P " + numberFormat.format(trackingStats.tilesQueued()) + 'Q');
-                    list.add("Updates: " + i18n.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + i18n.formatDuration(trackingStats.lastUpdateDuration()) + " last");
+                             + numberFormat.format(trackerStats.tilesTrackedGlobal()) + "G "
+                             + numberFormat.format(trackerStats.tilesTotal()) + "T " + numberFormat.format(trackerStats.tilesLoaded()) + "L "
+                             + numberFormat.format(trackerStats.tilesLoading()) + "P " + numberFormat.format(trackerStats.tilesQueued()) + 'Q');
+                    list.add("Updates: " + i18n.formatDuration(trackerStats.avgUpdateDuration()) + " avg, " + i18n.formatDuration(trackerStats.lastUpdateDuration()) + " last");
                 } else {
                     list.add("§oTracking data not available");
                 }

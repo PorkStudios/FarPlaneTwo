@@ -26,9 +26,9 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.ctx.ClientContext;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
@@ -62,7 +62,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected boolean sessionOpen;
     protected boolean closed;
 
-    protected DebugStats.Tracking debugServerStats;
+    protected Tracker.Stats debugTrackerStats;
 
     @CalledFromAnyThread
     @Override
@@ -182,13 +182,13 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
 
     @CalledWithMonitor
     protected void handleDebug(@NonNull SPacketDebugUpdateStatistics packet) {
-        this.debugServerStats = packet.tracking;
+        this.debugTrackerStats = packet.tracker;
     }
 
     @CalledFromAnyThread
     @Override
-    public DebugStats.Tracking debugServerStats() {
-        return this.debugServerStats;
+    public Tracker.Stats debugTrackerStats() {
+        return this.debugTrackerStats;
     }
 
     @CalledFromAnyThread

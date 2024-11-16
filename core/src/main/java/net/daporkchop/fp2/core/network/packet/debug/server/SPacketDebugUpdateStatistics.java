@@ -20,11 +20,9 @@
 package net.daporkchop.fp2.core.network.packet.debug.server;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -37,27 +35,26 @@ import java.io.IOException;
 @AllArgsConstructor(staticName = "create")
 @NoArgsConstructor(onConstructor_ = { @Deprecated })
 public final class SPacketDebugUpdateStatistics implements IPacket {
-    public DebugStats.Tracking tracking;
+    public Tracker.Stats tracker;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
-        this.tracking = DebugStats.Tracking.builder()
-                .tilesLoaded(in.readLongLE())
-                .tilesLoading(in.readLongLE())
-                .tilesQueued(in.readLongLE())
-                .tilesTrackedGlobal(in.readLongLE())
-                .avgUpdateDuration(in.readLongLE())
-                .lastUpdateDuration(in.readLongLE())
-                .build();
+        this.tracker = new Tracker.Stats(
+                in.readIntLE(),
+                in.readIntLE(),
+                in.readIntLE(),
+                in.readIntLE(),
+                in.readLongLE(),
+                in.readLongLE());
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
-        out.writeLongLE(this.tracking.tilesLoaded());
-        out.writeLongLE(this.tracking.tilesLoading());
-        out.writeLongLE(this.tracking.tilesQueued());
-        out.writeLongLE(this.tracking.tilesTrackedGlobal());
-        out.writeLongLE(this.tracking.avgUpdateDuration());
-        out.writeLongLE(this.tracking.lastUpdateDuration());
+        out.writeIntLE(this.tracker.tilesLoaded());
+        out.writeIntLE(this.tracker.tilesLoading());
+        out.writeIntLE(this.tracker.tilesQueued());
+        out.writeIntLE(this.tracker.tilesTrackedGlobal());
+        out.writeLongLE(this.tracker.avgUpdateDuration());
+        out.writeLongLE(this.tracker.lastUpdateDuration());
     }
 }

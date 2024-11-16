@@ -26,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;

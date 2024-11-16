@@ -44,7 +44,6 @@ import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;

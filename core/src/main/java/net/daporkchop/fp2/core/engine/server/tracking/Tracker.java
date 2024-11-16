@@ -19,8 +19,8 @@
 
 package net.daporkchop.fp2.core.engine.server.tracking;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
@@ -31,6 +31,7 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.lib.common.annotation.BorrowOwnership;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Comparator;
@@ -48,7 +49,6 @@ import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Per-context tracker instance.
@@ -424,17 +424,36 @@ public final class Tracker {
         }
     }
 
-    public DebugStats.Tracking debugStats() {
+    public Stats debugStats() {
         //i don't care that i'm calling #count() and #size() in a not thread-safe manner - worst-case scenario, the count is reported incorrectly for a split second
 
-        return DebugStats.Tracking.builder()
-                .tilesLoaded(this.loadedPositions.size())
-                .tilesLoading(this.waitingPositions.size())
-                .tilesQueued(this.queuedPositions.size())
-                .tilesTrackedGlobal(this.manager.entries().size())
-                .lastUpdateDuration(this.lastUpdateTime)
-                .avgUpdateDuration(this.lastUpdateTime)
-                .build();
+        return new Stats(
+                this.loadedPositions.size(),
+                this.waitingPositions.size(),
+                this.queuedPositions.size(),
+                this.manager.entries().size(),
+                this.lastUpdateTime,
+                this.lastUpdateTime);
+    }
+
+    /**
+     * Debug statistics for the tracker.
+     *
+     * @author DaPorkchop_
+     */
+    @Data
+    public static final class Stats {
+        private final @NotNegative int tilesLoaded;
+        private final @NotNegative int tilesLoading;
+        private final @NotNegative int tilesQueued;
+        private final @NotNegative int tilesTrackedGlobal;
+
+        private final long avgUpdateDuration;
+        private final long lastUpdateDuration;
+
+        public int tilesTotal() {
+            return this.tilesLoaded + this.tilesLoading + this.tilesQueued;
+        }
     }
 
     /**

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,8 +23,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FWorldClient;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
@@ -42,7 +42,7 @@ public interface IFarPlayerClient extends AutoCloseable {
     void send(@NonNull IPacket packet);
 
     @CalledFromAnyThread
-    DebugStats.Tracking debugServerStats();
+    Tracker.Stats debugTrackerStats();
 
     @CalledFromClientThread
     void ready();
