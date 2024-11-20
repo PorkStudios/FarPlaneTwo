@@ -45,6 +45,7 @@ import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessWriteBatchWithInd
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksStorageManifest;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.misc.file.PFiles;
+import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -113,14 +114,65 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
 
     protected static final String DEFAULT_COLUMN_FAMILY_NAME = new String(RocksDB.DEFAULT_COLUMN_FAMILY).intern();
 
-    public static final Comparator<byte[]> LEX_BYTES_COMPARATOR = (a, b) -> {
-        int diff;
-        for (int i = 0; i < a.length && i < b.length; i++) {
-            diff = (a[i] & 0xFF) - (b[i] & 0xFF);
-            if (diff != 0) {
-                return diff;
+    @SuppressWarnings("ArrayEquality")
+    public static int compareBytesLex(byte[] a, byte[] b) {
+        final int len = Math.min(a.length, b.length);
+        if (a == b) { //compare after dereferencing both to ensure we throw an NPE if possible
+            return 0;
+        }
+
+        int i = 0;
+
+        UNSAFE:
+        if (PUnsafe.isUnalignedAccessSupported() && PUnsafe.arrayByteIndexScale() == Byte.BYTES) {
+            //this JVM supports unaligned memory access and uses tightly packed byte arrays! we can use unsafe to quickly compare larger words at a time.
+
+            //compare 8 bytes as a time using longs
+            for (int j = 0, longCount = len / Long.BYTES; j < longCount; j++, i += Long.BYTES) {
+                assert i >= 0 && i <= len - Long.BYTES : i + ", " + len;
+
+                long offset = PUnsafe.arrayByteElementOffset(i);
+                long aWord = PUnsafe.getUnalignedLong(a, offset);
+                long bWord = PUnsafe.getUnalignedLong(b, offset);
+                if (aWord != bWord) { //there is a mismatch within this 8-byte block
+                    //figure out which byte in the block was mismatched
+                    int byteOffset = PlatformInfo.IS_LITTLE_ENDIAN
+                            ? Long.numberOfTrailingZeros(aWord ^ bWord) / Byte.SIZE
+                            : Long.numberOfLeadingZeros(aWord ^ bWord) / Byte.SIZE;
+
+                    //extract the corresponding bytes from the two words we already loaded
+                    int bitOffset = byteOffset * Byte.SIZE;
+                    byte aByte = (byte) (aWord >> bitOffset);
+                    byte bByte = (byte) (bWord >> bitOffset);
+
+                    //compare the bytes as usual
+                    return (aByte & 0xFF) - (bByte & 0xFF);
+                }
+            }
+
+            //if there is enough data left, compare 4 bytes at a time using ints
+            if (len - i >= Integer.BYTES) {
+                assert i >= 0 && i <= len - Integer.BYTES : i + ", " + len;
+
+                long offset = PUnsafe.arrayByteElementOffset(i);
+                int aWord = PUnsafe.getUnalignedInt(a, offset);
+                int bWord = PUnsafe.getUnalignedInt(b, offset);
+                if (aWord != bWord) { //there is a mismatch within this 4-byte block
+                    //figure out which byte in the block was mismatched, increment i by that amount and fall through to the byte loop
+                    i += PlatformInfo.IS_LITTLE_ENDIAN
+                            ? Long.numberOfTrailingZeros(aWord ^ bWord) / Byte.SIZE
+                            : Long.numberOfLeadingZeros(aWord ^ bWord) / Byte.SIZE;
+                    break UNSAFE;
+                }
             }
         }
+
+        for (; i < len; i++) {
+            if (a[i] != b[i]) {
+                return (a[i] & 0xFF) - (b[i] & 0xFF);
+            }
+        }
+
         // if array entries are equal till the first ends, then the
         // longer is "bigger"
         return a.length - b.length;

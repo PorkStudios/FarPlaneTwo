@@ -25,6 +25,7 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
@@ -143,8 +144,8 @@ public class RocksAccessTransaction implements FStorageAccess, ArrayOnlyFStorage
                 //rocksdb reports that the iterator is valid, but let's manually check to make sure that current key is within the requested iteration range.
                 //  workaround for https://github.com/facebook/rocksdb/issues/2343
                 byte[] key = this.key();
-                return (fromKeyInclusive == null || LEX_BYTES_COMPARATOR.compare(key, fromKeyInclusive) >= 0)
-                       && (toKeyExclusive == null || LEX_BYTES_COMPARATOR.compare(key, toKeyExclusive) < 0);
+                return (fromKeyInclusive == null || RocksStorage.compareBytesLex(key, fromKeyInclusive) >= 0)
+                       && (toKeyExclusive == null || RocksStorage.compareBytesLex(key, toKeyExclusive) < 0);
             }
 
             @Override
