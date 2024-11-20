@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -36,12 +36,14 @@ import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
 import net.daporkchop.fp2.api.util.function.ThrowingConsumer;
 import net.daporkchop.fp2.api.util.function.ThrowingFunction;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessDB;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessReadMasqueradingAsReadWrite;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessTransaction;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessWriteBatch;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessWriteBatchWithIndexMasqueradingAsTransaction;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksStorageManifest;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -50,6 +52,7 @@ import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompressionOptions;
 import org.rocksdb.CompressionType;
 import org.rocksdb.DBOptions;
+import org.rocksdb.Env;
 import org.rocksdb.FlushOptions;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.OptimisticTransactionOptions;
@@ -57,6 +60,7 @@ import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksMemEnv;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 import org.rocksdb.TransactionDB;
@@ -72,6 +76,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +92,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -120,15 +126,15 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         return a.length - b.length;
     };
 
-    public static FStorage open(@NonNull Path root) throws FStorageException {
+    public static FStorage open(@NonNull Path root, @NonNull FP2Config config) throws FStorageException {
         String mode = System.getProperty("fp2.core.storage.rocksdb.mode", "OptimisticTransaction");
         switch (mode) {
             case "Locking":
-                return new LockingRocksStorage(root);
+                return new LockingRocksStorage(root, config);
             case "OptimisticTransaction":
-                return new OptimisticTransactionRocksStorage(root);
+                return new OptimisticTransactionRocksStorage(root, config);
             case "PessimisticTransaction":
-                return new PessimisticTransactionRocksStorage(root);
+                return new PessimisticTransactionRocksStorage(root, config);
             default:
                 throw new IllegalArgumentException("unknown or unsupported storage mode: '" + mode + '\'');
         }
@@ -172,12 +178,15 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         return array;
     }
 
-    private final Path root;
-
     @Getter
     private final DB db;
 
-    private final DBOptions dbOptions = this.createDBOptions();
+    private final Env env;
+    private final DBOptions dbOptions;
+
+    private final CompressionType compressionType;
+    private final CompressionOptions compressionOptions;
+
     private final Map<FStorageColumnHintsInternal, ColumnFamilyOptions> cachedColumnFamilyOptionsForHints = new ConcurrentHashMap<>();
 
     private final Map<String, ColumnFamilyHandle> openColumnFamilyHandles = new ConcurrentHashMap<>();
@@ -193,13 +202,27 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
 
     private volatile boolean open = true;
 
-    protected RocksStorage(Path root) throws FStorageException {
-        this.root = PFiles.ensureDirectoryExists(root);
+    protected RocksStorage(Path root, FP2Config config) throws FStorageException {
+        boolean memoryStorage = FP2_DEBUG && config.debug().memoryStorage();
+        boolean uncompressedStorage = FP2_DEBUG && config.debug().uncompressedStorage();
+
+        //if memory storage is enabled, create a new in-memory env, otherwise use the default env
+        this.env = memoryStorage ? new RocksMemEnv(Env.getDefault()) : Env.getDefault();
+        this.dbOptions = this.createDBOptions();
+
+        this.compressionType = uncompressedStorage ? CompressionType.NO_COMPRESSION : CompressionType.ZSTD_COMPRESSION;
+        this.compressionOptions = this.createCompressionOptions();
 
         List<String> cfNames = new ArrayList<>();
         List<ColumnFamilyDescriptor> cfDescriptors = new ArrayList<>();
 
-        if (PFiles.checkFileExists(root.resolve("CURRENT"))) { //the database exists!
+        //if the database is on-disk, make sure the directory exists
+        if (!memoryStorage) {
+            PFiles.ensureDirectoryExists(root);
+        }
+
+        //if the database is on-disk and already exists, inspect the existing database to determine which column families we should use when opening it
+        if (!memoryStorage && PFiles.checkFileExists(root.resolve("CURRENT"))) { //the database exists!
             //find the names of all the column families in the db so that we can open it
             List<byte[]> initialColumnFamilyNames;
             try {
@@ -493,11 +516,15 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 .setCreateMissingColumnFamilies(true)
                 .setAllowConcurrentMemtableWrite(true)
                 .setAllowFAllocate(false)
-                .setKeepLogFileNum(1L);
+                .setKeepLogFileNum(1L)
+                .setEnv(this.env);
     }
 
-    protected void releaseDBOptions(@NonNull DBOptions options) {
-        options.close();
+    protected CompressionOptions createCompressionOptions() {
+        return new CompressionOptions().setEnabled(true)
+                .setMaxDictBytes(64 << 10)
+                .setZStdMaxTrainBytes(64 << 16)
+                .setLevel(6);
     }
 
     protected ColumnFamilyOptions getCachedColumnFamilyOptionsForHints(@NonNull FStorageColumnHintsInternal hints) {
@@ -508,27 +535,18 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         ColumnFamilyOptions options = new ColumnFamilyOptions();
 
         if (hints.compressability() != FStorageColumnHintsInternal.Compressability.NONE) {
-            options.setCompressionType(CompressionType.ZSTD_COMPRESSION)
-                    .setCompressionOptions(new CompressionOptions().setEnabled(true)
-                            .setMaxDictBytes(64 << 10)
-                            .setZStdMaxTrainBytes(64 << 16)
-                            .setLevel(6));
+            options.setCompressionType(this.compressionType).setCompressionOptions(this.compressionOptions);
         }
 
         return options;
     }
 
-    protected void releaseColumnFamilyOptions(@NonNull ColumnFamilyOptions options) {
-        if (options.compressionOptions() != null) { //compression options are set, close them
-            options.compressionOptions().close();
-        }
-
-        options.close();
-    }
-
     protected void releaseOptions() {
-        this.releaseDBOptions(this.dbOptions);
-        this.cachedColumnFamilyOptionsForHints.values().forEach(this::releaseColumnFamilyOptions);
+        PResourceUtil.closeAll(
+                PResourceUtil.lazyCloseAll(this.cachedColumnFamilyOptionsForHints.values()),
+                this.compressionOptions,
+                this.dbOptions,
+                this.env);
     }
 
     @Override
@@ -843,8 +861,8 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         protected Lock readLock;
         protected Lock writeLock;
 
-        protected LockingRocksStorage(Path root) throws FStorageException {
-            super(root);
+        protected LockingRocksStorage(Path root, FP2Config config) throws FStorageException {
+            super(root, config);
         }
 
         @Override
@@ -1028,8 +1046,8 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
      * @author DaPorkchop_
      */
     protected static abstract class AbstractTransactionRocksStorage<DB extends RocksDB> extends RocksStorage<DB> {
-        protected AbstractTransactionRocksStorage(Path root) throws FStorageException {
-            super(root);
+        protected AbstractTransactionRocksStorage(Path root, FP2Config config) throws FStorageException {
+            super(root, config);
         }
 
         protected abstract Transaction beginTransaction(@NonNull WriteOptions writeOptions, boolean setSnapshot);
@@ -1159,8 +1177,8 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
 
         protected TransactionDBOptions transactionDBOptions;
 
-        protected PessimisticTransactionRocksStorage(Path root) throws FStorageException {
-            super(root);
+        protected PessimisticTransactionRocksStorage(Path root, FP2Config config) throws FStorageException {
+            super(root, config);
         }
 
         @Override
@@ -1178,12 +1196,10 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         }
 
         @Override
-        protected void releaseDBOptions(@NonNull DBOptions options) {
-            super.releaseDBOptions(options);
-
-            if (this.transactionDBOptions != null) { //transactionDBOptions have been allocated, release them
-                this.transactionDBOptions.close();
-            }
+        protected void releaseOptions() {
+            PResourceUtil.closeAll(
+                    this.transactionDBOptions, //if transactionDBOptions have been allocated, release them
+                    super::releaseOptions);
         }
     }
 
@@ -1196,8 +1212,8 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         protected static final OptimisticTransactionOptions TRANSACTION_OPTIONS_DEFAULT = new OptimisticTransactionOptions();
         protected static final OptimisticTransactionOptions TRANSACTION_OPTIONS_SET_SNAPSHOT = new OptimisticTransactionOptions().setSetSnapshot(true);
 
-        protected OptimisticTransactionRocksStorage(Path root) throws FStorageException {
-            super(root);
+        protected OptimisticTransactionRocksStorage(Path root, FP2Config config) throws FStorageException {
+            super(root, config);
         }
 
         @Override

@@ -377,10 +377,12 @@ public final class FP2Config implements Cloneable<FP2Config> {
             @Config.CategoryMeta(name = "default", title = false),
             @Config.CategoryMeta(name = Debug.CATEGORY_CLIENT),
             @Config.CategoryMeta(name = Debug.CATEGORY_SERVER),
+            @Config.CategoryMeta(name = Debug.CATEGORY_STORAGE),
     })
     public static class Debug implements Cloneable<Debug> {
         protected static final String CATEGORY_CLIENT = "client";
         protected static final String CATEGORY_SERVER = "server";
+        protected static final String CATEGORY_STORAGE = "storage";
 
         @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT)
@@ -408,6 +410,18 @@ public final class FP2Config implements Cloneable<FP2Config> {
         @Config.GuiCategory(CATEGORY_SERVER)
         @Config.GuiShowServerValue
         private final boolean levelZeroTracking = preventInline(true);
+
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_STORAGE)
+        @Config.GuiShowServerValue
+        @Config.RestartRequired(Config.Requirement.WORLD)
+        private final boolean memoryStorage = preventInline(false);
+
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_STORAGE)
+        @Config.GuiShowServerValue
+        @Config.RestartRequired(Config.Requirement.WORLD)
+        private final boolean uncompressedStorage = preventInline(false);
 
         @Override
         public Debug clone() {

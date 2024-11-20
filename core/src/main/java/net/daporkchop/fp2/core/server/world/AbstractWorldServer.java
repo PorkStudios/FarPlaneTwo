@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.server.world;
@@ -46,7 +45,7 @@ public abstract class AbstractWorldServer<F extends FP2Core,
     public AbstractWorldServer(@NonNull F fp2, IMPL_WORLD implWorld, @NonNull Path path) {
         super(fp2, implWorld);
 
-        this.storage = this.getForInit(() -> RocksStorage.open(path.resolve("fp2")));
+        this.storage = this.getForInit(() -> RocksStorage.open(path.resolve("fp2"), fp2.globalConfig()));
     }
 
     @Override
