@@ -26,8 +26,6 @@ import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 
-import java.util.IntSummaryStatistics;
-
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -72,7 +70,7 @@ public abstract class AbstractDenseExtendedStateRegistryData<STATE> implements F
     protected abstract int lightEmission(int id, STATE state);
 
     @Override
-    public final int type(int state) throws IndexOutOfBoundsException {
+    public final byte type(int state) throws IndexOutOfBoundsException {
         return this.types[state];
     }
 

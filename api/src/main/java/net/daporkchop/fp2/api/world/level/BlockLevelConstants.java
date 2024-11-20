@@ -43,21 +43,21 @@ public class BlockLevelConstants {
      *
      * @see FExtendedStateRegistryData#type(int)
      */
-    public static final int BLOCK_TYPE_INVISIBLE = 0;
+    public static final byte BLOCK_TYPE_INVISIBLE = 0;
 
     /**
      * The block type used to indicate that a block is partially transparent or translucent.
      *
      * @see FExtendedStateRegistryData#type(int)
      */
-    public static final int BLOCK_TYPE_TRANSPARENT = 1;
+    public static final byte BLOCK_TYPE_TRANSPARENT = 1;
 
     /**
      * The block type used to indicate that a block is fully opaque.
      *
      * @see FExtendedStateRegistryData#type(int)
      */
-    public static final int BLOCK_TYPE_OPAQUE = 2;
+    public static final byte BLOCK_TYPE_OPAQUE = 2;
 
     /**
      * Checks whether the given {@code int} is a valid block type.

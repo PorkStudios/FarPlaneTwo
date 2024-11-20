@@ -46,7 +46,7 @@ public interface FExtendedStateRegistryData {
      * @return the block type
      * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
      */
-    int type(int state) throws IndexOutOfBoundsException;
+    byte type(int state) throws IndexOutOfBoundsException;
 
     /**
      * Gets the light attributes for the given state ID.
