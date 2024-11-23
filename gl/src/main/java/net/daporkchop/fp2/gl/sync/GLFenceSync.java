@@ -19,11 +19,15 @@
 
 package net.daporkchop.fp2.gl.sync;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLObject;
+
+import java.util.concurrent.TimeUnit;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
@@ -42,6 +46,7 @@ public final class GLFenceSync extends GLObject {
     }
 
     private final long sync;
+    private boolean flushed;
 
     private GLFenceSync(OpenGL gl, long sync) {
         super(gl);
@@ -58,6 +63,31 @@ public final class GLFenceSync extends GLObject {
         return this.gl.glGetSync(this.sync, GL_SYNC_STATUS) == GL_SIGNALED;
     }
 
+    /**
+     * Waits for this fence sync object to be signalled.
+     */
+    public WaitStatus waitSignalled(long timeout, TimeUnit unit) {
+        this.checkOpen();
+
+        int flags = this.flushed ? 0 : GL_SYNC_FLUSH_COMMANDS_BIT;
+        this.flushed = true;
+
+        int status = this.gl.glClientWaitSync(this.sync, flags, unit.toNanos(timeout));
+        switch (status) {
+            case GL_ALREADY_SIGNALED:
+                return WaitStatus.ALREADY_SIGNALED;
+            case GL_TIMEOUT_EXPIRED:
+                return WaitStatus.TIMEOUT_EXPIRED;
+            case GL_CONDITION_SATISFIED:
+                return WaitStatus.CONDITION_SATISFIED;
+            case GL_WAIT_FAILED:
+                this.gl.checkError(); //actually, we'll throw the OpenGL error
+                return WaitStatus.WAIT_FAILED;
+            default:
+                throw new IllegalArgumentException("unknown status: " + status);
+        }
+    }
+
     @Override
     protected void delete() {
         this.gl.glDeleteSync(this.sync);
@@ -71,5 +101,20 @@ public final class GLFenceSync extends GLObject {
     @Override
     public String getDebugLabel() {
         return this.gl.glGetObjectPtrLabel(this.sync);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    @Getter
+    public enum WaitStatus {
+        ALREADY_SIGNALED(GL_ALREADY_SIGNALED),
+        TIMEOUT_EXPIRED(GL_TIMEOUT_EXPIRED),
+        CONDITION_SATISFIED(GL_CONDITION_SATISFIED),
+        WAIT_FAILED(GL_WAIT_FAILED),
+        ;
+
+        private final int id;
     }
 }

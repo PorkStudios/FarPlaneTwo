@@ -234,7 +234,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 //  supported, then we'll enable selected tile counting
                 this.countSelectedBuffer = GLBuffer.createFunctionallyImmutable(gl, (long) EngineConstants.MAX_LODS * Integer.BYTES, BufferUsage.STREAM_COPY, 0);
                 this.useIndirectCount = useIndirectCount;
-                this.debugStatisticsDownloader = useStatisticsDownloader ? new AsynchronousSmallBufferDownloader(gl, (int) this.countSelectedBuffer.capacity(), 10) : null;
+                this.debugStatisticsDownloader = useStatisticsDownloader ? new AsynchronousSmallBufferDownloader(gl, (int) this.countSelectedBuffer.capacity()) : null;
             } else {
                 this.countSelectedBuffer = null;
                 this.useIndirectCount = false;

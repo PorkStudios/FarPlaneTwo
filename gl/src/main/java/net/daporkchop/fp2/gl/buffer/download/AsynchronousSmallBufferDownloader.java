@@ -34,6 +34,7 @@ import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
@@ -61,6 +62,12 @@ public final class AsynchronousSmallBufferDownloader implements AutoCloseable {
     private final ArrayDeque<FrameEntry> inFlightFrameEntries = new ArrayDeque<>();
     private int freeStart;
     private int freeCount;
+
+    private long warnedStallTime;
+
+    public AsynchronousSmallBufferDownloader(@NonNull OpenGL gl, @Positive int maxTransferSize) {
+        this(gl, maxTransferSize, 10);
+    }
 
     public AsynchronousSmallBufferDownloader(@NonNull OpenGL gl, @Positive int maxTransferSize, @Positive int maxConcurrentTransfers) {
         gl.checkSupported(REQUIRED_EXTENSIONS);
@@ -92,7 +99,20 @@ public final class AsynchronousSmallBufferDownloader implements AutoCloseable {
      */
     public void downloadRange(@NonNull GLBuffer src, @NotNegative long srcOffset, @NotNegative int size, @NonNull Consumer<ByteBuffer> callback) {
         checkState(notNegative(size, "size") <= this.maxTransferSize, "per-frame size limit (%s) exceeded!", this.maxTransferSize);
-        checkState(this.freeCount > 0, "render-ahead limit (%s) exceeded!", this.maxConcurrentTransfers);
+
+        //if there are no free slots, we should wait until one frees up!
+        while (this.freeCount <= 0) {
+            //if it's been sufficiently long since the last one, log a warning to indicate that the render-ahead threshold is too low or something is wrong
+            long now = System.nanoTime();
+            if (this.warnedStallTime < now) {
+                this.warnedStallTime = now + TimeUnit.SECONDS.toNanos(1L);
+                new RuntimeException("render-ahead limit exceeded!").printStackTrace();
+            }
+
+            //block until the most recent in-flight entry is completed, then call tick() to finish up completed frames
+            this.inFlightFrameEntries.peek().sync.waitSignalled(1L, TimeUnit.SECONDS);
+            this.tick();
+        }
 
         int activeSlot = this.freeStart;
         this.freeCount--;
@@ -119,6 +139,7 @@ public final class AsynchronousSmallBufferDownloader implements AutoCloseable {
         while (!this.inFlightFrameEntries.isEmpty() && this.inFlightFrameEntries.peek().sync.isSignalled()) {
             FrameEntry entry = this.inFlightFrameEntries.remove();
             entry.close();
+            if (entry.size < 0) continue;
             this.freeCount++;
 
             //an entry was completed, so its data is now available! update the current result by reading the data out of the corresponding slot
