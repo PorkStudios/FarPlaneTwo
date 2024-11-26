@@ -23,14 +23,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.Data;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.ToString;
 import lombok.With;
 import net.daporkchop.fp2.core.config.gui.container.ConfigGuiRenderDistanceContainer;
 import net.daporkchop.lib.common.misc.Cloneable;
@@ -42,22 +37,16 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
-import static java.lang.Math.*;
 import static java.nio.file.StandardCopyOption.*;
 import static java.nio.file.StandardOpenOption.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@Builder(access = AccessLevel.PRIVATE, toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor
-@Getter
+@Data
 @With
-@ToString
-@EqualsAndHashCode
 @Config.GuiCategories({
         @Config.CategoryMeta(name = "default", title = false),
         @Config.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE, containerClass = ConfigGuiRenderDistanceContainer.class),
@@ -66,7 +55,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
     private static final Gson GSON = new Gson();
     private static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().create();
 
-    protected static final String CATEGORY_RENDER_DISTANCE = "renderDistance";
+    static final String CATEGORY_RENDER_DISTANCE = "renderDistance";
 
     private static final String CONFIG_FILE_NAME = "fp2.json5";
 
@@ -144,40 +133,40 @@ public final class FP2Config implements Cloneable<FP2Config> {
             return null;
         }
 
-        return clientConfig.toBuilder()
-                .maxLevels(min(serverConfig.maxLevels(), clientConfig.maxLevels()))
-                .cutoffDistance(min(serverConfig.cutoffDistance(), clientConfig.cutoffDistance()))
-                .build();
+        return new FP2Config(
+                Math.min(serverConfig.maxLevels, clientConfig.maxLevels),
+                Math.min(serverConfig.cutoffDistance, clientConfig.cutoffDistance),
+                serverConfig.performance,
+                serverConfig.compatibility,
+                serverConfig.quality,
+                serverConfig.debug);
     }
 
-    @Builder.Default
     @Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.core.engine.EngineConstants#MAX_LODS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
     @Config.GuiShowServerValue
-    private final int maxLevels = preventInline(3);
+    private final int maxLevels;
 
-    @Builder.Default
     @Config.Range(min = @Config.Constant(0), max = @Config.Constant(Integer.MAX_VALUE))
     @Config.GuiRange(min = @Config.Constant(field = "net.daporkchop.fp2.core.engine.EngineConstants#T_VOXELS"), max = @Config.Constant(1024), snapTo = @Config.Constant(field = "net.daporkchop.fp2.core.engine.EngineConstants#T_VOXELS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
     @Config.GuiShowServerValue
-    private final int cutoffDistance = preventInline(256);
+    private final int cutoffDistance;
 
-    @Builder.Default
-    @NonNull
-    private final Performance performance = new Performance();
+    private final @NonNull Performance performance;
+    private final @NonNull Compatibility compatibility;
+    private final @NonNull Quality quality;
+    private final @NonNull Debug debug;
 
-    @Builder.Default
-    @NonNull
-    private final Compatibility compatibility = new Compatibility();
+    private FP2Config() {
+        this.maxLevels = 3;
+        this.cutoffDistance = 256;
 
-    @Builder.Default
-    @NonNull
-    private final Quality quality = new Quality();
-
-    @Builder.Default
-    @NonNull
-    private final Debug debug = new Debug();
+        this.performance = new Performance();
+        this.compatibility = new Compatibility();
+        this.quality = new Quality();
+        this.debug = new Debug();
+    }
 
     /**
      * Cleans up this config, eliminating any impossible values.
@@ -193,253 +182,231 @@ public final class FP2Config implements Cloneable<FP2Config> {
      * @return the effective render distance, in blocks
      */
     public long effectiveRenderDistanceBlocks() {
-        return (long) this.cutoffDistance << (this.maxLevels - 1L);
+        return (long) this.cutoffDistance << (this.maxLevels - 1);
     }
 
     @Override
     public FP2Config clone() {
-        return this.toBuilder()
-                .performance(this.performance.clone())
-                .compatibility(this.compatibility.clone())
-                .debug(this.debug.clone())
-                .quality(this.quality.clone())
-                .build();
+        return new FP2Config(
+                this.maxLevels,
+                this.cutoffDistance,
+                this.performance.clone(),
+                this.compatibility.clone(),
+                this.quality.clone(),
+                this.debug.clone());
     }
 
     /**
      * @author DaPorkchop_
      */
-    @Builder(access = AccessLevel.PRIVATE, toBuilder = true)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor
-    @Getter
+    @Data
     @With
-    @ToString
-    @EqualsAndHashCode
     @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
             @Config.CategoryMeta(name = Performance.CATEGORY_CLIENT),
     })
-    public static class Quality implements Cloneable<Quality> {
-        protected static final String CATEGORY_CLIENT = "client";
+    public static final class Quality implements Cloneable<Quality> {
+        static final String CATEGORY_CLIENT = "client";
 
-        @Builder.Default
         @Config.RestartRequired(Config.Requirement.WORLD)
         @Config.GuiCategory(CATEGORY_CLIENT)
-        private final boolean forceBlockyMesh = preventInline(false);
+        private final boolean forceBlockyMesh;
+
+        Quality() {
+            this.forceBlockyMesh = false;
+        }
 
         @Override
         public Quality clone() {
-            return this.toBuilder().build();
+            return (Quality) super.clone();
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    @Builder(access = AccessLevel.PRIVATE, toBuilder = true)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor
-    @Getter
+    @Data
     @With
-    @ToString
-    @EqualsAndHashCode
     @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
             @Config.CategoryMeta(name = Performance.CATEGORY_CLIENT),
             @Config.CategoryMeta(name = Performance.CATEGORY_THREADS),
     })
-    public static class Performance implements Cloneable<Performance> {
-        protected static final String CATEGORY_CLIENT = "client";
-        protected static final String CATEGORY_THREADS = "threads";
+    public static final class Performance implements Cloneable<Performance> {
+        static final String CATEGORY_CLIENT = "client";
+        static final String CATEGORY_THREADS = "threads";
 
-        @Builder.Default
         @Config.RestartRequired(Config.Requirement.WORLD)
         @Config.GuiCategory(CATEGORY_CLIENT)
-        private final boolean gpuFrustumCulling = preventInline(true);
+        private final boolean gpuFrustumCulling;
 
-        @Builder.Default
         @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(1024))
         @Config.GuiCategory(CATEGORY_CLIENT)
-        private final int maxBakesProcessedPerFrame = preventInline(256);
+        private final int maxBakesProcessedPerFrame;
 
-        @Builder.Default
         @Config.RestartRequired(Config.Requirement.WORLD)
         @Config.GuiCategory(CATEGORY_CLIENT)
-        private final boolean renderQuads = preventInline(true);
+        private final boolean renderQuads;
 
-        @Builder.Default
         @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
         @Config.RestartRequired(Config.Requirement.GAME)
         @Config.GuiCategory(CATEGORY_THREADS)
-        private final int trackingThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
+        private final int trackingThreads;
 
-        @Builder.Default
         @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
         @Config.RestartRequired(Config.Requirement.WORLD)
         @Config.GuiCategory(CATEGORY_THREADS)
-        private final int terrainThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
+        private final int terrainThreads;
 
-        @Builder.Default
         @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
         @Config.RestartRequired(Config.Requirement.WORLD)
         @Config.GuiCategory(CATEGORY_THREADS)
-        private final int bakeThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
+        private final int bakeThreads;
+
+        Performance() {
+            this.gpuFrustumCulling = true;
+            this.maxBakesProcessedPerFrame = 256;
+            this.renderQuads = true;
+
+            this.trackingThreads = Math.max(PorkUtil.CPU_COUNT >> 2, 1);
+            this.terrainThreads =
+            this.bakeThreads = Math.max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
+        }
 
         @Override
         public Performance clone() {
-            return this.toBuilder().build();
+            return (Performance) super.clone();
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    @Builder(access = AccessLevel.PRIVATE, toBuilder = true)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor
-    @Getter
+    @Data
     @With
-    @ToString
-    @EqualsAndHashCode
     @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
             @Config.CategoryMeta(name = Compatibility.CATEGORY_CLIENT),
             @Config.CategoryMeta(name = Compatibility.CATEGORY_CLIENT_WORKAROUNDS),
     })
-    public static class Compatibility implements Cloneable<Compatibility> {
-        protected static final String CATEGORY_CLIENT = "client";
-        protected static final String CATEGORY_CLIENT_WORKAROUNDS = "clientWorkarounds";
+    public static final class Compatibility implements Cloneable<Compatibility> {
+        static final String CATEGORY_CLIENT = "client";
+        static final String CATEGORY_CLIENT_WORKAROUNDS = "clientWorkarounds";
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT)
-        private final boolean reversedZ = preventInline(true);
+        private final boolean reversedZ;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
         @Config.RestartRequired(Config.Requirement.GAME)
         @NonNull
-        private final WorkaroundState workaroundAmdVertexPadding = preventInline(WorkaroundState.AUTO);
+        private final WorkaroundState workaroundAmdVertexPadding;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
         @Config.RestartRequired(Config.Requirement.GAME)
         @NonNull
-        private final WorkaroundState workaroundIntelMultidrawNotWorking = preventInline(WorkaroundState.AUTO);
+        private final WorkaroundState workaroundIntelMultidrawNotWorking;
+
+        Compatibility() {
+            this.reversedZ = true;
+
+            this.workaroundAmdVertexPadding = WorkaroundState.AUTO;
+            this.workaroundIntelMultidrawNotWorking = WorkaroundState.AUTO;
+        }
 
         @Override
         public Compatibility clone() {
-            return this.toBuilder().build();
+            return (Compatibility) super.clone();
         }
 
         /**
          * @author DaPorkchop_
          */
         public enum WorkaroundState {
-            AUTO {
-                @Override
-                public boolean shouldEnable(boolean flag) {
-                    return flag;
-                }
-            },
-            ENABLED {
-                @Override
-                public boolean shouldEnable(boolean flag) {
-                    return true;
-                }
-            },
-            DISABLED {
-                @Override
-                public boolean shouldEnable(boolean flag) {
-                    return false;
-                }
-            };
-
-            public abstract boolean shouldEnable(boolean flag);
+            AUTO,
+            ENABLED,
+            DISABLED,
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    @Builder(access = AccessLevel.PRIVATE, toBuilder = true)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor
-    @Getter
+    @Data
     @With
-    @ToString
-    @EqualsAndHashCode
     @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
             @Config.CategoryMeta(name = Debug.CATEGORY_CLIENT),
             @Config.CategoryMeta(name = Debug.CATEGORY_SERVER),
             @Config.CategoryMeta(name = Debug.CATEGORY_STORAGE),
     })
-    public static class Debug implements Cloneable<Debug> {
-        protected static final String CATEGORY_CLIENT = "client";
-        protected static final String CATEGORY_SERVER = "server";
-        protected static final String CATEGORY_STORAGE = "storage";
+    public static final class Debug implements Cloneable<Debug> {
+        static final String CATEGORY_CLIENT = "client";
+        static final String CATEGORY_SERVER = "server";
+        static final String CATEGORY_STORAGE = "storage";
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT)
-        private final boolean backfaceCulling = preventInline(true);
+        private final boolean backfaceCulling;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT)
-        private final boolean vanillaTerrainRendering = preventInline(true);
+        private final boolean vanillaTerrainRendering;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT)
-        private final boolean levelZeroRendering = preventInline(true);
+        private final boolean levelZeroRendering;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT)
         @NonNull
-        private final DebugColorMode debugColors = preventInline(DebugColorMode.DISABLED);
+        private final DebugColorMode debugColors;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_SERVER)
         @Config.GuiShowServerValue
-        private final boolean exactGeneration = preventInline(true);
+        private final boolean exactGeneration;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_SERVER)
         @Config.GuiShowServerValue
-        private final boolean levelZeroTracking = preventInline(true);
+        private final boolean levelZeroTracking;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_STORAGE)
         @Config.GuiShowServerValue
         @Config.RestartRequired(Config.Requirement.WORLD)
-        private final boolean memoryStorage = preventInline(false);
+        private final boolean memoryStorage;
 
-        @Builder.Default
         @Config.GuiCategory(CATEGORY_STORAGE)
         @Config.GuiShowServerValue
         @Config.RestartRequired(Config.Requirement.WORLD)
-        private final boolean uncompressedStorage = preventInline(false);
+        private final boolean uncompressedStorage;
+
+        Debug() {
+            this.backfaceCulling = true;
+            this.vanillaTerrainRendering = true;
+            this.levelZeroRendering = true;
+            this.debugColors = DebugColorMode.DISABLED;
+            this.exactGeneration = true;
+            this.levelZeroTracking = true;
+            this.memoryStorage = false;
+            this.uncompressedStorage = false;
+        }
 
         @Override
         public Debug clone() {
-            return this.toBuilder().build();
+            return (Debug) super.clone();
         }
 
         /**
          * @author DaPorkchop_
          */
-        @RequiredArgsConstructor
-        @Getter
         public enum DebugColorMode { //synced with resources/assets/fp2/shaders/util/debug_color_mode.glsl
-            DISABLED(false),
-            LEVEL(true),
-            POSITION(true),
-            NORMAL(true);
-
-            private final boolean enable;
+            DISABLED,
+            LEVEL,
+            POSITION,
+            NORMAL,
         }
     }
 }
