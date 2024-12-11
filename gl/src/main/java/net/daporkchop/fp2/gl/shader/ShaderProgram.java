@@ -217,6 +217,9 @@ public abstract class ShaderProgram extends GLObject.Normal {
             if (buf[0] >= 0) {
                 //this uniform is part of a uniform block, skip it
                 continue;
+            } else if (this.gl.supports(GLExtension.GL_ARB_shader_atomic_counters) && buf[1] == GL_UNSIGNED_INT_ATOMIC_COUNTER) {
+                //this uniform is actually an atomic counter, skip it
+                continue;
             }
 
             String name = this.gl.glGetProgramResourceName(this.id, GL_UNIFORM, resourceIndex, bufSize);
