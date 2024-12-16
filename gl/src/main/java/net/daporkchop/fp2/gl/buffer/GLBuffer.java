@@ -125,13 +125,8 @@ public abstract class GLBuffer extends GLObject.Normal {
     }
 
     @Override
-    public void setDebugLabel(@NonNull CharSequence label) {
-        this.gl.glObjectLabel(GL_BUFFER, this.id, label);
-    }
-
-    @Override
-    public String getDebugLabel() {
-        return this.gl.glGetObjectLabel(GL_BUFFER, this.id);
+    protected final int debugLabelNamespace() {
+        return GL_BUFFER;
     }
 
     /**

@@ -52,13 +52,8 @@ public abstract class GLTexture extends GLObject.Normal {
     }
 
     @Override
-    public final void setDebugLabel(@NonNull CharSequence label) {
-        this.gl.glObjectLabel(GL_TEXTURE, this.id, label);
-    }
-
-    @Override
-    public final String getDebugLabel() {
-        return this.gl.glGetObjectLabel(GL_TEXTURE, this.id);
+    protected final int debugLabelNamespace() {
+        return GL_TEXTURE;
     }
 
     /**

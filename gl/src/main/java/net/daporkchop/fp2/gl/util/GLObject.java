@@ -96,9 +96,21 @@ public abstract class GLObject implements AutoCloseable {
         /**
          * @return this OpenGL object's id
          */
-        public int id() {
+        public final int id() {
             super.checkOpen();
             return this.id;
+        }
+
+        protected abstract int debugLabelNamespace();
+
+        @Override
+        public final void setDebugLabel(@NonNull CharSequence label) {
+            this.gl.glObjectLabel(this.debugLabelNamespace(), this.id, label);
+        }
+
+        @Override
+        public final String getDebugLabel() {
+            return this.gl.glGetObjectLabel(this.debugLabelNamespace(), this.id);
         }
     }
 }

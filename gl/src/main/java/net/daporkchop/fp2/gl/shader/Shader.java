@@ -72,13 +72,8 @@ public final class Shader extends GLObject.Normal {
     }
 
     @Override
-    public void setDebugLabel(@NonNull CharSequence label) {
-        this.gl.glObjectLabel(GL_SHADER, this.id, label);
-    }
-
-    @Override
-    public String getDebugLabel() {
-        return this.gl.glGetObjectLabel(GL_SHADER, this.id);
+    protected int debugLabelNamespace() {
+        return GL_SHADER;
     }
 
     private static String formatInfoLog(String text, List<SourceLocation> locations) {
