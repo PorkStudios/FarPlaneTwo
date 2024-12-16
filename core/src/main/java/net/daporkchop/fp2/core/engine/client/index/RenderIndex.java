@@ -204,7 +204,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
         VERTEX_ATTRIBUTE(GLExtensionSet.empty()),
         /**
          * The shader declares a uniform buffer at binding location {@link RenderConstants#TILE_POS_ARRAY_UBO_BINDING}. The buffer must use the {@code std140}
-         * layout, and contain an array of {@code ivec4} of length {@link RenderConstants#tilePosArrayUBOElements(OpenGL)}.
+         * layout, and contain an array of {@code ivec4} of length {@link RenderConstants#TILE_POS_ARRAY_UBO_ELEMENTS}.
          * <p>
          * The shader can access the tile position of the current tile by reading the uniform element at index {@code gl_DrawID}.
          */

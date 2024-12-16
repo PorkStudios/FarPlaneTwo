@@ -123,7 +123,7 @@ public final class GlobalRenderer {
                     .define("LIGHTMAP_SAMPLER_NAME", RenderConstants.LIGHTMAP_SAMPLER_NAME)
                     .define("TILE_POS_ARRAY_UBO_NAME", RenderConstants.TILE_POS_ARRAY_UBO_NAME)
                     .define("TILE_POS_ARRAY_UBO_LAYOUT", "std140")
-                    .define("TILE_POS_ARRAY_UBO_ELEMENTS", RenderConstants.tilePosArrayUBOElements(gl));
+                    .define("TILE_POS_ARRAY_UBO_ELEMENTS", RenderConstants.TILE_POS_ARRAY_UBO_ELEMENTS);
 
             if (gl.supports(GpuQuadLists.QuadsTechnique.SSBO.requiredExtensions())) {
                 shaderMacrosBuilder

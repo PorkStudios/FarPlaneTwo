@@ -40,6 +40,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -301,6 +302,35 @@ public abstract class ShaderProgram extends GLObject.Normal {
             result[resourceIndex] = this.gl.glGetProgramResourceName(this.id, programInterface, resourceIndex, bufSize);
         }
         return result;
+    }
+
+    @GLRequires(GLExtension.GL_ARB_get_program_binary)
+    public final Optional<GetProgramBinaryResult> getProgramBinary() throws UnsupportedOperationException {
+        this.checkOpen();
+        this.gl.checkSupported(GLExtension.GL_ARB_get_program_binary);
+
+        int binaryLength = this.gl.glGetProgrami(this.id, GL_PROGRAM_BINARY_LENGTH);
+        if (binaryLength == 0) {
+            return Optional.empty();
+        }
+
+        byte[] binary = new byte[binaryLength];
+        int[] length = new int[1];
+        int[] binaryFormat = new int[1];
+        this.gl.glGetProgramBinary(this.id, length, binaryFormat, binary);
+
+        return Optional.of(new GetProgramBinaryResult(binaryFormat[0], Arrays.copyOf(binary, length[0])));
+    }
+
+    /**
+     * A handle for setting uniform values for this shader.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    public static final class GetProgramBinaryResult {
+        public final int binaryFormat;
+        public final byte @NonNull [] binary;
     }
 
     /**

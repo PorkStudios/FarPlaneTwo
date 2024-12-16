@@ -19,9 +19,8 @@
 
 package net.daporkchop.fp2.core.engine.client;
 
-import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.util.type.GLIVec4;
 
 /**
  * Constant values used throughout the render code.
@@ -76,26 +75,11 @@ public class RenderConstants {
 
     /**
      * The length of the TilePos uniform array, in tile positions.
-     *
-     * @param gl the OpenGL context
-     * @return the length of the TilePos uniform array, in tile positions
      */
-    public static int tilePosArrayUBOElements(OpenGL gl) {
-        return gl.limits().maxUniformBlockSize() >> 4;
-    }
+    //The spec guarantees that UBOs can be at least 16KiB on all platforms, so we'll use that.
+    //  It would be cool to set this based on the actual implementation's maximum UBO size, but Mesa ends up chewing up huge amounts of RAM when compiling a shader
+    //  with large arrays in a UBO.
+    public static final int TILE_POS_ARRAY_UBO_ELEMENTS = 16384 / GLIVec4.BYTES;
 
     public static final String TILE_POS_UNIFORM_NAME = "u_TilePos";
-
-    /**
-     * Emits the indices for drawing a quad.
-     *
-     * @param indices        the {@link ByteBuf} to write the indices to
-     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
-     * @param c0             the index of one of the edge vertices
-     * @param c1             the index of the other edge vertex
-     * @param provoking      the index of the provoking vertex
-     */
-    public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
-        indices.writeShortLE(c1).writeShortLE(oppositeCorner).writeShortLE(c0).writeShortLE(provoking);
-    }
 }
