@@ -942,6 +942,30 @@ final class LegacyOpenGL extends OpenGL {
     //
 
     @Override
+    public void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, @NonNull ByteBuffer binary) {
+        super.checkSupported(GLExtension.GL_ARB_get_program_binary);
+        this.delegate.glGetProgramBinary(program, length, binaryFormat, binary);
+    }
+
+    @Override
+    public void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, byte @NonNull [] binary) {
+        super.checkSupported(GLExtension.GL_ARB_get_program_binary);
+        this.delegate.glGetProgramBinary(program, length, binaryFormat, binary);
+    }
+
+    @Override
+    public void glProgramBinary(int program, int binaryFormat, @NonNull ByteBuffer binary) {
+        super.checkSupported(GLExtension.GL_ARB_get_program_binary);
+        this.delegate.glProgramBinary(program, binaryFormat, binary);
+    }
+
+    @Override
+    public void glProgramBinary(int program, int binaryFormat, byte @NonNull [] binary) {
+        super.checkSupported(GLExtension.GL_ARB_get_program_binary);
+        this.delegate.glProgramBinary(program, binaryFormat, binary);
+    }
+
+    @Override
     public void glProgramUniform1i(int program, int location, int v0) {
         super.checkSupported(GLExtension.GL_ARB_separate_shader_objects);
         this.delegate.glProgramUniform1i(program, location, v0);

@@ -123,7 +123,7 @@ public abstract class OpenGL {
             }
         }
     }
-    
+
     //
     //
     // REGULAR FIELDS
@@ -144,7 +144,7 @@ public abstract class OpenGL {
 
     @Getter
     private final Limits limits;
-    
+
     //
     //
     // EXTENSION AND VERSION CAPABILITY FIELDS
@@ -174,6 +174,7 @@ public abstract class OpenGL {
 
     // OpenGL 4.1
     protected final boolean OpenGL41;
+    protected final boolean GL_ARB_get_program_binary;
     protected final boolean GL_ARB_separate_shader_objects;
 
     // OpenGL 4.2
@@ -318,6 +319,7 @@ public abstract class OpenGL {
 
         // OpenGL 4.1
         this.OpenGL41 = version.compareTo(GLVersion.OpenGL41) >= 0;
+        this.GL_ARB_get_program_binary = !this.OpenGL41 && allExtensions.contains(GLExtension.GL_ARB_get_program_binary);
         this.GL_ARB_separate_shader_objects = !this.OpenGL41 && allExtensions.contains(GLExtension.GL_ARB_separate_shader_objects);
 
         // OpenGL 4.2
@@ -1468,6 +1470,34 @@ public abstract class OpenGL {
     // OpenGL 4.1
     //
     //
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_get_program_binary GL_ARB_get_program_binary}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_get_program_binary)
+    public abstract void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, @NonNull ByteBuffer binary);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_get_program_binary GL_ARB_get_program_binary}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_get_program_binary)
+    public abstract void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, byte @NonNull [] binary);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_get_program_binary GL_ARB_get_program_binary}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_get_program_binary)
+    public abstract void glProgramBinary(int program, int binaryFormat, @NonNull ByteBuffer binary);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_get_program_binary GL_ARB_get_program_binary}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_get_program_binary)
+    public abstract void glProgramBinary(int program, int binaryFormat, byte @NonNull [] binary);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}

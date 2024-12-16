@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.lwjgl2;
 import lombok.NonNull;
 import lombok.val;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.common.util.NIOBufferUtil;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -168,6 +169,10 @@ public final class GLAPILWJGL2 extends OpenGL {
         return (ByteBuffer) APIUtil_getBufferByte.invokeExact(GLContext.getCapabilities(), capacity);
     }
 
+    private ByteBuffer getBufferByteDuplicateExactly(@NotNegative int capacity) {
+        return (ByteBuffer) this.getBufferByte(capacity).duplicate().position(0).limit(capacity);
+    }
+
     private IntBuffer getBufferInt(@NotNegative int capacity) {
         IntBuffer buffer = (IntBuffer) APIUtil_getBufferInt.invokeExact(GLContext.getCapabilities());
         checkArg(capacity <= buffer.capacity(), "capacity (%s) <= %s", capacity, buffer.capacity());
@@ -192,6 +197,17 @@ public final class GLAPILWJGL2 extends OpenGL {
         return buffer;
     }
 
+    //
+    // getBufferForUpload
+    // (upload using typed buffer)
+    //
+
+    private ByteBuffer getBufferForUpload(byte[] data) {
+        ByteBuffer dataBuffer = this.getBufferByte(data.length).duplicate();
+        dataBuffer.put(data).flip();
+        return dataBuffer;
+    }
+
     private ShortBuffer getBufferForUpload(short[] data) {
         ShortBuffer dataBuffer = this.getBufferByte(data.length * Short.BYTES).asShortBuffer();
         dataBuffer.put(data).flip();
@@ -205,7 +221,7 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     private ByteBuffer getBufferForUpload(long[] data) {
-        ByteBuffer dataBuffer = (ByteBuffer) this.getBufferByte(data.length * Long.BYTES).duplicate().position(0).limit(data.length * Long.BYTES);
+        ByteBuffer dataBuffer = this.getBufferByteDuplicateExactly(data.length * Long.BYTES);
         dataBuffer.asLongBuffer().put(data);
         return dataBuffer;
     }
@@ -220,6 +236,19 @@ public final class GLAPILWJGL2 extends OpenGL {
         DoubleBuffer dataBuffer = this.getBufferByte(data.length * Double.BYTES).asDoubleBuffer();
         dataBuffer.put(data).flip();
         return dataBuffer;
+    }
+
+    //
+    // begin/finishHeapDownload
+    // (download using typed buffer)
+    //
+
+    private ByteBuffer beginHeapDownload(byte[] data) {
+        return this.getBufferByteDuplicateExactly(data.length);
+    }
+
+    private void finishHeapDownload(byte[] data, ByteBuffer dataBuffer) {
+        dataBuffer.get(data);
     }
 
     private ShortBuffer beginHeapDownload(short[] data) {
@@ -239,7 +268,7 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     private ByteBuffer beginHeapDownload(long[] data) {
-        return (ByteBuffer) this.getBufferByte(data.length * Long.BYTES).duplicate().position(0).limit(data.length * Long.BYTES);
+        return this.getBufferByteDuplicateExactly(data.length * Long.BYTES);
     }
 
     private void finishHeapDownload(long[] data, ByteBuffer dataBuffer) {
@@ -1663,6 +1692,52 @@ public final class GLAPILWJGL2 extends OpenGL {
     // OpenGL 4.1
     //
     //
+
+    @Override
+    public void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, @NonNull ByteBuffer binary) {
+        if (this.OpenGL41 | this.GL_ARB_get_program_binary) {
+            //get temporary direct buffer for storing the return values
+            //we can safely use APIUtil.getBufferInt() here: GL41.glGetProgramBinary() doesn't use it
+            IntBuffer lengthFormatBuffer = this.getBufferInt(2);
+            IntBuffer lengthBuffer = NIOBufferUtil.duplicateRange(lengthFormatBuffer, 0, 1);
+            IntBuffer binaryFormatBuffer = NIOBufferUtil.duplicateRange(lengthFormatBuffer, 1, 1);
+
+            GL41.glGetProgramBinary(program, lengthBuffer, binaryFormatBuffer, binary);
+            super.debugCheckError();
+
+            //copy binary length and format into the destination arrays
+            if (length != null) {
+                length[0] = lengthBuffer.get(0);
+            }
+            binaryFormat[0] = binaryFormatBuffer.get(0);
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_get_program_binary));
+        }
+    }
+
+    @Override
+    public void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, byte @NonNull [] binary) {
+        //get temporary direct buffer for downloading the binary
+        //we can safely use APIUtil.getBufferByte() here: neither GL41.glGetProgramBinary() nor the ByteBuffer overload of glGetProgramBinary() use it
+        val dataBuffer = this.beginHeapDownload(binary);
+        this.glGetProgramBinary(program, length, binaryFormat, dataBuffer);
+        this.finishHeapDownload(binary, dataBuffer);
+    }
+
+    @Override
+    public void glProgramBinary(int program, int binaryFormat, @NonNull ByteBuffer binary) {
+        if (this.OpenGL41 | this.GL_ARB_get_program_binary) {
+            GL41.glProgramBinary(program, binaryFormat, binary);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_get_program_binary));
+        }
+    }
+
+    @Override
+    public void glProgramBinary(int program, int binaryFormat, byte @NonNull [] binary) {
+        this.glProgramBinary(program, binaryFormat, this.getBufferForUpload(binary));
+    }
 
     @Override
     public void glProgramUniform1i(int program, int location, int v0) {

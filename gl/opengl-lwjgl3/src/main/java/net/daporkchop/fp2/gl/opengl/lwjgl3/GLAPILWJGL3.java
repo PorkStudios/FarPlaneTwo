@@ -1363,6 +1363,53 @@ public final class GLAPILWJGL3 extends OpenGL {
     //
 
     @Override
+    public void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, @NonNull ByteBuffer binary) {
+        if (this.OpenGL41 | this.GL_ARB_get_program_binary) {
+            GL41C.glGetProgramBinary(program, length, binaryFormat, binary);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_get_program_binary));
+        }
+    }
+
+    @Override
+    public void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, byte @NonNull [] binary) {
+        MemoryStack stack = MemoryStack.stackGet();
+        int stackPointer = stack.getPointer();
+        try {
+            //allocate temporary direct buffer for downloading the binary
+            val binaryBuffer = stack.malloc(binary.length);
+            this.glGetProgramBinary(program, length, binaryFormat, binaryBuffer);
+
+            //copy the binary into the heap array
+            binaryBuffer.get(binary);
+        } finally {
+            stack.setPointer(stackPointer);
+        }
+    }
+
+    @Override
+    public void glProgramBinary(int program, int binaryFormat, @NonNull ByteBuffer binary) {
+        if (this.OpenGL41 | this.GL_ARB_get_program_binary) {
+            GL41C.glProgramBinary(program, binaryFormat, binary);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_get_program_binary));
+        }
+    }
+
+    @Override
+    public void glProgramBinary(int program, int binaryFormat, byte @NonNull [] binary) {
+        MemoryStack stack = MemoryStack.stackGet();
+        int stackPointer = stack.getPointer();
+        try {
+            this.glProgramBinary(program, binaryFormat, stack.bytes(binary));
+        } finally {
+            stack.setPointer(stackPointer);
+        }
+    }
+
+    @Override
     public void glProgramUniform1i(int program, int location, int v0) {
         if (this.OpenGL41 | this.GL_ARB_separate_shader_objects) {
             GL41C.glProgramUniform1i(program, location, v0);
