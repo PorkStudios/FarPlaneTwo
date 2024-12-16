@@ -53,8 +53,8 @@ public abstract class AbstractDenseExtendedStateRegistryData<STATE> implements F
             int lightOpacity = this.lightOpacity(id, state);
             int lightEmission = this.lightEmission(id, state);
             Preconditions.checkState(BlockLevelConstants.isValidBlockType(type), "for %s (id %s): invalid block type %s", state, id, type);
-            Preconditions.checkState(BlockLevelConstants.isValidLight(lightOpacity), "for %s (id %s): invalid light opacity %s", state, id, type);
-            Preconditions.checkState(BlockLevelConstants.isValidLight(lightEmission), "for %s (id %s): invalid light emission %s", state, id, type);
+            Preconditions.checkState(BlockLevelConstants.isValidLight(lightOpacity), "for %s (id %s): invalid light opacity %s", state, id, lightOpacity);
+            Preconditions.checkState(BlockLevelConstants.isValidLight(lightEmission), "for %s (id %s): invalid light emission %s", state, id, lightEmission);
 
             types[id] = (byte) type;
             lightAttrs[id] = BlockLevelConstants.packLightAttrs(lightOpacity, lightEmission);
