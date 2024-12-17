@@ -62,6 +62,8 @@ public abstract class OpenGL {
 
     //these are currently all enabled by default, as they don't seem to make much performance difference
     public static final boolean PRESERVE_REGULAR_BUFFER_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveBufferBindings", "true"));
+    public static final boolean PRESERVE_FRAMEBUFFER_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveFramebufferBindings", "true"));
+    public static final boolean PRESERVE_RENDERBUFFER_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveRenderbufferBindings", "true"));
     public static final boolean PRESERVE_TEXTURE_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveTextureBindings", "true"));
     public static final boolean PRESERVE_VAO_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveVaoBindings", "true"));
     public static final boolean PRESERVE_PROGRAM_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveProgramBindings", "true"));
@@ -1277,6 +1279,71 @@ public abstract class OpenGL {
      */
     public abstract void glUniform4ui(int location, IntBuffer value);
 
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract int glGenRenderbuffer();
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glDeleteRenderbuffer(int renderbuffer);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glBindRenderbuffer(int target, int renderbuffer);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glRenderbufferStorage(int target, int internalformat, int width, int height);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract int glGenFramebuffer();
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glDeleteFramebuffer(int framebuffer);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glBindFramebuffer(int target, int framebuffer);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glFramebufferTexture1D(int target, int attachment, int textarget, int texture, int level);
+
+    /**
+      @since OpenGL 3.0
+     */
+    public abstract void glFramebufferTexture2D(int target, int attachment, int textarget, int texture, int level);
+
+    /**
+      @since OpenGL 3.0
+     */
+    public abstract void glFramebufferTexture3D(int target, int attachment, int textarget, int texture, int level, int layer);
+
+    /**
+      @since OpenGL 3.0
+     */
+    public abstract void glFramebufferRenderbuffer(int target, int attachment, int renderbuffertarget, int renderbuffer);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract int glCheckFramebufferStatus(int target);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glBlitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter);
+
     //
     //
     // OpenGL 3.1
@@ -2159,6 +2226,55 @@ public abstract class OpenGL {
      */
     @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_multi_bind })
     public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract int glCreateRenderbuffer();
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glNamedRenderbufferStorage(int renderbuffer, int internalformat, int width, int height);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract int glCreateFramebuffer();
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glNamedFramebufferTexture(int framebuffer, int attachment, int texture, int level);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glNamedFramebufferRenderbuffer(int framebuffer, int attachment, int renderbuffertarget, int renderbuffer);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract int glCheckNamedFramebufferStatus(int framebuffer, int target);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glBlitNamedFramebuffer(int readFramebuffer, int drawFramebuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter);
 
     //
     //

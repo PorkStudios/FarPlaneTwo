@@ -1073,6 +1073,87 @@ public final class GLAPILWJGL3 extends OpenGL {
         super.debugCheckError();
     }
 
+    @Override
+    public int glGenRenderbuffer() {
+        val res = GL30C.glGenRenderbuffers();
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
+    public void glDeleteRenderbuffer(int renderbuffer) {
+        GL30C.glDeleteRenderbuffers(renderbuffer);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBindRenderbuffer(int target, int renderbuffer) {
+        GL30C.glBindRenderbuffer(target, renderbuffer);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glRenderbufferStorage(int target, int internalformat, int width, int height) {
+        GL30C.glRenderbufferStorage(target, internalformat, width, height);
+        super.debugCheckError();
+    }
+
+    @Override
+    public int glGenFramebuffer() {
+        val res = GL30C.glGenFramebuffers();
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
+    public void glDeleteFramebuffer(int framebuffer) {
+        GL30C.glDeleteFramebuffers(framebuffer);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBindFramebuffer(int target, int framebuffer) {
+        GL30C.glBindFramebuffer(target, framebuffer);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glFramebufferTexture1D(int target, int attachment, int textarget, int texture, int level) {
+        GL30C.glFramebufferTexture1D(target, attachment, textarget, texture, level);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glFramebufferTexture2D(int target, int attachment, int textarget, int texture, int level) {
+        GL30C.glFramebufferTexture2D(target, attachment, textarget, texture, level);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glFramebufferTexture3D(int target, int attachment, int textarget, int texture, int level, int layer) {
+        GL30C.glFramebufferTexture3D(target, attachment, textarget, texture, level, layer);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glFramebufferRenderbuffer(int target, int attachment, int renderbuffertarget, int renderbuffer) {
+        GL30C.glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
+        super.debugCheckError();
+    }
+
+    @Override
+    public int glCheckFramebufferStatus(int target) {
+        val res = GL30C.glCheckFramebufferStatus(target);
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
+    public void glBlitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+        GL30C.glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+        super.debugCheckError();
+    }
+
     //
     //
     // OpenGL 3.1
@@ -2475,6 +2556,79 @@ public final class GLAPILWJGL3 extends OpenGL {
     public void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides) {
         if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
             GL45C.nglVertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public int glCreateRenderbuffer() {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val res = GL45C.glCreateRenderbuffers();
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedRenderbufferStorage(int renderbuffer, int internalformat, int width, int height) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45C.glNamedRenderbufferStorage(renderbuffer, internalformat, width, height);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public int glCreateFramebuffer() {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val res = GL45C.glCreateFramebuffers();
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedFramebufferTexture(int framebuffer, int attachment, int texture, int level) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45C.glNamedFramebufferTexture(framebuffer, attachment, texture, level);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glNamedFramebufferRenderbuffer(int framebuffer, int attachment, int renderbuffertarget, int renderbuffer) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45C.glNamedFramebufferRenderbuffer(framebuffer, attachment, renderbuffertarget, renderbuffer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public int glCheckNamedFramebufferStatus(int framebuffer, int target) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val res = GL45C.glCheckNamedFramebufferStatus(framebuffer, target);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glBlitNamedFramebuffer(int readFramebuffer, int drawFramebuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45C.glBlitNamedFramebuffer(readFramebuffer, drawFramebuffer, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));

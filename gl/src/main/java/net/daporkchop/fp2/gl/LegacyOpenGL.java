@@ -779,6 +779,71 @@ final class LegacyOpenGL extends OpenGL {
         this.delegate.glUniform4ui(location, value);
     }
 
+    @Override
+    public int glGenRenderbuffer() {
+        return this.delegate.glGenRenderbuffer();
+    }
+
+    @Override
+    public void glDeleteRenderbuffer(int renderbuffer) {
+        this.delegate.glDeleteRenderbuffer(renderbuffer);
+    }
+
+    @Override
+    public void glBindRenderbuffer(int target, int renderbuffer) {
+        this.delegate.glBindRenderbuffer(target, renderbuffer);
+    }
+
+    @Override
+    public void glRenderbufferStorage(int target, int internalformat, int width, int height) {
+        this.delegate.glRenderbufferStorage(target, internalformat, width, height);
+    }
+
+    @Override
+    public int glGenFramebuffer() {
+        return this.delegate.glGenFramebuffer();
+    }
+
+    @Override
+    public void glDeleteFramebuffer(int framebuffer) {
+        this.delegate.glDeleteFramebuffer(framebuffer);
+    }
+
+    @Override
+    public void glBindFramebuffer(int target, int framebuffer) {
+        this.delegate.glBindFramebuffer(target, framebuffer);
+    }
+
+    @Override
+    public void glFramebufferTexture1D(int target, int attachment, int textarget, int texture, int level) {
+        this.delegate.glFramebufferTexture1D(target, attachment, textarget, texture, level);
+    }
+
+    @Override
+    public void glFramebufferTexture2D(int target, int attachment, int textarget, int texture, int level) {
+        this.delegate.glFramebufferTexture2D(target, attachment, textarget, texture, level);
+    }
+
+    @Override
+    public void glFramebufferTexture3D(int target, int attachment, int textarget, int texture, int level, int layer) {
+        this.delegate.glFramebufferTexture3D(target, attachment, textarget, texture, level, layer);
+    }
+
+    @Override
+    public void glFramebufferRenderbuffer(int target, int attachment, int renderbuffertarget, int renderbuffer) {
+        this.delegate.glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
+    }
+
+    @Override
+    public int glCheckFramebufferStatus(int target) {
+        return this.delegate.glCheckFramebufferStatus(target);
+    }
+
+    @Override
+    public void glBlitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+        this.delegate.glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+    }
+
     //
     //
     // OpenGL 3.1
@@ -1553,6 +1618,48 @@ final class LegacyOpenGL extends OpenGL {
     public void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides) {
         super.checkSupported(direct_state_access_AND_multi_bind);
         this.delegate.glVertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
+    }
+
+    @Override
+    public int glCreateRenderbuffer() {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        return this.delegate.glCreateRenderbuffer();
+    }
+
+    @Override
+    public void glNamedRenderbufferStorage(int renderbuffer, int internalformat, int width, int height) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glNamedRenderbufferStorage(renderbuffer, internalformat, width, height);
+    }
+
+    @Override
+    public int glCreateFramebuffer() {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        return this.delegate.glCreateFramebuffer();
+    }
+
+    @Override
+    public void glNamedFramebufferTexture(int framebuffer, int attachment, int texture, int level) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glNamedFramebufferTexture(framebuffer, attachment, texture, level);
+    }
+
+    @Override
+    public void glNamedFramebufferRenderbuffer(int framebuffer, int attachment, int renderbuffertarget, int renderbuffer) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glNamedFramebufferRenderbuffer(framebuffer, attachment, renderbuffertarget, renderbuffer);
+    }
+
+    @Override
+    public int glCheckNamedFramebufferStatus(int framebuffer, int target) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        return this.delegate.glCheckNamedFramebufferStatus(framebuffer, target);
+    }
+
+    @Override
+    public void glBlitNamedFramebuffer(int readFramebuffer, int drawFramebuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glBlitNamedFramebuffer(readFramebuffer, drawFramebuffer, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
     }
 
     //
