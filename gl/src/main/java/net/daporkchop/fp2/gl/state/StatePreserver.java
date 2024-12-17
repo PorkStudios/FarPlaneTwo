@@ -48,6 +48,9 @@ public final class StatePreserver {
         return new Builder(gl);
     }
 
+    private static final byte FLAG_PRESERVE = 1;
+    private static final byte FLAG_RESTORE_DEFAULT = 2;
+
     private final OpenGL gl;
     private final boolean compatibility;
     private final boolean samplerObjects;
@@ -99,6 +102,12 @@ public final class StatePreserver {
     private int boundProgram;
     private int boundVAO;
 
+    //framebuffer bindings
+    private final byte framebuffer;
+    private int boundReadFramebuffer;
+    private int boundDrawFramebuffer;
+    private int boundRenderbuffer;
+
     //ordinary buffer bindings
     private final BufferTarget[] bufferTargets;
     private final int[] bufferBindings;
@@ -114,6 +123,8 @@ public final class StatePreserver {
         this.gl = builder.gl;
         this.compatibility = this.gl.supports(GLExtension.GL_ARB_compatibility);
         this.samplerObjects = this.gl.supports(GLExtension.GL_ARB_sampler_objects);
+
+        this.framebuffer = builder.framebuffer;
 
         this.bufferTargets = builder.bufferTargets.toArray(new BufferTarget[0]);
         this.bufferBindings = new int[this.bufferTargets.length];
@@ -194,6 +205,13 @@ public final class StatePreserver {
         this.boundProgram = gl.glGetInteger(GL_CURRENT_PROGRAM);
         this.boundVAO = gl.glGetInteger(GL_VERTEX_ARRAY_BINDING);
 
+        //framebuffer bindings
+        if ((this.framebuffer & FLAG_PRESERVE) != 0) {
+            this.boundReadFramebuffer = gl.glGetInteger(GL_READ_FRAMEBUFFER_BINDING);
+            this.boundDrawFramebuffer = gl.glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
+            this.boundRenderbuffer = gl.glGetInteger(GL_RENDERBUFFER_BINDING);
+        }
+
         //ordinary buffer bindings
         BufferTarget[] bufferTargets = this.bufferTargets;
         int[] bufferBindings = this.bufferBindings;
@@ -250,6 +268,12 @@ public final class StatePreserver {
         gl.glStencilFunc(GL_ALWAYS, 0, -1);
         gl.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         gl.glClearStencil(0);
+
+        //framebuffer bindings
+        if ((this.framebuffer & FLAG_RESTORE_DEFAULT) != 0) {
+            gl.glBindFramebuffer(GL_FRAMEBUFFER, 0); //bind the default framebuffer as both the read and draw framebuffer
+            gl.glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        }
 
         //simple bindings
         gl.glUseProgram(0);
@@ -316,6 +340,13 @@ public final class StatePreserver {
         //simple bindings
         gl.glUseProgram(this.boundProgram);
         gl.glBindVertexArray(this.boundVAO);
+
+        //framebuffer bindings
+        if ((this.framebuffer & FLAG_PRESERVE) != 0) {
+            gl.glBindFramebuffer(GL_READ_FRAMEBUFFER, this.boundReadFramebuffer);
+            gl.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this.boundDrawFramebuffer);
+            gl.glBindRenderbuffer(GL_RENDERBUFFER, this.boundRenderbuffer);
+        }
 
         //ordinary buffer bindings
         BufferTarget[] bufferTargets = this.bufferTargets;
@@ -389,6 +420,8 @@ public final class StatePreserver {
         final Set<IndexedBufferBinding> indexedBuffers = new HashSet<>();
         final Set<TextureBinding> textures = new HashSet<>();
 
+        byte framebuffer = 0;
+
         public Builder fixedFunctionDrawState() {
             //backed up by default
             return this;
@@ -401,6 +434,22 @@ public final class StatePreserver {
 
         public Builder vao() {
             //backed up by default
+            return this;
+        }
+
+        /**
+         * Preserve the framebuffer and renderbuffer bindings.
+         */
+        public Builder preserveFramebuffer() {
+            this.framebuffer |= FLAG_PRESERVE;
+            return this;
+        }
+
+        /**
+         * Preserve the framebuffer and renderbuffer bindings, and restore their default bindings when backing up render state.
+         */
+        public Builder restoreDefaultFramebuffer() {
+            this.framebuffer |= FLAG_PRESERVE | FLAG_RESTORE_DEFAULT;
             return this;
         }
 

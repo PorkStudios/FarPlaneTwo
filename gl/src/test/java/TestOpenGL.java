@@ -48,6 +48,13 @@ import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.Shader;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
+import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
+import net.daporkchop.fp2.gl.texture.framebuffer.FramebufferAttachment;
+import net.daporkchop.fp2.gl.texture.framebuffer.FramebufferBlitFilter;
+import net.daporkchop.fp2.gl.texture.framebuffer.FramebufferTarget;
+import net.daporkchop.fp2.gl.texture.framebuffer.GLFramebuffer;
+import net.daporkchop.fp2.gl.texture.framebuffer.GLRenderbuffer;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
@@ -144,10 +151,18 @@ public class TestOpenGL {
                 .vertexAttributesWithPrefix("a_", instanceVertexFormat)
                 .build();
 
+        val colorRenderbuffer = GLRenderbuffer.create(gl);
+        colorRenderbuffer.capacity(TextureInternalFormat.RGBA8, WINDOW_SIZE_W, WINDOW_SIZE_H);
+
+        val framebuffer = GLFramebuffer.create(gl);
+        framebuffer.attachRenderbuffer(FramebufferAttachment.COLOR_ATTACHMENT0, colorRenderbuffer);
+        framebuffer.checkComplete();
+
         val uploader = new UnsynchronizedMapBufferUploader(gl, 64 << 20);
         val fps = new FPS();
 
         gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        framebuffer.bindUnsafe(FramebufferTarget.DRAW_FRAMEBUFFER);
 
         int frame = 0;
         do {
@@ -167,13 +182,31 @@ public class TestOpenGL {
 
             backup.close();
 
+            //copy the stuff we've drawn onto the default framebuffer so that it can be displayed
+            GLFramebuffer.blit(gl,
+                    framebuffer, 0, 0, WINDOW_SIZE_W, WINDOW_SIZE_H,
+                    null, 0, 0, WINDOW_SIZE_W, WINDOW_SIZE_H,
+                    GL_COLOR_BUFFER_BIT, FramebufferBlitFilter.NEAREST);
+
             swapAndSync.run();
 
             uploader.tick();
             fps.update();
             frame++;
         } while (!closeRequested.getAsBoolean());
-        uploader.close();
+
+        PResourceUtil.closeAll(
+                uploader,
+                framebuffer,
+                colorRenderbuffer,
+                shader,
+                fsh,
+                vsh,
+                instancedSquaresVAO,
+                quadsIndexBuffer,
+                instanceVertexBuffer,
+                vertexBuffer,
+                uniformBuffer);
     }
 
     private static class FPS {

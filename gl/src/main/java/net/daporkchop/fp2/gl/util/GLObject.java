@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.util;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.lib.common.annotation.NotThreadSafe;
 
@@ -35,8 +36,21 @@ public abstract class GLObject implements AutoCloseable {
     /**
      * The OpenGL context which this object belongs to.
      */
-    public final OpenGL gl;
+    protected final OpenGL gl;
     private boolean closed;
+
+    /**
+     * {@code true} if {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} is supported.
+     * <p>
+     * This field is hoisted here even though it may not be needed by all subclasses simply to minimize the amount of padding space in other
+     * subclasses, and isn't a big deal since initializing it is very cheap.
+     */
+    protected final boolean dsa;
+
+    protected GLObject(OpenGL gl) {
+        this.gl = gl;
+        this.dsa = gl.supports(GLExtension.GL_ARB_direct_state_access);
+    }
 
     @Override
     public void close() {

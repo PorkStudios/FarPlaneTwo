@@ -99,7 +99,6 @@ public abstract class GLBuffer extends GLObject.Normal {
     }
 
     protected final boolean clearBufferObject;
-    protected final boolean dsa;
     protected final boolean invalidateSubdata;
 
     protected long capacity = -1L;
@@ -108,7 +107,6 @@ public abstract class GLBuffer extends GLObject.Normal {
     protected GLBuffer(OpenGL gl) {
         super(gl, gl.supports(GLExtension.GL_ARB_direct_state_access) ? gl.glCreateBuffer() : gl.glGenBuffer());
         this.clearBufferObject = gl.supports(GLExtension.GL_ARB_clear_buffer_object);
-        this.dsa = gl.supports(GLExtension.GL_ARB_direct_state_access);
         this.invalidateSubdata = gl.supports(GLExtension.GL_ARB_invalidate_subdata);
     }
 
