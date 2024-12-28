@@ -56,4 +56,21 @@ public abstract class GLSampledTexture extends GLTexture {
             });
         }
     }
+
+    /**
+     * Sets this texture's filtering mode.
+     */
+    public final void filter(@NotNegative TextureFiltering minFilter, @NotNegative TextureFiltering magFilter) {
+        this.checkOpen();
+
+        if (this.dsa) {
+            this.gl.glTextureParameter(this.id, GL_TEXTURE_MIN_FILTER, minFilter.id());
+            this.gl.glTextureParameter(this.id, GL_TEXTURE_MAG_FILTER, magFilter.id());
+        } else {
+            this.bind(target -> {
+                this.gl.glTexParameter(target.id(), GL_TEXTURE_MIN_FILTER, minFilter.id());
+                this.gl.glTexParameter(target.id(), GL_TEXTURE_MAG_FILTER, magFilter.id());
+            });
+        }
+    }
 }

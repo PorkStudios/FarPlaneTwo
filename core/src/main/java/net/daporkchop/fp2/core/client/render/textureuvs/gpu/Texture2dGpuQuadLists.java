@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.texture.GLTexture2D;
 import net.daporkchop.fp2.gl.texture.PixelFormat;
+import net.daporkchop.fp2.gl.texture.TextureFiltering;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
 import net.daporkchop.fp2.gl.texture.TextureTarget;
 import net.daporkchop.fp2.gl.texture.PixelType;
@@ -90,6 +91,9 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
         this.listsTexture.mipmapLevels(0, 0);
         this.quadsCoordTexture.mipmapLevels(0, 0);
         this.quadsTintTexture.mipmapLevels(0, 0);
+        this.listsTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+        this.quadsCoordTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+        this.quadsTintTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
 
         try (val alloc = new DirectMemoryAllocator()) { //temporary allocator for staging data
             try (val listsList = new DirectIVec2List(alloc)) {
@@ -104,6 +108,8 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
                 listsList.appendZero(capacity - listsList.size());
 
                 this.listsTexture.texImage(0, width, height, TextureInternalFormat.RG32UI, PixelFormat.RG_INTEGER, PixelType.UNSIGNED_INT, listsList.byteBufferView());
+            } catch (Throwable t) {
+                t.printStackTrace();
             }
 
             try (val quadsCoordList = new DirectVec4List(alloc);
