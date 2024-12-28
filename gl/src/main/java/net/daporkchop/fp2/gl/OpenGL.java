@@ -1282,6 +1282,11 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 3.0
      */
+    public abstract void glGenerateMipmap(int target);
+
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract int glGenRenderbuffer();
 
     /**
@@ -2226,6 +2231,97 @@ public abstract class OpenGL {
      */
     @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_multi_bind })
     public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract int glCreateTexture(int target);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glBindTextureUnit(int unit, int texture);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glTextureParameter(int texture, int pname, int param);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glTextureParameter(int texture, int pname, float param);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract int glGetTextureParameterInteger(int texture, int pname);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract float glGetTextureParameterFloat(int texture, int pname);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, long data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, @NonNull ByteBuffer data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glTextureSubImage2D(int texture, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glTextureSubImage2D(int texture, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glTextureSubImage3D(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, long data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glTextureSubImage3D(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
+    public abstract void glGenerateTextureMipmap(int texture);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}

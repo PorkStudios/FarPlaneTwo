@@ -780,6 +780,11 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glGenerateMipmap(int target) {
+        this.delegate.glGenerateMipmap(target);
+    }
+
+    @Override
     public int glGenRenderbuffer() {
         return this.delegate.glGenRenderbuffer();
     }
@@ -1618,6 +1623,84 @@ final class LegacyOpenGL extends OpenGL {
     public void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides) {
         super.checkSupported(direct_state_access_AND_multi_bind);
         this.delegate.glVertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
+    }
+
+    @Override
+    public int glCreateTexture(int target) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        return this.delegate.glCreateTexture(target);
+    }
+
+    @Override
+    public void glBindTextureUnit(int unit, int texture) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glBindTextureUnit(unit, texture);
+    }
+
+    @Override
+    public void glTextureParameter(int texture, int pname, int param) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glTextureParameter(texture, pname, param);
+    }
+
+    @Override
+    public void glTextureParameter(int texture, int pname, float param) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glTextureParameter(texture, pname, param);
+    }
+
+    @Override
+    public int glGetTextureParameterInteger(int texture, int pname) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        return this.delegate.glGetTextureParameterInteger(texture, pname);
+    }
+
+    @Override
+    public float glGetTextureParameterFloat(int texture, int pname) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        return this.delegate.glGetTextureParameterFloat(texture, pname);
+    }
+
+    @Override
+    public void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, long data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glTextureSubImage1D(texture, level, xoffset, width, format, type, data);
+    }
+
+    @Override
+    public void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, @NonNull ByteBuffer data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glTextureSubImage1D(texture, level, xoffset, width, format, type, data);
+    }
+
+    @Override
+    public void glTextureSubImage2D(int texture, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, data);
+    }
+
+    @Override
+    public void glTextureSubImage2D(int texture, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, data);
+    }
+
+    @Override
+    public void glTextureSubImage3D(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, long data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+    }
+
+    @Override
+    public void glTextureSubImage3D(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+    }
+
+    @Override
+    public void glGenerateTextureMipmap(int texture) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+        this.delegate.glGenerateTextureMipmap(texture);
     }
 
     @Override

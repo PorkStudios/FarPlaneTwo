@@ -1404,6 +1404,12 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
+    public void glGenerateMipmap(int target) {
+        GL30.glGenerateMipmap(target);
+        super.debugCheckError();
+    }
+
+    @Override
     public int glGenRenderbuffer() {
         val res = GL30.glGenRenderbuffers();
         super.debugCheckError();
@@ -1417,7 +1423,7 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
-    public void glBindRenderbuffer(int target, int framebuffer) {
+    public void glBindRenderbuffer(int target, int renderbuffer) {
         GL30.glBindRenderbuffer(target, renderbuffer);
         super.debugCheckError();
     }
@@ -3140,6 +3146,127 @@ public final class GLAPILWJGL2 extends OpenGL {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_multi_bind));
+        }
+    }
+
+    @Override
+    public int glCreateTexture(int target) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val res = GL45.glCreateTextures(target);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glBindTextureUnit(int unit, int texture) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glBindTextureUnit(unit, texture);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glTextureParameter(int texture, int pname, int param) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glTextureParameteri(texture, pname, param);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glTextureParameter(int texture, int pname, float param) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glTextureParameterf(texture, pname, param);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public int glGetTextureParameterInteger(int texture, int pname) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val res = GL45.glGetTextureParameteri(texture, pname);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public float glGetTextureParameterFloat(int texture, int pname) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            val res = GL45.glGetTextureParameterf(texture, pname);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, long data) {
+        this.glTextureSubImage1D(texture, level, xoffset, width, format, type,
+                DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage1DStorage(format, type, width)));
+    }
+
+    @Override
+    public void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, @NonNull ByteBuffer data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glTextureSubImage1D(texture, level, xoffset, width, format, type, data);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glTextureSubImage2D(int texture, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data) {
+        this.glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type,
+                DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage2DStorage(format, type, width, height)));
+    }
+
+    @Override
+    public void glTextureSubImage2D(int texture, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, data);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glTextureSubImage3D(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, long data) {
+        this.glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type,
+                DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage3DStorage(format, type, width, height, depth)));
+    }
+
+    @Override
+    public void glTextureSubImage3D(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glGenerateTextureMipmap(int texture) {
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            GL45.glGenerateTextureMipmap(texture);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
