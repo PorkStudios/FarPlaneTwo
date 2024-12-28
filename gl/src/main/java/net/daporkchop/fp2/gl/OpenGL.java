@@ -174,6 +174,10 @@ public abstract class OpenGL {
     protected final boolean GL_ARB_instanced_arrays;
     protected final boolean GL_ARB_sampler_objects;
 
+    // OpenGL 4.0
+    protected final boolean OpenGL40;
+    protected final boolean GL_ARB_transform_feedback2;
+
     // OpenGL 4.1
     protected final boolean OpenGL41;
     protected final boolean GL_ARB_get_program_binary;
@@ -183,6 +187,7 @@ public abstract class OpenGL {
     protected final boolean OpenGL42;
     protected final boolean GL_ARB_base_instance;
     protected final boolean GL_ARB_shader_image_load_store;
+    protected final boolean GL_ARB_texture_storage;
 
     // OpenGL 4.3
     protected final boolean OpenGL43;
@@ -319,6 +324,10 @@ public abstract class OpenGL {
         this.GL_ARB_instanced_arrays = !this.OpenGL33 && allExtensions.contains(GLExtension.GL_ARB_instanced_arrays);
         this.GL_ARB_sampler_objects = !this.OpenGL33 && allExtensions.contains(GLExtension.GL_ARB_sampler_objects);
 
+        // OpenGL 4.0
+        this.OpenGL40 = version.compareTo(GLVersion.OpenGL40) >= 0;
+        this.GL_ARB_transform_feedback2 = !this.OpenGL40 && allExtensions.contains(GLExtension.GL_ARB_transform_feedback2);
+
         // OpenGL 4.1
         this.OpenGL41 = version.compareTo(GLVersion.OpenGL41) >= 0;
         this.GL_ARB_get_program_binary = !this.OpenGL41 && allExtensions.contains(GLExtension.GL_ARB_get_program_binary);
@@ -328,6 +337,7 @@ public abstract class OpenGL {
         this.OpenGL42 = version.compareTo(GLVersion.OpenGL42) >= 0;
         this.GL_ARB_base_instance = !this.OpenGL42 && allExtensions.contains(GLExtension.GL_ARB_base_instance);
         this.GL_ARB_shader_image_load_store = !this.OpenGL42 && allExtensions.contains(GLExtension.GL_ARB_shader_image_load_store);
+        this.GL_ARB_texture_storage = !this.OpenGL42 && allExtensions.contains(GLExtension.GL_ARB_texture_storage);
 
         // OpenGL 4.3
         this.OpenGL43 = version.compareTo(GLVersion.OpenGL43) >= 0;
@@ -1766,6 +1776,27 @@ public abstract class OpenGL {
     @GLRequires(GLExtension.GL_ARB_shader_image_load_store)
     public abstract void glMemoryBarrier(int barriers);
 
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_texture_storage GL_ARB_texture_storage}
+     * @since OpenGL 4.2
+     */
+    @GLRequires(GLExtension.GL_ARB_texture_storage)
+    public abstract void glTexStorage1D(int target, int levels, int internalformat, int width);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_texture_storage GL_ARB_texture_storage}
+     * @since OpenGL 4.2
+     */
+    @GLRequires(GLExtension.GL_ARB_texture_storage)
+    public abstract void glTexStorage2D(int target, int levels, int internalformat, int width, int height);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_texture_storage GL_ARB_texture_storage}
+     * @since OpenGL 4.2
+     */
+    @GLRequires(GLExtension.GL_ARB_texture_storage)
+    public abstract void glTexStorage3D(int target, int levels, int internalformat, int width, int height, int depth);
+
     //
     //
     // OpenGL 4.3
@@ -2275,6 +2306,27 @@ public abstract class OpenGL {
     public abstract float glGetTextureParameterFloat(int texture, int pname);
 
     /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_texture_storage GL_ARB_texture_storage}
+     * @since OpenGL 4.5
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_texture_storage })
+    public abstract void glTextureStorage1D(int texture, int levels, int internalformat, int width);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_texture_storage GL_ARB_texture_storage}
+     * @since OpenGL 4.5
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_texture_storage })
+    public abstract void glTextureStorage2D(int texture, int levels, int internalformat, int width, int height);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_texture_storage GL_ARB_texture_storage}
+     * @since OpenGL 4.5
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_texture_storage })
+    public abstract void glTextureStorage3D(int texture, int levels, int internalformat, int width, int height, int depth);
+
+    /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
      * @since OpenGL 4.5
      */
@@ -2322,6 +2374,14 @@ public abstract class OpenGL {
      */
     @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glGenerateTextureMipmap(int texture);
+
+    //i don't know why this depends on GL_ARB_transform_feedback2 instead of GL_ARB_texture_buffer_object, but that's what the DSA spec says.
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_transform_feedback2 GL_ARB_transform_feedback2}
+     * @since OpenGL 4.5
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_transform_feedback2 })
+    public abstract void glTextureBuffer(int texture, int internalformat, int buffer);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}

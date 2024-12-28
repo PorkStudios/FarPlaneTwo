@@ -1203,6 +1203,24 @@ final class LegacyOpenGL extends OpenGL {
         this.delegate.glMemoryBarrier(barriers);
     }
 
+    @Override
+    public void glTexStorage1D(int target, int levels, int internalformat, int width) {
+        super.checkSupported(GLExtension.GL_ARB_texture_storage);
+        this.delegate.glTexStorage1D(target, levels, internalformat, width);
+    }
+
+    @Override
+    public void glTexStorage2D(int target, int levels, int internalformat, int width, int height) {
+        super.checkSupported(GLExtension.GL_ARB_texture_storage);
+        this.delegate.glTexStorage2D(target, levels, internalformat, width, height);
+    }
+
+    @Override
+    public void glTexStorage3D(int target, int levels, int internalformat, int width, int height, int depth) {
+        super.checkSupported(GLExtension.GL_ARB_texture_storage);
+        this.delegate.glTexStorage3D(target, levels, internalformat, width, height, depth);
+    }
+
     //
     //
     // OpenGL 4.3
@@ -1661,6 +1679,28 @@ final class LegacyOpenGL extends OpenGL {
         return this.delegate.glGetTextureParameterFloat(texture, pname);
     }
 
+    private static final GLExtensionSet direct_state_access_AND_texture_storage = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_direct_state_access)
+            .add(GLExtension.GL_ARB_texture_storage);
+
+    @Override
+    public void glTextureStorage1D(int texture, int levels, int internalformat, int width) {
+        super.checkSupported(direct_state_access_AND_texture_storage);
+        this.delegate.glTextureStorage1D(texture, levels, internalformat, width);
+    }
+
+    @Override
+    public void glTextureStorage2D(int texture, int levels, int internalformat, int width, int height) {
+        super.checkSupported(direct_state_access_AND_texture_storage);
+        this.delegate.glTextureStorage2D(texture, levels, internalformat, width, height);
+    }
+
+    @Override
+    public void glTextureStorage3D(int texture, int levels, int internalformat, int width, int height, int depth) {
+        super.checkSupported(direct_state_access_AND_texture_storage);
+        this.delegate.glTextureStorage3D(texture, levels, internalformat, width, height, depth);
+    }
+
     @Override
     public void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, long data) {
         super.checkSupported(GLExtension.GL_ARB_direct_state_access);
@@ -1701,6 +1741,16 @@ final class LegacyOpenGL extends OpenGL {
     public void glGenerateTextureMipmap(int texture) {
         super.checkSupported(GLExtension.GL_ARB_direct_state_access);
         this.delegate.glGenerateTextureMipmap(texture);
+    }
+
+    private static final GLExtensionSet direct_state_access_AND_transform_feedback2 = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_direct_state_access)
+            .add(GLExtension.GL_ARB_transform_feedback2);
+
+    @Override
+    public void glTextureBuffer(int texture, int internalformat, int buffer) {
+        super.checkSupported(direct_state_access_AND_transform_feedback2);
+        this.delegate.glTextureBuffer(texture, internalformat, buffer);
     }
 
     @Override

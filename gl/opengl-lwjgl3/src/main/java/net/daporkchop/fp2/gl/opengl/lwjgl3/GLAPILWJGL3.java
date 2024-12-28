@@ -1771,6 +1771,36 @@ public final class GLAPILWJGL3 extends OpenGL {
         }
     }
 
+    @Override
+    public void glTexStorage1D(int target, int levels, int internalformat, int width) {
+        if (this.OpenGL42 | this.GL_ARB_texture_storage) {
+            GL42C.glTexStorage1D(target, levels, internalformat, width);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_texture_storage));
+        }
+    }
+
+    @Override
+    public void glTexStorage2D(int target, int levels, int internalformat, int width, int height) {
+        if (this.OpenGL42 | this.GL_ARB_texture_storage) {
+            GL42C.glTexStorage2D(target, levels, internalformat, width, height);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_texture_storage));
+        }
+    }
+
+    @Override
+    public void glTexStorage3D(int target, int levels, int internalformat, int width, int height, int depth) {
+        if (this.OpenGL42 | this.GL_ARB_texture_storage) {
+            GL42C.glTexStorage3D(target, levels, internalformat, width, height, depth);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_texture_storage));
+        }
+    }
+
     //
     //
     // OpenGL 4.3
@@ -2631,6 +2661,36 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public void glTextureStorage1D(int texture, int levels, int internalformat, int width) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_texture_storage)) {
+            GL45C.glTextureStorage1D(texture, levels, internalformat, width);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_texture_storage));
+        }
+    }
+
+    @Override
+    public void glTextureStorage2D(int texture, int levels, int internalformat, int width, int height) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_texture_storage)) {
+            GL45C.glTextureStorage2D(texture, levels, internalformat, width, height);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_texture_storage));
+        }
+    }
+
+    @Override
+    public void glTextureStorage3D(int texture, int levels, int internalformat, int width, int height, int depth) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_texture_storage)) {
+            GL45C.glTextureStorage3D(texture, levels, internalformat, width, height, depth);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_texture_storage));
+        }
+    }
+
+    @Override
     public void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, long data) {
         if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
             GL45C.nglTextureSubImage1D(texture, level, xoffset, width, format, type, data);
@@ -2697,6 +2757,16 @@ public final class GLAPILWJGL3 extends OpenGL {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public void glTextureBuffer(int texture, int internalformat, int buffer) {
+        if (this.OpenGL45 | (this.GL_ARB_direct_state_access & this.GL_ARB_transform_feedback2)) {
+            GL45C.glTextureBuffer(texture, internalformat, buffer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_transform_feedback2));
         }
     }
 
