@@ -53,6 +53,7 @@ public final class StatePreserver {
 
     private final OpenGL gl;
     private final boolean compatibility;
+    private final boolean dsa;
     private final boolean samplerObjects;
 
     //fixed-function blend state
@@ -122,6 +123,7 @@ public final class StatePreserver {
     StatePreserver(Builder builder) {
         this.gl = builder.gl;
         this.compatibility = this.gl.supports(GLExtension.GL_ARB_compatibility);
+        this.dsa = this.gl.supports(GLExtension.GL_ARB_direct_state_access);
         this.samplerObjects = this.gl.supports(GLExtension.GL_ARB_sampler_objects);
 
         this.framebuffer = builder.framebuffer;
@@ -291,8 +293,13 @@ public final class StatePreserver {
         //texture bindings
         //no-op, we currently don't care about this
         /*for (TextureBinding binding : this.textureBindings) {
-            gl.glActiveTexture(GL_TEXTURE0 + binding.unit);
-            gl.glBindTexture(binding.target.target(), 0);
+            if (this.dsa) {
+                gl.glBindTextureUnit(binding.unit, 0);
+            } else {
+                gl.glActiveTexture(GL_TEXTURE0 + binding.unit);
+                gl.glBindTexture(binding.target.id(), 0);
+            }
+
             if (this.samplerObjects) {
                 gl.glBindSampler(binding.unit, 0);
             }
@@ -362,8 +369,13 @@ public final class StatePreserver {
 
         //texture bindings
         for (TextureBinding binding : this.textureBindings) {
-            gl.glActiveTexture(GL_TEXTURE0 + binding.unit);
-            gl.glBindTexture(binding.target.id(), binding.texture);
+            if (this.dsa) {
+                gl.glBindTextureUnit(binding.unit, binding.texture);
+            } else {
+                gl.glActiveTexture(GL_TEXTURE0 + binding.unit);
+                gl.glBindTexture(binding.target.id(), binding.texture);
+            }
+
             if (this.samplerObjects) {
                 gl.glBindSampler(binding.unit, binding.sampler);
             }

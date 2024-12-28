@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.texture;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
@@ -35,12 +36,14 @@ public abstract class GLTexture extends GLObject.Normal {
     private final TextureTarget target;
 
     protected GLTexture(OpenGL gl, @NonNull TextureTarget target) {
-        super(gl, gl.glGenTexture());
+        super(gl, gl.supports(GLExtension.GL_ARB_direct_state_access) ? gl.glCreateTexture(target.id()) : gl.glGenTexture());
 
         try {
             this.target = target;
 
-            this.bindPreserving(ignored -> {});
+            if (!this.dsa) { //without DSA, the object isn't created until it's bound for the first time
+                this.bind(ignored -> {});
+            }
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -109,6 +112,30 @@ public abstract class GLTexture extends GLObject.Normal {
             this.bindPreserving(callback);
         } else {
             this.bindUnsafe(callback);
+        }
+    }
+
+    /**
+     * Immediately binds this texture to the texture's {@link TextureTarget texture binding target} on the specified texture unit in the OpenGL context.
+     * <p>
+     * This method <strong>may</strong> change the active texture unit.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound texture or previously active texture unit when the operation
+     * completes. The user is responsible for ensuring that OpenGL state is preserved, or that leaving this texture bound and/or the active texture unit modified
+     * will not cause future issues.
+     *
+     * @param unit the texture unit to bind the texture to (zero-indexed)
+     */
+    public final void bindToUnitUnsafe(int unit) {
+        this.checkOpen();
+
+        if (this.dsa) {
+            // If possible, use glBindTextureUnit() to bind the texture directly
+            this.gl.glBindTextureUnit(unit, this.id);
+        } else {
+            // Fall back to glActiveTexture() + glBindTexture()
+            this.gl.glActiveTexture(GL_TEXTURE0 + unit);
+            this.gl.glBindTexture(this.target.id(), this.id);
         }
     }
 }

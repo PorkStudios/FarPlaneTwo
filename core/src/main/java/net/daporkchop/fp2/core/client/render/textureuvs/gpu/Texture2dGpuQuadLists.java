@@ -137,11 +137,8 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
 
     @Override
     public void bind(OpenGL gl) {
-        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_LISTS_SAMPLER2D_BINDING);
-        gl.glBindTexture(GL_TEXTURE_2D, this.listsTexture.id());
-        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLER2D_BINDING);
-        gl.glBindTexture(GL_TEXTURE_2D, this.quadsCoordTexture.id());
-        gl.glActiveTexture(GL_TEXTURE0 + RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLER2D_BINDING);
-        gl.glBindTexture(GL_TEXTURE_2D, this.quadsTintTexture.id());
+        this.listsTexture.bindToUnitUnsafe(RenderConstants.TEXTURE_UVS_LISTS_SAMPLER2D_BINDING);
+        this.quadsCoordTexture.bindToUnitUnsafe(RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLER2D_BINDING);
+        this.quadsTintTexture.bindToUnitUnsafe(RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLER2D_BINDING);
     }
 }

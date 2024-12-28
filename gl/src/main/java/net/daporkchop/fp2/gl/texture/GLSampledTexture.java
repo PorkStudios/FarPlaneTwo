@@ -46,9 +46,14 @@ public abstract class GLSampledTexture extends GLTexture {
         this.checkOpen();
         checkArg(baseLevel <= maxLevel, "baseLevel (%s) must be less than or equal to maxLevel (%s)", baseLevel, maxLevel);
 
-        this.bind(target -> {
-            this.gl.glTexParameter(target.id(), GL_TEXTURE_BASE_LEVEL, baseLevel);
-            this.gl.glTexParameter(target.id(), GL_TEXTURE_MAX_LEVEL, maxLevel);
-        });
+        if (this.dsa) {
+            this.gl.glTextureParameter(this.id, GL_TEXTURE_BASE_LEVEL, baseLevel);
+            this.gl.glTextureParameter(this.id, GL_TEXTURE_MAX_LEVEL, maxLevel);
+        } else {
+            this.bind(target -> {
+                this.gl.glTexParameter(target.id(), GL_TEXTURE_BASE_LEVEL, baseLevel);
+                this.gl.glTexParameter(target.id(), GL_TEXTURE_MAX_LEVEL, maxLevel);
+            });
+        }
     }
 }
