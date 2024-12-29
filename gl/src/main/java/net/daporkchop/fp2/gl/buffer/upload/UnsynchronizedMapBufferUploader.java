@@ -28,6 +28,8 @@ import net.daporkchop.fp2.gl.buffer.BufferAccess;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.GLImmutableBuffer;
 import net.daporkchop.fp2.gl.sync.GLFenceSync;
+import net.daporkchop.lib.common.annotation.param.Positive;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -62,20 +64,24 @@ public final class UnsynchronizedMapBufferUploader extends BufferUploader {
 
     private final BufferUploader fallback;
 
-    public UnsynchronizedMapBufferUploader(OpenGL gl, int arenaSize) {
+    public UnsynchronizedMapBufferUploader(OpenGL gl, @Positive int arenaSize) {
         gl.checkSupported(REQUIRED_EXTENSIONS);
         positive(arenaSize, "arenaSize");
 
-        this.gl = gl;
-        this.stagingBuffer = GLImmutableBuffer.create(gl, arenaSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_CLIENT_STORAGE_BIT);
-        this.stagingBufferMapping = this.stagingBuffer.mapRange(BufferAccess.WRITE_ONLY, GL_MAP_PERSISTENT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_FLUSH_EXPLICIT_BIT, 0L, arenaSize);
+        try {
+            this.gl = gl;
+            this.stagingBuffer = GLImmutableBuffer.create(gl, arenaSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_CLIENT_STORAGE_BIT);
+            this.stagingBufferMapping = this.stagingBuffer.mapRange(BufferAccess.WRITE_ONLY, GL_MAP_PERSISTENT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_FLUSH_EXPLICIT_BIT, 0L, arenaSize);
 
-        this.fallback = new ScratchCopyBufferUploader(gl);
+            this.fallback = new ScratchCopyBufferUploader(gl);
 
-        this.arenaSize = arenaSize;
-        this.freeStart = 0;
-        this.freeSize = arenaSize;
-        this.dirtyStart = 0;
+            this.arenaSize = arenaSize;
+            this.freeStart = 0;
+            this.freeSize = arenaSize;
+            this.dirtyStart = 0;
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
     }
 
     @Override

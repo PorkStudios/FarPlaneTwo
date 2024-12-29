@@ -72,8 +72,7 @@ public final class ComputeShaderProgram extends ShaderProgram {
      */
     public static final class Builder extends ShaderProgram.Builder<ComputeShaderProgram, Builder> {
         Builder(OpenGL gl) {
-            super(gl, EnumSet.of(ShaderType.COMPUTE), EnumSet.of(ShaderType.COMPUTE));
-            gl.checkSupported(REQUIRED_EXTENSIONS);
+            super(gl.checkSupported(REQUIRED_EXTENSIONS), EnumSet.of(ShaderType.COMPUTE), EnumSet.of(ShaderType.COMPUTE));
         }
 
         public Builder computeShader(Shader computeShader) {

@@ -406,10 +406,11 @@ public abstract class OpenGL {
      * @param extension the OpenGL extension
      * @throws UnsupportedOperationException if the given extensions is not supported
      */
-    public final void checkSupported(GLExtension extension) {
+    public final OpenGL checkSupported(GLExtension extension) {
         if (!this.allExtensions.contains(extension)) {
             throw new UnsupportedOperationException(this.unsupportedMsg(extension));
         }
+        return this;
     }
 
     /**
@@ -418,10 +419,11 @@ public abstract class OpenGL {
      * @param extensions the OpenGL extensions
      * @throws UnsupportedOperationException if any of the given extensions is not supported
      */
-    public final void checkSupported(GLExtensionSet extensions) {
+    public final OpenGL checkSupported(GLExtensionSet extensions) {
         if (!this.allExtensions.containsAll(extensions)) {
             throw new UnsupportedOperationException(this.unsupportedMsg(extensions));
         }
+        return this;
     }
 
     /**

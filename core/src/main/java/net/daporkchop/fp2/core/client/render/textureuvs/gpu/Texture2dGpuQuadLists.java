@@ -58,17 +58,7 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
     private GLTexture2D quadsTintTexture;
 
     public Texture2dGpuQuadLists(@NonNull OpenGL gl) {
-        super(gl, QuadsTechnique.TEXTURE_2D);
-
-        try {
-            gl.checkSupported(REQUIRED_EXTENSIONS);
-
-            this.listsTexture = GLTexture2D.create(gl, TextureInternalFormat.RG32UI, 1, 1, 1);
-            this.quadsCoordTexture = GLTexture2D.create(gl, TextureInternalFormat.RGBA32F, 1, 1, 1);
-            this.quadsTintTexture = GLTexture2D.create(gl, TextureInternalFormat.R32F, 1, 1, 1);
-        } catch (Throwable t) {
-            throw PResourceUtil.closeSuppressed(t, this);
-        }
+        super(gl.checkSupported(REQUIRED_EXTENSIONS), QuadsTechnique.TEXTURE_2D);
     }
 
     @Override

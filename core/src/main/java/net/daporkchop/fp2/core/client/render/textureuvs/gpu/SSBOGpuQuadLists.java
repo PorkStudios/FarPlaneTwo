@@ -51,11 +51,9 @@ public final class SSBOGpuQuadLists extends GpuQuadLists {
     private final AttributeBuffer<TextureUVs.PackedBakedQuadAttribute> quadsBuffer;
 
     public SSBOGpuQuadLists(@NonNull OpenGL gl, @NonNull GlobalRenderer globalRenderer) {
-        super(gl, QuadsTechnique.SSBO);
+        super(gl.checkSupported(REQUIRED_EXTENSIONS), QuadsTechnique.SSBO);
 
         try {
-            gl.checkSupported(REQUIRED_EXTENSIONS);
-
             this.listsBuffer = globalRenderer.uvQuadListSSBOFormat.createBuffer();
             this.quadsBuffer = globalRenderer.uvPackedQuadSSBOFormat.createBuffer();
         } catch (Throwable t) {

@@ -61,11 +61,9 @@ public final class BufferTextureGpuQuadLists extends GpuQuadLists {
     private final GLBufferTexture quadsTintTexture;
 
     public BufferTextureGpuQuadLists(@NonNull OpenGL gl) {
-        super(gl, QuadsTechnique.BUFFER_TEXTURE);
+        super(gl.checkSupported(REQUIRED_EXTENSIONS), QuadsTechnique.BUFFER_TEXTURE);
 
         try {
-            gl.checkSupported(REQUIRED_EXTENSIONS);
-
             this.listsTexture = GLBufferTexture.create(gl);
             this.quadsCoordTexture = GLBufferTexture.create(gl);
             this.quadsTintTexture = GLBufferTexture.create(gl);
