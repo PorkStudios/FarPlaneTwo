@@ -33,7 +33,6 @@ import net.daporkchop.fp2.gl.texture.TextureFiltering;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
 import net.daporkchop.fp2.gl.texture.TextureTarget;
 import net.daporkchop.fp2.gl.texture.PixelType;
-import net.daporkchop.fp2.gl.util.AbstractDirectList;
 import net.daporkchop.fp2.gl.util.list.DirectFloatList;
 import net.daporkchop.fp2.gl.util.list.DirectIVec2List;
 import net.daporkchop.fp2.gl.util.list.DirectVec4List;
@@ -43,9 +42,6 @@ import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.List;
-import java.util.function.Function;
-
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * Implementation of {@link GpuQuadLists} which uses {@link QuadsTechnique#BUFFER_TEXTURE}.
@@ -57,9 +53,9 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
 
     public static final int X_COORD_WRAP = 1024; //this is the minimum permitted value of GL_MAX_TEXTURE_SIZE
 
-    private final GLTexture2D listsTexture;
-    private final GLTexture2D quadsCoordTexture;
-    private final GLTexture2D quadsTintTexture;
+    private GLTexture2D listsTexture;
+    private GLTexture2D quadsCoordTexture;
+    private GLTexture2D quadsTintTexture;
 
     public Texture2dGpuQuadLists(@NonNull OpenGL gl) {
         super(gl, QuadsTechnique.TEXTURE_2D);
@@ -67,9 +63,9 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
         try {
             gl.checkSupported(REQUIRED_EXTENSIONS);
 
-            this.listsTexture = GLTexture2D.create(gl);
-            this.quadsCoordTexture = GLTexture2D.create(gl);
-            this.quadsTintTexture = GLTexture2D.create(gl);
+            this.listsTexture = GLTexture2D.create(gl, TextureInternalFormat.RG32UI, 1, 1, 1);
+            this.quadsCoordTexture = GLTexture2D.create(gl, TextureInternalFormat.RGBA32F, 1, 1, 1);
+            this.quadsTintTexture = GLTexture2D.create(gl, TextureInternalFormat.R32F, 1, 1, 1);
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -88,12 +84,9 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
         int listsSize = lists.size();
         int quadsSize = quads.size();
 
-        this.listsTexture.mipmapLevels(0, 0);
-        this.quadsCoordTexture.mipmapLevels(0, 0);
-        this.quadsTintTexture.mipmapLevels(0, 0);
-        this.listsTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
-        this.quadsCoordTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
-        this.quadsTintTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+        GLTexture2D newListsTexture = null;
+        GLTexture2D newQuadsCoordTexture = null;
+        GLTexture2D newQuadsTintTexture = null;
 
         try (val alloc = new DirectMemoryAllocator()) { //temporary allocator for staging data
             try (val listsList = new DirectIVec2List(alloc)) {
@@ -107,9 +100,9 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
                 }
                 listsList.appendZero(capacity - listsList.size());
 
-                this.listsTexture.texImage(0, width, height, TextureInternalFormat.RG32UI, PixelFormat.RG_INTEGER, PixelType.UNSIGNED_INT, listsList.byteBufferView());
-            } catch (Throwable t) {
-                t.printStackTrace();
+                newListsTexture = GLTexture2D.create(this.gl, TextureInternalFormat.RG32UI, 1, width, height);
+                newListsTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+                newListsTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RG_INTEGER, PixelType.UNSIGNED_INT, listsList.byteBufferView());
             }
 
             try (val quadsCoordList = new DirectVec4List(alloc);
@@ -127,10 +120,25 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
                 quadsCoordList.appendZero(capacity - quadsCoordList.size());
                 quadsTintList.appendZero(capacity - quadsTintList.size());
 
-                this.quadsCoordTexture.texImage(0, width, height, TextureInternalFormat.RGBA32F, PixelFormat.RGBA, PixelType.FLOAT, quadsCoordList.byteBufferView());
-                this.quadsTintTexture.texImage(0, width, height, TextureInternalFormat.R32F, PixelFormat.RED, PixelType.FLOAT, quadsTintList.byteBufferView());
+                newQuadsCoordTexture = GLTexture2D.create(this.gl, TextureInternalFormat.RGBA32F, 1, width, height);
+                newQuadsCoordTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+                newQuadsCoordTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RGBA, PixelType.FLOAT, quadsCoordList.byteBufferView());
+
+                newQuadsTintTexture = GLTexture2D.create(this.gl, TextureInternalFormat.R32F, 1, width, height);
+                newQuadsTintTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+                newQuadsTintTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RED, PixelType.FLOAT, quadsTintList.byteBufferView());
             }
+        } catch (Throwable t) {
+            //close the new textures if they've been created
+            throw PResourceUtil.closeAllSuppressed(t, newListsTexture, newQuadsCoordTexture, newQuadsTintTexture);
         }
+
+        //close the old textures, then save the new ones
+        PResourceUtil.closeAll(this.listsTexture, this.quadsCoordTexture, this.quadsTintTexture);
+
+        this.listsTexture = newListsTexture;
+        this.quadsCoordTexture = newQuadsCoordTexture;
+        this.quadsTintTexture = newQuadsTintTexture;
     }
 
     @Override

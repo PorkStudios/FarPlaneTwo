@@ -98,6 +98,7 @@ struct PackedBakedQuad {
 //
 
 #if FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_BUFFER_TEXTURE
+#include <"fp2:shaders/util/arb/texture_buffer_object.glsl"> // texelFetchBuffer()
     uniform usamplerBuffer TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME;
     uniform samplerBuffer TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME;
     uniform samplerBuffer TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME;
@@ -141,7 +142,7 @@ TexQuadList stateAndFaceIndexToTexQuadList(uint state, uint faceIndex) {
 #if FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_SSBO
     return b_texQuadList[listIndex];
 #elif FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_BUFFER_TEXTURE
-    uvec2 list = texelFetch(TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME, int(listIndex)).xy;
+    uvec2 list = texelFetchBuffer(TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME, int(listIndex)).xy;
 
     TexQuadList result;
     result.first = list.x;
@@ -169,8 +170,8 @@ PackedBakedQuad quadIndexToQuad(uint quadIndex) {
 #if FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_SSBO
     return b_texQuad[quadIndex];
 #elif FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_BUFFER_TEXTURE
-    vec4 coord = texelFetch(TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME, int(quadIndex));
-    float tint = texelFetch(TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME, int(quadIndex)).x;
+    vec4 coord = texelFetchBuffer(TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME, int(quadIndex));
+    float tint = texelFetchBuffer(TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME, int(quadIndex)).x;
 
     PackedBakedQuad result;
     result.coords = coord;
