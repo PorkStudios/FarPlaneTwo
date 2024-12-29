@@ -19,33 +19,19 @@
 
 package net.daporkchop.fp2.gl.texture;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.OpenGL;
 
 /**
+ * An OpenGL texture object which owns its underlying texture storage.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum PixelFormat {
-    RED(GL_RED),
-    RG(GL_RG),
-    RGB(GL_RGB),
-    BGR(GL_BGR),
-    RGBA(GL_RGBA),
-    BGRA(GL_BGRA),
-    RED_INTEGER(GL_RED_INTEGER),
-    RG_INTEGER(GL_RG_INTEGER),
-    RGB_INTEGER(GL_RGB_INTEGER),
-    BGR_INTEGER(GL_BGR_INTEGER),
-    RGBA_INTEGER(GL_RGBA_INTEGER),
-    BGRA_INTEGER(GL_BGRA_INTEGER),
-    DEPTH_COMPONENT(GL_DEPTH_COMPONENT),
-    STENCIL_INDEX(GL_STENCIL_INDEX), //requires OpenGL 4.4
-    DEPTH_STENCIL(GL_DEPTH_STENCIL),
-    ;
+public abstract class GLStorageTexture extends GLTexture {
+    protected final @NonNull TextureInternalFormat internalFormat;
 
-    private final int id;
+    protected GLStorageTexture(@NonNull OpenGL gl, @NonNull TextureTarget target, @NonNull TextureInternalFormat internalFormat) {
+        super(gl, target);
+        this.internalFormat = internalFormat;
+    }
 }

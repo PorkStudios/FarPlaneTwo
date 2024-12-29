@@ -19,9 +19,11 @@
 
 package net.daporkchop.fp2.gl.texture;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -31,9 +33,22 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public abstract class GLSampledTexture extends GLTexture {
-    protected GLSampledTexture(OpenGL gl, @NonNull TextureTarget target) {
-        super(gl, target);
+@Getter
+public abstract class GLSampledTexture extends GLStorageTexture {
+    protected final @Positive int levels;
+
+    protected GLSampledTexture(@NonNull OpenGL gl, @NonNull TextureTarget target, @NonNull TextureInternalFormat internalFormat, @Positive int levels) {
+        super(gl, target, internalFormat);
+
+        try {
+            this.levels = positive(levels, "levels");
+
+            //configure the base and maximum mipmap levels
+            // (i don't think this is actually necessary)
+            this.mipmapLevels(0, levels - 1);
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
     }
 
     /**
@@ -42,7 +57,7 @@ public abstract class GLSampledTexture extends GLTexture {
      * @param baseLevel the base mipmap level (inclusive)
      * @param maxLevel  the maximum mipmap level (inclusive)
      */
-    public final void mipmapLevels(@NotNegative int baseLevel, @NotNegative int maxLevel) {
+    public final void mipmapLevels(int baseLevel, int maxLevel) {
         this.checkOpen();
         checkArg(baseLevel <= maxLevel, "baseLevel (%s) must be less than or equal to maxLevel (%s)", baseLevel, maxLevel);
 
@@ -60,7 +75,7 @@ public abstract class GLSampledTexture extends GLTexture {
     /**
      * Sets this texture's filtering mode.
      */
-    public final void filter(@NotNegative TextureFiltering minFilter, @NotNegative TextureFiltering magFilter) {
+    public final void filter(@NonNull TextureFiltering minFilter, @NonNull TextureFiltering magFilter) {
         this.checkOpen();
 
         if (this.dsa) {

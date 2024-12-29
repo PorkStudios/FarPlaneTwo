@@ -33,17 +33,17 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 public abstract class GLTexture extends GLObject.Normal {
+    protected final boolean immutableStorage;
+
     private final TextureTarget target;
 
-    protected GLTexture(OpenGL gl, @NonNull TextureTarget target) {
+    protected GLTexture(@NonNull OpenGL gl, @NonNull TextureTarget target) {
         super(gl, gl.supports(GLExtension.GL_ARB_direct_state_access) ? gl.glCreateTexture(target.id()) : gl.glGenTexture());
 
         try {
-            this.target = target;
+            this.immutableStorage = gl.supports(GLExtension.GL_ARB_texture_storage);
 
-            if (!this.dsa) { //without DSA, the object isn't created until it's bound for the first time
-                this.bind(ignored -> {});
-            }
+            this.target = target;
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }

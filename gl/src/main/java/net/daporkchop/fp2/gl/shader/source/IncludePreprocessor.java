@@ -128,6 +128,7 @@ public final class IncludePreprocessor {
     private IncludePreprocessor include(Identifier file, SourceLocation includedFrom) throws IOException, ResourceNotFoundException {
         if (this.includedFilesWithPragmaOnce.contains(file)) {
             //this source file contains a "#pragma once" and has already been included, don't include it again!
+            //TODO: if the source file is included conditionally, we should probably include the file anyway
             return this;
         }
 

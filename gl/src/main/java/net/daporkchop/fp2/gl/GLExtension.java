@@ -506,6 +506,10 @@ public enum GLExtension {
      * @see <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_sparse_buffer.txt">https://registry.khronos.org/OpenGL/extensions/ARB/ARB_sparse_buffer.txt</a>
      */
     GL_ARB_sparse_buffer(null, false),
+    /**
+     * @see <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_gpu_shader4.txt">https://registry.khronos.org/OpenGL/extensions/EXT/EXT_gpu_shader4.txt</a>
+     */
+    GL_EXT_gpu_shader4(null, true),
     ;
 
     private final GLVersion coreVersion;

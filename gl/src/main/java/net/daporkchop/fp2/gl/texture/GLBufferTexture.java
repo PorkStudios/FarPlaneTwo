@@ -24,30 +24,40 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 /**
  * @author DaPorkchop_
  */
 public final class GLBufferTexture extends GLTexture {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
-            .add(GLExtension.GL_ARB_texture_buffer_object);
+            .add(GLExtension.GL_ARB_texture_buffer_object)
+            .add(GLExtension.GL_EXT_gpu_shader4); //TODO: this isn't a reliable way to check for shader support, ideally we want to check if GL_EXT_gpu_shader4 OR GLSL 1.40 (GL 3.2) is supported
 
-    public static GLBufferTexture create(OpenGL gl, @NonNull TextureInternalFormat internalFormat, @NonNull GLBuffer buffer) {
+    public static GLBufferTexture create(@NonNull OpenGL gl) {
         gl.checkSupported(REQUIRED_EXTENSIONS);
-        return new GLBufferTexture(gl, internalFormat, buffer);
+        return new GLBufferTexture(gl);
     }
 
-    private GLBufferTexture(OpenGL gl, TextureInternalFormat internalFormat, GLBuffer buffer) {
+    private GLBufferTexture(@NonNull OpenGL gl) {
         super(gl, TextureTarget.TEXTURE_BUFFER);
+    }
 
-        try {
-            //actually attach the buffer object to this buffer texture
+    /**
+     * Sets the buffer object which provides the storage for this buffer texture.
+     *
+     * @param internalFormat the internal format of the data in the given buffer
+     * @param buffer         the buffer
+     */
+    public void setBuffer(@NonNull TextureInternalFormat internalFormat, @NonNull GLBuffer buffer) {
+        this.checkOpen();
+
+        //actually attach the buffer object to this buffer texture
+        if (this.dsa) {
+            this.gl.glTextureBuffer(this.id, internalFormat.id(), buffer.id());
+        } else {
             this.bind(target -> {
-                gl.glTexBuffer(target.id(), internalFormat.id(), buffer.id());
+                this.gl.glTexBuffer(target.id(), internalFormat.id(), buffer.id());
             });
-        } catch (Throwable t) {
-            throw PResourceUtil.closeSuppressed(t, this);
         }
     }
 }
