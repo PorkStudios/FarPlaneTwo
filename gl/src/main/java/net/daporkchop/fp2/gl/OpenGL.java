@@ -425,6 +425,20 @@ public abstract class OpenGL {
     }
 
     /**
+     * Checks that the features provided by both of the given OpenGL extension are supported by the current context.
+     *
+     * @param extension0 the OpenGL extension
+     * @param extension1 the OpenGL extension
+     * @throws UnsupportedOperationException if either of the given extensions is not supported
+     */
+    public final OpenGL checkSupported(GLExtension extension0, GLExtension extension1) {
+        if (!this.allExtensions.contains(extension0) || !this.allExtensions.contains(extension1)) {
+            throw new UnsupportedOperationException(this.unsupportedMsg(extension0, extension1));
+        }
+        return this;
+    }
+
+    /**
      * Checks that the features provided by the given OpenGL extensions are supported by the current context.
      *
      * @param extensions the OpenGL extensions
