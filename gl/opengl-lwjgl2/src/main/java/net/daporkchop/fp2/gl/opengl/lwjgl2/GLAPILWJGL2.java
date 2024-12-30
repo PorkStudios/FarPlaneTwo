@@ -1756,6 +1756,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, byte @NonNull [] binary) {
+        super.checkSupported(GLExtension.GL_ARB_get_program_binary);
+
         //get temporary direct buffer for downloading the binary
         //we can safely use APIUtil.getBufferByte() here: neither GL41.glGetProgramBinary() nor the ByteBuffer overload of glGetProgramBinary() use it
         val dataBuffer = this.beginHeapDownload(binary);
@@ -1773,6 +1775,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glProgramBinary(int program, int binaryFormat, byte @NonNull [] binary) {
+        super.checkSupported(GLExtension.GL_ARB_get_program_binary);
+
         this.glProgramBinary(program, binaryFormat, this.getBufferForUpload(binary));
     }
 
@@ -2158,6 +2162,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glGetProgramResourceiv(int program, int programInterface, int index, @NonNull int[] props, int[] length, @NonNull int[] params) {
+        super.checkSupported(GLExtension.GL_ARB_program_interface_query);
+
         //get temporary direct buffer for storing the arguments and results
         //we can safely use APIUtil.getBufferInt() here: GL43.glGetProgramResource() doesn't use it
         IntBuffer tmpBuffer = this.getBufferInt(props.length + params.length + (length != null ? 1 : 0));
@@ -2288,6 +2294,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glDebugMessageControl(int source, int type, int severity, int[] ids, boolean enabled) {
+        super.checkSupported(GLExtension.GL_KHR_debug);
+
         if (ids == null) {
             this.glDebugMessageControl(source, type, severity, (IntBuffer) null, enabled);
         } else {
@@ -2416,6 +2424,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glBindBuffersBase(int target, int first, @NonNull int[] buffers) {
+        super.checkSupported(GLExtension.GL_ARB_multi_bind);
+
         //get temporary direct buffer for storing the arguments
         //we can safely use APIUtil.getBufferInt() here: GL44.glBindBuffersBase() doesn't use it
         IntBuffer buffersBuffer = this.getBufferInt(buffers.length).duplicate();
@@ -2904,6 +2914,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glVertexArrayVertexBuffers(int vaobj, int first, int count, int[] buffers, long[] offsets, int[] strides) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_multi_bind);
+
         if (buffers == null) {
             this.glVertexArrayVertexBuffers(vaobj, first, count, 0L, 0L, 0L);
         } else {
@@ -3022,6 +3034,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glTextureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, long data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+
         this.glTextureSubImage1D(texture, level, xoffset, width, format, type,
                 DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage1DStorage(format, type, width)));
     }
@@ -3036,6 +3050,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glTextureSubImage2D(int texture, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+
         this.glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type,
                 DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage2DStorage(format, type, width, height)));
     }
@@ -3050,6 +3066,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glTextureSubImage3D(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, long data) {
+        super.checkSupported(GLExtension.GL_ARB_direct_state_access);
+
         this.glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type,
                 DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage3DStorage(format, type, width, height, depth)));
     }
@@ -3187,6 +3205,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     @Override
     public void glDebugMessageControlARB(int source, int type, int severity, int[] ids, boolean enabled) {
+        super.checkSupported(GLExtension.GL_ARB_debug_output);
+
         if (ids == null) {
             this.glDebugMessageControlARB(source, type, severity, (IntBuffer) null, enabled);
         } else {

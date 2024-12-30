@@ -1412,6 +1412,8 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public void glGetProgramBinary(int program, int[] length, int @NonNull [] binaryFormat, byte @NonNull [] binary) {
+        super.checkSupported(GLExtension.GL_ARB_get_program_binary);
+
         MemoryStack stack = MemoryStack.stackGet();
         int stackPointer = stack.getPointer();
         try {
@@ -1436,6 +1438,8 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public void glProgramBinary(int program, int binaryFormat, byte @NonNull [] binary) {
+        super.checkSupported(GLExtension.GL_ARB_get_program_binary);
+
         MemoryStack stack = MemoryStack.stackGet();
         int stackPointer = stack.getPointer();
         try {
@@ -1822,20 +1826,18 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public String glGetObjectLabel(int identifier, int name) {
-        int maxLabelLength = this.limits().maxLabelLength();
         super.checkSupported(GLExtension.GL_KHR_debug);
 
-        val res = GL43C.glGetObjectLabel(identifier, name, maxLabelLength);
+        val res = GL43C.glGetObjectLabel(identifier, name, this.limits().maxLabelLength());
         super.debugCheckError();
         return res;
     }
 
     @Override
     public String glGetObjectPtrLabel(long ptr) {
-        int maxLabelLength = this.limits().maxLabelLength();
         super.checkSupported(GLExtension.GL_KHR_debug);
 
-        val res = GL43C.glGetObjectPtrLabel(ptr, maxLabelLength);
+        val res = GL43C.glGetObjectPtrLabel(ptr, this.limits().maxLabelLength());
         super.debugCheckError();
         return res;
     }
