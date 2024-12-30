@@ -149,7 +149,7 @@ public abstract class OpenGL {
     //
     // EXTENSION AND VERSION CAPABILITY FIELDS
     // The OpenGLxx fields are true iff the context supports the corresponding OpenGL version.
-    // The GL_ARB_xx fields are true iff the corresponding OpenGL extensions are supported, but not in the core profile.
+    // The GL_ARB_xx fields are true iff the corresponding OpenGL extensions are supported.
     //
     //
 
@@ -320,60 +320,60 @@ public abstract class OpenGL {
 
         // OpenGL 3.1
         this.OpenGL31 = version.compareTo(GLVersion.OpenGL31) >= 0;
-        this.GL_ARB_copy_buffer = !this.OpenGL31 && allExtensions.contains(GLExtension.GL_ARB_copy_buffer);
-        this.GL_ARB_draw_instanced = !this.OpenGL31 && allExtensions.contains(GLExtension.GL_ARB_draw_instanced);
-        this.GL_ARB_texture_buffer_object = !this.OpenGL31 && allExtensions.contains(GLExtension.GL_ARB_texture_buffer_object);
-        this.GL_ARB_uniform_buffer_object = !this.OpenGL31 && allExtensions.contains(GLExtension.GL_ARB_uniform_buffer_object);
+        this.GL_ARB_copy_buffer = allExtensions.contains(GLExtension.GL_ARB_copy_buffer);
+        this.GL_ARB_draw_instanced = allExtensions.contains(GLExtension.GL_ARB_draw_instanced);
+        this.GL_ARB_texture_buffer_object = allExtensions.contains(GLExtension.GL_ARB_texture_buffer_object);
+        this.GL_ARB_uniform_buffer_object = allExtensions.contains(GLExtension.GL_ARB_uniform_buffer_object);
 
         // OpenGL 3.2
         this.OpenGL32 = version.compareTo(GLVersion.OpenGL32) >= 0;
-        this.GL_ARB_draw_elements_base_vertex = !this.OpenGL32 && allExtensions.contains(GLExtension.GL_ARB_draw_elements_base_vertex);
-        this.GL_ARB_sync = !this.OpenGL32 && allExtensions.contains(GLExtension.GL_ARB_sync);
+        this.GL_ARB_draw_elements_base_vertex = allExtensions.contains(GLExtension.GL_ARB_draw_elements_base_vertex);
+        this.GL_ARB_sync = allExtensions.contains(GLExtension.GL_ARB_sync);
 
         // OpenGL 3.3
         this.OpenGL33 = version.compareTo(GLVersion.OpenGL33) >= 0;
-        this.GL_ARB_instanced_arrays = !this.OpenGL33 && allExtensions.contains(GLExtension.GL_ARB_instanced_arrays);
-        this.GL_ARB_sampler_objects = !this.OpenGL33 && allExtensions.contains(GLExtension.GL_ARB_sampler_objects);
+        this.GL_ARB_instanced_arrays = allExtensions.contains(GLExtension.GL_ARB_instanced_arrays);
+        this.GL_ARB_sampler_objects = allExtensions.contains(GLExtension.GL_ARB_sampler_objects);
 
         // OpenGL 4.0
         this.OpenGL40 = version.compareTo(GLVersion.OpenGL40) >= 0;
-        this.GL_ARB_transform_feedback2 = !this.OpenGL40 && allExtensions.contains(GLExtension.GL_ARB_transform_feedback2);
+        this.GL_ARB_transform_feedback2 = allExtensions.contains(GLExtension.GL_ARB_transform_feedback2);
 
         // OpenGL 4.1
         this.OpenGL41 = version.compareTo(GLVersion.OpenGL41) >= 0;
-        this.GL_ARB_get_program_binary = !this.OpenGL41 && allExtensions.contains(GLExtension.GL_ARB_get_program_binary);
-        this.GL_ARB_separate_shader_objects = !this.OpenGL41 && allExtensions.contains(GLExtension.GL_ARB_separate_shader_objects);
+        this.GL_ARB_get_program_binary = allExtensions.contains(GLExtension.GL_ARB_get_program_binary);
+        this.GL_ARB_separate_shader_objects = allExtensions.contains(GLExtension.GL_ARB_separate_shader_objects);
 
         // OpenGL 4.2
         this.OpenGL42 = version.compareTo(GLVersion.OpenGL42) >= 0;
-        this.GL_ARB_base_instance = !this.OpenGL42 && allExtensions.contains(GLExtension.GL_ARB_base_instance);
-        this.GL_ARB_shader_image_load_store = !this.OpenGL42 && allExtensions.contains(GLExtension.GL_ARB_shader_image_load_store);
-        this.GL_ARB_texture_storage = !this.OpenGL42 && allExtensions.contains(GLExtension.GL_ARB_texture_storage);
+        this.GL_ARB_base_instance = allExtensions.contains(GLExtension.GL_ARB_base_instance);
+        this.GL_ARB_shader_image_load_store = allExtensions.contains(GLExtension.GL_ARB_shader_image_load_store);
+        this.GL_ARB_texture_storage = allExtensions.contains(GLExtension.GL_ARB_texture_storage);
 
         // OpenGL 4.3
         this.OpenGL43 = version.compareTo(GLVersion.OpenGL43) >= 0;
-        this.GL_ARB_clear_buffer_object = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_clear_buffer_object);
-        this.GL_ARB_compute_shader = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_compute_shader);
-        this.GL_ARB_invalidate_subdata = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_invalidate_subdata);
-        this.GL_ARB_multi_draw_indirect = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_multi_draw_indirect);
-        this.GL_ARB_program_interface_query = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_program_interface_query);
-        this.GL_ARB_shader_storage_buffer_object = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_shader_storage_buffer_object);
-        this.GL_ARB_vertex_attrib_binding = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_ARB_vertex_attrib_binding);
-        this.GL_KHR_debug = !this.OpenGL43 && allExtensions.contains(GLExtension.GL_KHR_debug);
+        this.GL_ARB_clear_buffer_object = allExtensions.contains(GLExtension.GL_ARB_clear_buffer_object);
+        this.GL_ARB_compute_shader = allExtensions.contains(GLExtension.GL_ARB_compute_shader);
+        this.GL_ARB_invalidate_subdata = allExtensions.contains(GLExtension.GL_ARB_invalidate_subdata);
+        this.GL_ARB_multi_draw_indirect = allExtensions.contains(GLExtension.GL_ARB_multi_draw_indirect);
+        this.GL_ARB_program_interface_query = allExtensions.contains(GLExtension.GL_ARB_program_interface_query);
+        this.GL_ARB_shader_storage_buffer_object = allExtensions.contains(GLExtension.GL_ARB_shader_storage_buffer_object);
+        this.GL_ARB_vertex_attrib_binding = allExtensions.contains(GLExtension.GL_ARB_vertex_attrib_binding);
+        this.GL_KHR_debug = allExtensions.contains(GLExtension.GL_KHR_debug);
 
         // OpenGL 4.4
         this.OpenGL44 = version.compareTo(GLVersion.OpenGL44) >= 0;
-        this.GL_ARB_buffer_storage = !this.OpenGL44 && allExtensions.contains(GLExtension.GL_ARB_buffer_storage);
-        this.GL_ARB_multi_bind = !this.OpenGL44 && allExtensions.contains(GLExtension.GL_ARB_multi_bind);
+        this.GL_ARB_buffer_storage = allExtensions.contains(GLExtension.GL_ARB_buffer_storage);
+        this.GL_ARB_multi_bind = allExtensions.contains(GLExtension.GL_ARB_multi_bind);
 
         // OpenGL 4.5
         this.OpenGL45 = version.compareTo(GLVersion.OpenGL45) >= 0;
-        this.GL_ARB_clip_control = !this.OpenGL45 && allExtensions.contains(GLExtension.GL_ARB_clip_control);
-        this.GL_ARB_direct_state_access = !this.OpenGL45 && allExtensions.contains(GLExtension.GL_ARB_direct_state_access);
+        this.GL_ARB_clip_control = allExtensions.contains(GLExtension.GL_ARB_clip_control);
+        this.GL_ARB_direct_state_access = allExtensions.contains(GLExtension.GL_ARB_direct_state_access);
 
         // OpenGL 4.6
         this.OpenGL46 = version.compareTo(GLVersion.OpenGL46) >= 0;
-        this.GL_ARB_indirect_parameters = !this.OpenGL46 && allExtensions.contains(GLExtension.GL_ARB_indirect_parameters);
+        this.GL_ARB_indirect_parameters = allExtensions.contains(GLExtension.GL_ARB_indirect_parameters);
 
         // No OpenGL version
         this.GL_ARB_debug_output = allExtensions.contains(GLExtension.GL_ARB_debug_output);
@@ -392,7 +392,7 @@ public abstract class OpenGL {
     protected abstract GLVersion determineVersion();
 
     /**
-     * Checks if the features provided by the given OpenGL extension are supported by the current context.
+     * Asserts that the given OpenGL extension are supported by the current context.
      *
      * @param extension the OpenGL extension
      * @return {@code true} if the features provided by the given OpenGL extension are supported by the current context
@@ -402,7 +402,7 @@ public abstract class OpenGL {
     }
 
     /**
-     * Checks if the features provided by the given OpenGL extensions are supported by the current context.
+     * Asserts that the given OpenGL extensions are supported by the current context.
      *
      * @param extensions the OpenGL extensions
      * @return {@code true} if the features provided by the given OpenGL extensions are supported by the current context
@@ -412,7 +412,7 @@ public abstract class OpenGL {
     }
 
     /**
-     * Checks that the features provided by the given OpenGL extension is supported by the current context.
+     * Asserts that the given OpenGL extension is supported by the current context.
      *
      * @param extension the OpenGL extension
      * @throws UnsupportedOperationException if the given extensions is not supported
@@ -425,21 +425,21 @@ public abstract class OpenGL {
     }
 
     /**
-     * Checks that the features provided by both of the given OpenGL extension are supported by the current context.
+     * Asserts that the given OpenGL extension are supported by the current context.
      *
      * @param extension0 the OpenGL extension
      * @param extension1 the OpenGL extension
      * @throws UnsupportedOperationException if either of the given extensions is not supported
      */
     public final OpenGL checkSupported(GLExtension extension0, GLExtension extension1) {
-        if (!this.allExtensions.contains(extension0) || !this.allExtensions.contains(extension1)) {
+        if (!(this.allExtensions.contains(extension0) && this.allExtensions.contains(extension1))) {
             throw new UnsupportedOperationException(this.unsupportedMsg(extension0, extension1));
         }
         return this;
     }
 
     /**
-     * Checks that the features provided by the given OpenGL extensions are supported by the current context.
+     * Asserts that the given OpenGL extensions are supported by the current context.
      *
      * @param extensions the OpenGL extensions
      * @throws UnsupportedOperationException if any of the given extensions is not supported
@@ -449,6 +449,37 @@ public abstract class OpenGL {
             throw new UnsupportedOperationException(this.unsupportedMsg(extensions));
         }
         return this;
+    }
+
+    /**
+     * Asserts that the given OpenGL extension is supported by the current context.
+     * <p>
+     * This method is intended for internal use only!
+     *
+     * @param flag      the boolean flag, if {@code false} an exception will be thrown
+     * @param extension the OpenGL extension
+     * @throws UnsupportedOperationException if the given extensions is not supported
+     */
+    protected final void checkSupported(boolean flag, GLExtension extension) {
+        if (!flag) {
+            throw new UnsupportedOperationException(this.unsupportedMsg(extension));
+        }
+    }
+
+    /**
+     * Asserts that the given OpenGL extensions are supported by the current context.
+     * <p>
+     * This method is intended for internal use only!
+     *
+     * @param flag       the boolean flag, if {@code false} an exception will be thrown
+     * @param extension0 the OpenGL extension
+     * @param extension1 the OpenGL extension
+     * @throws UnsupportedOperationException if either of the given extensions is not supported
+     */
+    protected final void checkSupported(boolean flag, GLExtension extension0, GLExtension extension1) {
+        if (!flag) {
+            throw new UnsupportedOperationException(this.unsupportedMsg(extension0, extension1));
+        }
     }
 
     /**
