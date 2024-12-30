@@ -31,7 +31,7 @@ import net.daporkchop.fp2.gl.buffer.GLBuffer;
 public final class GLBufferTexture extends GLTexture {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
             .add(GLExtension.GL_ARB_texture_buffer_object)
-            .add(GLExtension.GL_EXT_gpu_shader4); //TODO: this isn't a reliable way to check for shader support, ideally we want to check if GL_EXT_gpu_shader4 OR GLSL 1.40 (GL 3.2) is supported
+            .add(GLExtension.FEATURE_GLSL_function_texelFetch); //required in order to use texelFetch() in GLSL shaders
 
     public static GLBufferTexture create(@NonNull OpenGL gl) {
         gl.checkSupported(REQUIRED_EXTENSIONS);

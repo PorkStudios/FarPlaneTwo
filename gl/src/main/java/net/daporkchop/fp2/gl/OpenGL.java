@@ -43,8 +43,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
@@ -272,12 +270,13 @@ public abstract class OpenGL {
             //get supported extension names
             Set<String> extensionNames;
             if (version.compareTo(GLVersion.OpenGL30) < 0) { //use old extensions field
-                String extensionsString = this.glGetString(GL_EXTENSIONS);
-                extensionNames = new HashSet<>(Arrays.asList(extensionsString.trim().split(" ")));
+                extensionNames = new HashSet<>(Arrays.asList(this.glGetString(GL_EXTENSIONS).trim().split(" ")));
             } else { //use new indexed EXTENSIONS property
-                extensionNames = IntStream.range(0, this.glGetInteger(GL_NUM_EXTENSIONS))
-                        .mapToObj(i -> this.glGetString(GL_EXTENSIONS, i))
-                        .collect(Collectors.toSet());
+                int numExtensions = this.glGetInteger(GL_NUM_EXTENSIONS);
+                extensionNames = new HashSet<>(numExtensions);
+                for (int i = 0; i < numExtensions; i++) {
+                    extensionNames.add(this.glGetString(GL_EXTENSIONS, i));
+                }
             }
 
             //map extension names to the actual extensions
@@ -287,9 +286,21 @@ public abstract class OpenGL {
                     .removeAll(version.coreExtensions());
         }
 
+        //determine the highest supported GLSL version!
+        //  for now we'll just use whichever GLSL version is core in the current OpenGL version, but we could parse GL_SHADING_LANGUAGE_VERSION
+        int glslVersion = version.glsl();
+
         //figure out if GL_ARB_compatibility features should be assumed to be present
         if (isImplied_GL_ARB_compatibility(version, profile, forwardCompatibility)) {
             nonCoreExtensions = nonCoreExtensions.add(GLExtension.GL_ARB_compatibility);
+        }
+
+        //emulated "extensions" indicating feature support:
+        {
+            //FEATURE_GLSL_function_texelFetch: requires GLSL 1.40 or GL_EXT_gpu_shader4
+            if (glslVersion >= 140 || nonCoreExtensions.contains(GLExtension.GL_EXT_gpu_shader4)) {
+                nonCoreExtensions = nonCoreExtensions.add(GLExtension.FEATURE_GLSL_function_texelFetch);
+            }
         }
 
         GLExtensionSet allExtensions = nonCoreExtensions.addAll(version.coreExtensions());

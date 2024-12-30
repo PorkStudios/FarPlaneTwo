@@ -510,6 +510,22 @@ public enum GLExtension {
      * @see <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_gpu_shader4.txt">https://registry.khronos.org/OpenGL/extensions/EXT/EXT_gpu_shader4.txt</a>
      */
     GL_EXT_gpu_shader4(null, true),
+
+    //Not real extensions, but emulated for feature detection
+    /**
+     * Presence of this extension indicates that GLSL shaders may use the {@code texelFetch} or {@code texelFetch*} functions to fetch individual texel values from samplers. Additional
+     * preprocessor checks are required in GLSL source to dispatch calls to the correct function.
+     * <p>
+     * This emulated extension is enabled in the following cases:
+     * <ul>
+     *     <li>If GLSL 1.40 (or higher) is supported, in which case {@code texelFetch} is available</li>
+     *     <li>If {@link #GL_EXT_gpu_shader4} is supported, in which case the {@code texelFetch*} family of functions are available</li>
+     * </ul>
+     * <p>
+     * I don't like doing this, but for some stupid fucking reason reason it's perfectly valid for an OpenGL context to support {@link #GL_ARB_texture_buffer_object} but not support the
+     * GLSL {@code texelFetch[*]} function which is the only way to actually read data from a buffer texture.
+     */
+    FEATURE_GLSL_function_texelFetch(null, false),
     ;
 
     private final GLVersion coreVersion;
