@@ -29,10 +29,10 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.texture.GLTexture2D;
 import net.daporkchop.fp2.gl.texture.PixelFormat;
+import net.daporkchop.fp2.gl.texture.PixelType;
 import net.daporkchop.fp2.gl.texture.TextureFiltering;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
 import net.daporkchop.fp2.gl.texture.TextureTarget;
-import net.daporkchop.fp2.gl.texture.PixelType;
 import net.daporkchop.fp2.gl.util.list.DirectFloatList;
 import net.daporkchop.fp2.gl.util.list.DirectIVec2List;
 import net.daporkchop.fp2.gl.util.list.DirectVec4List;
@@ -44,7 +44,7 @@ import net.daporkchop.lib.common.math.PMath;
 import java.util.List;
 
 /**
- * Implementation of {@link GpuQuadLists} which uses {@link QuadsTechnique#BUFFER_TEXTURE}.
+ * Implementation of {@link GpuQuadLists} which uses simple 2D textures.
  *
  * @author DaPorkchop_
  */

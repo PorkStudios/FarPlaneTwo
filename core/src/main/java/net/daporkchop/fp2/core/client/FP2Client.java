@@ -44,6 +44,7 @@ import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.GLProfile;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.lib.common.function.PFunctions;
 import net.daporkchop.lib.logging.Logger;
 
 import java.io.InputStream;
@@ -116,6 +117,7 @@ public abstract class FP2Client {
                         //parse properties
                         GLVersion version = GLVersion.valueOf(Objects.requireNonNull(properties.getProperty("version"), "version"));
                         GLExtensionSet extensions = Stream.of(Objects.requireNonNull(properties.getProperty("extensions"), "extensions").split(","))
+                                .filter(PFunctions.not(String::isEmpty))
                                 .map(GLExtension::valueOf)
                                 .collect(GLExtensionSet.toExtensionSet());
                         GLProfile profile = GLProfile.valueOf(Objects.requireNonNull(properties.getProperty("profile"), "profile"));
