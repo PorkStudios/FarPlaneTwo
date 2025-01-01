@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -1672,6 +1672,14 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public void glBindImageTexture(int unit, int texture, int level, boolean layered, int layer, int access, int format) {
+        super.checkSupported(this.GL_ARB_shader_image_load_store, GLExtension.GL_ARB_shader_image_load_store);
+
+        GL42C.glBindImageTexture(unit, texture, level, layered, layer, access, format);
+        super.debugCheckError();
+    }
+
+    @Override
     public void glTexStorage1D(int target, int levels, int internalformat, int width) {
         super.checkSupported(this.GL_ARB_texture_storage, GLExtension.GL_ARB_texture_storage);
 
@@ -1967,6 +1975,30 @@ public final class GLAPILWJGL3 extends OpenGL {
         super.checkSupported(this.GL_ARB_multi_bind, GLExtension.GL_ARB_multi_bind);
 
         GL44C.glBindBuffersBase(target, first, buffers);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBindImageTextures(int first, int count) {
+        super.checkSupported(this.GL_ARB_multi_bind & this.GL_ARB_shader_image_load_store, GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store);
+
+        GL44C.nglBindImageTextures(first, count, 0L);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBindImageTextures(int first, @NonNull IntBuffer textures) {
+        super.checkSupported(this.GL_ARB_multi_bind & this.GL_ARB_shader_image_load_store, GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store);
+
+        GL44C.glBindImageTextures(first, textures);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBindImageTextures(int first, int @NonNull [] textures) {
+        super.checkSupported(this.GL_ARB_multi_bind & this.GL_ARB_shader_image_load_store, GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store);
+
+        GL44C.glBindImageTextures(first, textures);
         super.debugCheckError();
     }
 

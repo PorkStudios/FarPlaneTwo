@@ -1835,6 +1835,13 @@ public abstract class OpenGL {
     public abstract void glMemoryBarrier(int barriers);
 
     /**
+     * @apiNote requires {@link GLExtension#GL_ARB_shader_image_load_store GL_ARB_shader_image_load_store}
+     * @since OpenGL 4.2
+     */
+    @GLRequires(GLExtension.GL_ARB_shader_image_load_store)
+    public abstract void glBindImageTexture(int unit, int texture, int level, boolean layered, int layer, int access, int format);
+
+    /**
      * @apiNote requires {@link GLExtension#GL_ARB_texture_storage GL_ARB_texture_storage}
      * @since OpenGL 4.2
      */
@@ -2069,6 +2076,27 @@ public abstract class OpenGL {
      */
     @GLRequires(GLExtension.GL_ARB_multi_bind)
     public abstract void glBindBuffersBase(int target, int first, @NonNull int[] buffers);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_multi_bind GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_shader_image_load_store GL_ARB_shader_image_load_store}
+     * @since OpenGL 4.4
+     */
+    @GLRequires({GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store})
+    public abstract void glBindImageTextures(int first, int count);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_multi_bind GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_shader_image_load_store GL_ARB_shader_image_load_store}
+     * @since OpenGL 4.4
+     */
+    @GLRequires({GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store})
+    public abstract void glBindImageTextures(int first, @NonNull IntBuffer textures);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_multi_bind GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_shader_image_load_store GL_ARB_shader_image_load_store}
+     * @since OpenGL 4.4
+     */
+    @GLRequires({GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store})
+    public abstract void glBindImageTextures(int first, int @NonNull [] textures);
 
     //
     //

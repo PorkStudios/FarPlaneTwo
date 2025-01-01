@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -1204,6 +1204,12 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glBindImageTexture(int unit, int texture, int level, boolean layered, int layer, int access, int format) {
+        super.checkSupported(GLExtension.GL_ARB_shader_image_load_store);
+        this.delegate.glBindImageTexture(unit, texture, level, layered, layer, access, format);
+    }
+
+    @Override
     public void glTexStorage1D(int target, int levels, int internalformat, int width) {
         super.checkSupported(GLExtension.GL_ARB_texture_storage);
         this.delegate.glTexStorage1D(target, levels, internalformat, width);
@@ -1405,6 +1411,24 @@ final class LegacyOpenGL extends OpenGL {
     public void glBindBuffersBase(int target, int first, @NonNull int[] buffers) {
         super.checkSupported(GLExtension.GL_ARB_multi_bind);
         this.delegate.glBindBuffersBase(target, first, buffers);
+    }
+
+    @Override
+    public void glBindImageTextures(int first, int count) {
+        super.checkSupported(GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store);
+        this.delegate.glBindImageTextures(first, count);
+    }
+
+    @Override
+    public void glBindImageTextures(int first, @NonNull IntBuffer textures) {
+        super.checkSupported(GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store);
+        this.delegate.glBindImageTextures(first, textures);
+    }
+
+    @Override
+    public void glBindImageTextures(int first, int @NonNull [] textures) {
+        super.checkSupported(GLExtension.GL_ARB_multi_bind, GLExtension.GL_ARB_shader_image_load_store);
+        this.delegate.glBindImageTextures(first, textures);
     }
 
     //
