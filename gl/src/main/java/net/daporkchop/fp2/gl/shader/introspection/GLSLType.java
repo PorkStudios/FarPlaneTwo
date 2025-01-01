@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,236 +30,126 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 @RequiredArgsConstructor
 @Getter
 public enum GLSLType {
-    FLOAT(false),// 	float
-    FLOAT_VEC2(false),// 	vec2
-    FLOAT_VEC3(false),// 	vec3
-    FLOAT_VEC4(false),// 	vec4
-    DOUBLE(false),// 	double
-    DOUBLE_VEC2(false),// 	dvec2
-    DOUBLE_VEC3(false),// 	dvec3
-    DOUBLE_VEC4(false),// 	dvec4
-    INT(false),// 	int
-    INT_VEC2(false),// 	ivec2
-    INT_VEC3(false),// 	ivec3
-    INT_VEC4(false),// 	ivec4
-    UNSIGNED_INT(false),// 	unsigned int
-    UNSIGNED_INT_VEC2(false),// 	uvec2
-    UNSIGNED_INT_VEC3(false),// 	uvec3
-    UNSIGNED_INT_VEC4(false),// 	uvec4
-    BOOL(false),// 	bool
-    BOOL_VEC2(false),// 	bvec2
-    BOOL_VEC3(false),// 	bvec3
-    BOOL_VEC4(false),// 	bvec4
-    FLOAT_MAT2(false),// 	mat2
-    FLOAT_MAT3(false),// 	mat3
-    FLOAT_MAT4(false),// 	mat4
-    FLOAT_MAT2x3(false),// 	mat2x3
-    FLOAT_MAT2x4(false),// 	mat2x4
-    FLOAT_MAT3x2(false),// 	mat3x2
-    FLOAT_MAT3x4(false),// 	mat3x4
-    FLOAT_MAT4x2(false),// 	mat4x2
-    FLOAT_MAT4x3(false),// 	mat4x3
-    DOUBLE_MAT2(false),// 	dmat2
-    DOUBLE_MAT3(false),// 	dmat3
-    DOUBLE_MAT4(false),// 	dmat4
-    DOUBLE_MAT2x3(false),// 	dmat2x3
-    DOUBLE_MAT2x4(false),// 	dmat2x4
-    DOUBLE_MAT3x2(false),// 	dmat3x2
-    DOUBLE_MAT3x4(false),// 	dmat3x4
-    DOUBLE_MAT4x2(false),// 	dmat4x2
-    DOUBLE_MAT4x3(false),// 	dmat4x3
-    SAMPLER_1D(true),// 	sampler1D
-    SAMPLER_2D(true),// 	sampler2D
-    SAMPLER_3D(true),// 	sampler3D
-    SAMPLER_CUBE(true),// 	samplerCube
-    SAMPLER_1D_SHADOW(true),// 	sampler1DShadow
-    SAMPLER_2D_SHADOW(true),// 	sampler2DShadow
-    SAMPLER_1D_ARRAY(true),// 	sampler1DArray
-    SAMPLER_2D_ARRAY(true),// 	sampler2DArray
-    SAMPLER_1D_ARRAY_SHADOW(true),// 	sampler1DArrayShadow
-    SAMPLER_2D_ARRAY_SHADOW(true),// 	sampler2DArrayShadow
-    SAMPLER_2D_MULTISAMPLE(true),// 	sampler2DMS
-    SAMPLER_2D_MULTISAMPLE_ARRAY(true),// 	sampler2DMSArray
-    SAMPLER_CUBE_SHADOW(true),// 	samplerCubeShadow
-    SAMPLER_BUFFER(true),// 	samplerBuffer
-    SAMPLER_2D_RECT(true),// 	sampler2DRect
-    SAMPLER_2D_RECT_SHADOW(true),// 	sampler2DRectShadow
-    INT_SAMPLER_1D(true),// 	isampler1D
-    INT_SAMPLER_2D(true),// 	isampler2D
-    INT_SAMPLER_3D(true),// 	isampler3D
-    INT_SAMPLER_CUBE(true),// 	isamplerCube
-    INT_SAMPLER_1D_ARRAY(true),// 	isampler1DArray
-    INT_SAMPLER_2D_ARRAY(true),// 	isampler2DArray
-    INT_SAMPLER_2D_MULTISAMPLE(true),// 	isampler2DMS
-    INT_SAMPLER_2D_MULTISAMPLE_ARRAY(true),// 	isampler2DMSArray
-    INT_SAMPLER_BUFFER(true),// 	isamplerBuffer
-    INT_SAMPLER_2D_RECT(true),// 	isampler2DRect
-    UNSIGNED_INT_SAMPLER_1D(true),// 	usampler1D
-    UNSIGNED_INT_SAMPLER_2D(true),// 	usampler2D
-    UNSIGNED_INT_SAMPLER_3D(true),// 	usampler3D
-    UNSIGNED_INT_SAMPLER_CUBE(true),// 	usamplerCube
-    UNSIGNED_INT_SAMPLER_1D_ARRAY(true),// 	usampler2DArray
-    UNSIGNED_INT_SAMPLER_2D_ARRAY(true),// 	usampler2DArray
-    UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE(true),// 	usampler2DMS
-    UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY(true),// 	usampler2DMSArray
-    UNSIGNED_INT_SAMPLER_BUFFER(true),// 	usamplerBuffer
-    UNSIGNED_INT_SAMPLER_2D_RECT(true),//  usampler2DRect
+    FLOAT(GL_FLOAT, GLSLTypeCategory.VALUE),// 	float
+    FLOAT_VEC2(GL_FLOAT_VEC2, GLSLTypeCategory.VALUE),// 	vec2
+    FLOAT_VEC3(GL_FLOAT_VEC3, GLSLTypeCategory.VALUE),// 	vec3
+    FLOAT_VEC4(GL_FLOAT_VEC4, GLSLTypeCategory.VALUE),// 	vec4
+    DOUBLE(GL_DOUBLE, GLSLTypeCategory.VALUE),// 	double
+    DOUBLE_VEC2(GL_DOUBLE_VEC2, GLSLTypeCategory.VALUE),// 	dvec2
+    DOUBLE_VEC3(GL_DOUBLE_VEC3, GLSLTypeCategory.VALUE),// 	dvec3
+    DOUBLE_VEC4(GL_DOUBLE_VEC4, GLSLTypeCategory.VALUE),// 	dvec4
+    INT(GL_INT, GLSLTypeCategory.VALUE),// 	int
+    INT_VEC2(GL_INT_VEC2, GLSLTypeCategory.VALUE),// 	ivec2
+    INT_VEC3(GL_INT_VEC3, GLSLTypeCategory.VALUE),// 	ivec3
+    INT_VEC4(GL_INT_VEC4, GLSLTypeCategory.VALUE),// 	ivec4
+    UNSIGNED_INT(GL_UNSIGNED_INT, GLSLTypeCategory.VALUE),// 	unsigned int
+    UNSIGNED_INT_VEC2(GL_UNSIGNED_INT_VEC2, GLSLTypeCategory.VALUE),// 	uvec2
+    UNSIGNED_INT_VEC3(GL_UNSIGNED_INT_VEC3, GLSLTypeCategory.VALUE),// 	uvec3
+    UNSIGNED_INT_VEC4(GL_UNSIGNED_INT_VEC4, GLSLTypeCategory.VALUE),// 	uvec4
+    BOOL(GL_BOOL, GLSLTypeCategory.VALUE),// 	bool
+    BOOL_VEC2(GL_BOOL_VEC2, GLSLTypeCategory.VALUE),// 	bvec2
+    BOOL_VEC3(GL_BOOL_VEC3, GLSLTypeCategory.VALUE),// 	bvec3
+    BOOL_VEC4(GL_BOOL_VEC4, GLSLTypeCategory.VALUE),// 	bvec4
+    FLOAT_MAT2(GL_FLOAT_MAT2, GLSLTypeCategory.VALUE),// 	mat2
+    FLOAT_MAT3(GL_FLOAT_MAT3, GLSLTypeCategory.VALUE),// 	mat3
+    FLOAT_MAT4(GL_FLOAT_MAT4, GLSLTypeCategory.VALUE),// 	mat4
+    FLOAT_MAT2x3(GL_FLOAT_MAT2x3, GLSLTypeCategory.VALUE),// 	mat2x3
+    FLOAT_MAT2x4(GL_FLOAT_MAT2x4, GLSLTypeCategory.VALUE),// 	mat2x4
+    FLOAT_MAT3x2(GL_FLOAT_MAT3x2, GLSLTypeCategory.VALUE),// 	mat3x2
+    FLOAT_MAT3x4(GL_FLOAT_MAT3x4, GLSLTypeCategory.VALUE),// 	mat3x4
+    FLOAT_MAT4x2(GL_FLOAT_MAT4x2, GLSLTypeCategory.VALUE),// 	mat4x2
+    FLOAT_MAT4x3(GL_FLOAT_MAT4x3, GLSLTypeCategory.VALUE),// 	mat4x3
+    DOUBLE_MAT2(GL_DOUBLE_MAT2, GLSLTypeCategory.VALUE),// 	dmat2
+    DOUBLE_MAT3(GL_DOUBLE_MAT3, GLSLTypeCategory.VALUE),// 	dmat3
+    DOUBLE_MAT4(GL_DOUBLE_MAT4, GLSLTypeCategory.VALUE),// 	dmat4
+    DOUBLE_MAT2x3(GL_DOUBLE_MAT2x3, GLSLTypeCategory.VALUE),// 	dmat2x3
+    DOUBLE_MAT2x4(GL_DOUBLE_MAT2x4, GLSLTypeCategory.VALUE),// 	dmat2x4
+    DOUBLE_MAT3x2(GL_DOUBLE_MAT3x2, GLSLTypeCategory.VALUE),// 	dmat3x2
+    DOUBLE_MAT3x4(GL_DOUBLE_MAT3x4, GLSLTypeCategory.VALUE),// 	dmat3x4
+    DOUBLE_MAT4x2(GL_DOUBLE_MAT4x2, GLSLTypeCategory.VALUE),// 	dmat4x2
+    DOUBLE_MAT4x3(GL_DOUBLE_MAT4x3, GLSLTypeCategory.VALUE),// 	dmat4x3
+
+    SAMPLER_1D(GL_SAMPLER_1D, GLSLTypeCategory.SAMPLER),// 	sampler1D
+    SAMPLER_2D(GL_SAMPLER_2D, GLSLTypeCategory.SAMPLER),// 	sampler2D
+    SAMPLER_3D(GL_SAMPLER_3D, GLSLTypeCategory.SAMPLER),// 	sampler3D
+    SAMPLER_CUBE(GL_SAMPLER_CUBE, GLSLTypeCategory.SAMPLER),// 	samplerCube
+    SAMPLER_1D_SHADOW(GL_SAMPLER_1D_SHADOW, GLSLTypeCategory.SAMPLER),// 	sampler1DShadow
+    SAMPLER_2D_SHADOW(GL_SAMPLER_2D_SHADOW, GLSLTypeCategory.SAMPLER),// 	sampler2DShadow
+    SAMPLER_1D_ARRAY(GL_SAMPLER_1D_ARRAY, GLSLTypeCategory.SAMPLER),// 	sampler1DArray
+    SAMPLER_2D_ARRAY(GL_SAMPLER_2D_ARRAY, GLSLTypeCategory.SAMPLER),// 	sampler2DArray
+    SAMPLER_1D_ARRAY_SHADOW(GL_SAMPLER_1D_ARRAY_SHADOW, GLSLTypeCategory.SAMPLER),// 	sampler1DArrayShadow
+    SAMPLER_2D_ARRAY_SHADOW(GL_SAMPLER_2D_ARRAY_SHADOW, GLSLTypeCategory.SAMPLER),// 	sampler2DArrayShadow
+    SAMPLER_2D_MULTISAMPLE(GL_SAMPLER_2D_MULTISAMPLE, GLSLTypeCategory.SAMPLER),// 	sampler2DMS
+    SAMPLER_2D_MULTISAMPLE_ARRAY(GL_SAMPLER_2D_MULTISAMPLE_ARRAY, GLSLTypeCategory.SAMPLER),// 	sampler2DMSArray
+    SAMPLER_CUBE_SHADOW(GL_SAMPLER_CUBE_SHADOW, GLSLTypeCategory.SAMPLER),// 	samplerCubeShadow
+    SAMPLER_BUFFER(GL_SAMPLER_BUFFER, GLSLTypeCategory.SAMPLER),// 	samplerBuffer
+    SAMPLER_2D_RECT(GL_SAMPLER_2D_RECT, GLSLTypeCategory.SAMPLER),// 	sampler2DRect
+    SAMPLER_2D_RECT_SHADOW(GL_SAMPLER_2D_RECT_SHADOW, GLSLTypeCategory.SAMPLER),// 	sampler2DRectShadow
+    INT_SAMPLER_1D(GL_INT_SAMPLER_1D, GLSLTypeCategory.SAMPLER),// 	isampler1D
+    INT_SAMPLER_2D(GL_INT_SAMPLER_2D, GLSLTypeCategory.SAMPLER),// 	isampler2D
+    INT_SAMPLER_3D(GL_INT_SAMPLER_3D, GLSLTypeCategory.SAMPLER),// 	isampler3D
+    INT_SAMPLER_CUBE(GL_INT_SAMPLER_CUBE, GLSLTypeCategory.SAMPLER),// 	isamplerCube
+    INT_SAMPLER_1D_ARRAY(GL_INT_SAMPLER_1D_ARRAY, GLSLTypeCategory.SAMPLER),// 	isampler1DArray
+    INT_SAMPLER_2D_ARRAY(GL_INT_SAMPLER_2D_ARRAY, GLSLTypeCategory.SAMPLER),// 	isampler2DArray
+    INT_SAMPLER_2D_MULTISAMPLE(GL_INT_SAMPLER_2D_MULTISAMPLE, GLSLTypeCategory.SAMPLER),// 	isampler2DMS
+    INT_SAMPLER_2D_MULTISAMPLE_ARRAY(GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY, GLSLTypeCategory.SAMPLER),// 	isampler2DMSArray
+    INT_SAMPLER_BUFFER(GL_INT_SAMPLER_BUFFER, GLSLTypeCategory.SAMPLER),// 	isamplerBuffer
+    INT_SAMPLER_2D_RECT(GL_INT_SAMPLER_2D_RECT, GLSLTypeCategory.SAMPLER),// 	isampler2DRect
+    UNSIGNED_INT_SAMPLER_1D(GL_UNSIGNED_INT_SAMPLER_1D, GLSLTypeCategory.SAMPLER),// 	usampler1D
+    UNSIGNED_INT_SAMPLER_2D(GL_UNSIGNED_INT_SAMPLER_2D, GLSLTypeCategory.SAMPLER),// 	usampler2D
+    UNSIGNED_INT_SAMPLER_3D(GL_UNSIGNED_INT_SAMPLER_3D, GLSLTypeCategory.SAMPLER),// 	usampler3D
+    UNSIGNED_INT_SAMPLER_CUBE(GL_UNSIGNED_INT_SAMPLER_CUBE, GLSLTypeCategory.SAMPLER),// 	usamplerCube
+    UNSIGNED_INT_SAMPLER_1D_ARRAY(GL_UNSIGNED_INT_SAMPLER_1D_ARRAY, GLSLTypeCategory.SAMPLER),// 	usampler2DArray
+    UNSIGNED_INT_SAMPLER_2D_ARRAY(GL_UNSIGNED_INT_SAMPLER_2D_ARRAY, GLSLTypeCategory.SAMPLER),// 	usampler2DArray
+    UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE(GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE, GLSLTypeCategory.SAMPLER),// 	usampler2DMS
+    UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY(GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY, GLSLTypeCategory.SAMPLER),// 	usampler2DMSArray
+    UNSIGNED_INT_SAMPLER_BUFFER(GL_UNSIGNED_INT_SAMPLER_BUFFER, GLSLTypeCategory.SAMPLER),// 	usamplerBuffer
+    UNSIGNED_INT_SAMPLER_2D_RECT(GL_UNSIGNED_INT_SAMPLER_2D_RECT, GLSLTypeCategory.SAMPLER),//  usampler2DRect
+
+    IMAGE_1D(GL_IMAGE_1D, GLSLTypeCategory.IMAGE),//  image1D
+    IMAGE_2D(GL_IMAGE_2D, GLSLTypeCategory.IMAGE),//  image2D
+    IMAGE_3D(GL_IMAGE_3D, GLSLTypeCategory.IMAGE),//  image3D
+    IMAGE_2D_RECT(GL_IMAGE_2D_RECT, GLSLTypeCategory.IMAGE),//  image2DRect
+    IMAGE_CUBE(GL_IMAGE_CUBE, GLSLTypeCategory.IMAGE),//  imageCube
+    IMAGE_BUFFER(GL_IMAGE_BUFFER, GLSLTypeCategory.IMAGE),//  imageBuffer
+    IMAGE_1D_ARRAY(GL_IMAGE_1D_ARRAY, GLSLTypeCategory.IMAGE),//  image1DArray
+    IMAGE_2D_ARRAY(GL_IMAGE_2D_ARRAY, GLSLTypeCategory.IMAGE),//  image2DArray
+    IMAGE_CUBE_MAP_ARRAY(GL_IMAGE_CUBE_MAP_ARRAY, GLSLTypeCategory.IMAGE),//  imageCubeArray
+    IMAGE_2D_MULTISAMPLE(GL_IMAGE_2D_MULTISAMPLE, GLSLTypeCategory.IMAGE),//  image2DMS
+    IMAGE_2D_MULTISAMPLE_ARRAY(GL_IMAGE_2D_MULTISAMPLE_ARRAY, GLSLTypeCategory.IMAGE),//  image2DMSArray
+    INT_IMAGE_1D(GL_INT_IMAGE_1D, GLSLTypeCategory.IMAGE),//  iimage1D
+    INT_IMAGE_2D(GL_INT_IMAGE_2D, GLSLTypeCategory.IMAGE),//  iimage2D
+    INT_IMAGE_3D(GL_INT_IMAGE_3D, GLSLTypeCategory.IMAGE),//  iimage3D
+    INT_IMAGE_2D_RECT(GL_INT_IMAGE_2D_RECT, GLSLTypeCategory.IMAGE),//  iimage2DRect
+    INT_IMAGE_CUBE(GL_INT_IMAGE_CUBE, GLSLTypeCategory.IMAGE),//  iimageCube
+    INT_IMAGE_BUFFER(GL_INT_IMAGE_BUFFER, GLSLTypeCategory.IMAGE),//  iimageBuffer
+    INT_IMAGE_1D_ARRAY(GL_INT_IMAGE_1D_ARRAY, GLSLTypeCategory.IMAGE),//  iimage1DArray
+    INT_IMAGE_2D_ARRAY(GL_INT_IMAGE_2D_ARRAY, GLSLTypeCategory.IMAGE),//  iimage2DArray
+    INT_IMAGE_CUBE_MAP_ARRAY(GL_INT_IMAGE_CUBE_MAP_ARRAY, GLSLTypeCategory.IMAGE),//  iimageCubeArray
+    INT_IMAGE_2D_MULTISAMPLE(GL_INT_IMAGE_2D_MULTISAMPLE, GLSLTypeCategory.IMAGE),//  iimage2DMS
+    INT_IMAGE_2D_MULTISAMPLE_ARRAY(GL_INT_IMAGE_2D_MULTISAMPLE_ARRAY, GLSLTypeCategory.IMAGE),//  iimage2DMSArray
+    UNSIGNED_INT_IMAGE_1D(GL_UNSIGNED_INT_IMAGE_1D, GLSLTypeCategory.IMAGE),//  uimage1D
+    UNSIGNED_INT_IMAGE_2D(GL_UNSIGNED_INT_IMAGE_2D, GLSLTypeCategory.IMAGE),//  uimage2D
+    UNSIGNED_INT_IMAGE_3D(GL_UNSIGNED_INT_IMAGE_3D, GLSLTypeCategory.IMAGE),//  uimage3D
+    UNSIGNED_INT_IMAGE_2D_RECT(GL_UNSIGNED_INT_IMAGE_2D_RECT, GLSLTypeCategory.IMAGE),//  uimage2DRect
+    UNSIGNED_INT_IMAGE_CUBE(GL_UNSIGNED_INT_IMAGE_CUBE, GLSLTypeCategory.IMAGE),//  uimageCube
+    UNSIGNED_INT_IMAGE_BUFFER(GL_UNSIGNED_INT_IMAGE_BUFFER, GLSLTypeCategory.IMAGE),//  uimageBuffer
+    UNSIGNED_INT_IMAGE_1D_ARRAY(GL_UNSIGNED_INT_IMAGE_1D_ARRAY, GLSLTypeCategory.IMAGE),//  uimage1DArray
+    UNSIGNED_INT_IMAGE_2D_ARRAY(GL_UNSIGNED_INT_IMAGE_2D_ARRAY, GLSLTypeCategory.IMAGE),//  uimage2DArray
+    UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY(GL_UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY, GLSLTypeCategory.IMAGE),//  uimageCubeArray
+    UNSIGNED_INT_IMAGE_2D_MULTISAMPLE(GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE, GLSLTypeCategory.IMAGE),//  uimage2DMS
+    UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY(GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY, GLSLTypeCategory.IMAGE),//  uimage2DMSArray
     ;
 
-    private final boolean isSampler;
+    private final int id;
+    private final GLSLTypeCategory category;
 
     public static GLSLType get(int name) {
-        switch (name) {
-            case GL_FLOAT:
-                return FLOAT;
-            case GL_FLOAT_VEC2:
-                return FLOAT_VEC2;
-            case GL_FLOAT_VEC3:
-                return FLOAT_VEC3;
-            case GL_FLOAT_VEC4:
-                return FLOAT_VEC4;
-            case GL_DOUBLE:
-                return DOUBLE;
-            case GL_DOUBLE_VEC2:
-                return DOUBLE_VEC2;
-            case GL_DOUBLE_VEC3:
-                return DOUBLE_VEC3;
-            case GL_DOUBLE_VEC4:
-                return DOUBLE_VEC4;
-            case GL_INT:
-                return INT;
-            case GL_INT_VEC2:
-                return INT_VEC2;
-            case GL_INT_VEC3:
-                return INT_VEC3;
-            case GL_INT_VEC4:
-                return INT_VEC4;
-            case GL_UNSIGNED_INT:
-                return UNSIGNED_INT;
-            case GL_UNSIGNED_INT_VEC2:
-                return UNSIGNED_INT_VEC2;
-            case GL_UNSIGNED_INT_VEC3:
-                return UNSIGNED_INT_VEC3;
-            case GL_UNSIGNED_INT_VEC4:
-                return UNSIGNED_INT_VEC4;
-            case GL_BOOL:
-                return BOOL;
-            case GL_BOOL_VEC2:
-                return BOOL_VEC2;
-            case GL_BOOL_VEC3:
-                return BOOL_VEC3;
-            case GL_BOOL_VEC4:
-                return BOOL_VEC4;
-            case GL_FLOAT_MAT2:
-                return FLOAT_MAT2;
-            case GL_FLOAT_MAT3:
-                return FLOAT_MAT3;
-            case GL_FLOAT_MAT4:
-                return FLOAT_MAT4;
-            case GL_FLOAT_MAT2x3:
-                return FLOAT_MAT2x3;
-            case GL_FLOAT_MAT2x4:
-                return FLOAT_MAT2x4;
-            case GL_FLOAT_MAT3x2:
-                return FLOAT_MAT3x2;
-            case GL_FLOAT_MAT3x4:
-                return FLOAT_MAT3x4;
-            case GL_FLOAT_MAT4x2:
-                return FLOAT_MAT4x2;
-            case GL_FLOAT_MAT4x3:
-                return FLOAT_MAT4x3;
-            case GL_DOUBLE_MAT2:
-                return DOUBLE_MAT2;
-            case GL_DOUBLE_MAT3:
-                return DOUBLE_MAT3;
-            case GL_DOUBLE_MAT4:
-                return DOUBLE_MAT4;
-            case GL_DOUBLE_MAT2x3:
-                return DOUBLE_MAT2x3;
-            case GL_DOUBLE_MAT2x4:
-                return DOUBLE_MAT2x4;
-            case GL_DOUBLE_MAT3x2:
-                return DOUBLE_MAT3x2;
-            case GL_DOUBLE_MAT3x4:
-                return DOUBLE_MAT3x4;
-            case GL_DOUBLE_MAT4x2:
-                return DOUBLE_MAT4x2;
-            case GL_DOUBLE_MAT4x3:
-                return DOUBLE_MAT4x3;
-            case GL_SAMPLER_1D:
-                return SAMPLER_1D;
-            case GL_SAMPLER_2D:
-                return SAMPLER_2D;
-            case GL_SAMPLER_3D:
-                return SAMPLER_3D;
-            case GL_SAMPLER_CUBE:
-                return SAMPLER_CUBE;
-            case GL_SAMPLER_1D_SHADOW:
-                return SAMPLER_1D_SHADOW;
-            case GL_SAMPLER_2D_SHADOW:
-                return SAMPLER_2D_SHADOW;
-            case GL_SAMPLER_1D_ARRAY:
-                return SAMPLER_1D_ARRAY;
-            case GL_SAMPLER_2D_ARRAY:
-                return SAMPLER_2D_ARRAY;
-            case GL_SAMPLER_1D_ARRAY_SHADOW:
-                return SAMPLER_1D_ARRAY_SHADOW;
-            case GL_SAMPLER_2D_ARRAY_SHADOW:
-                return SAMPLER_2D_ARRAY_SHADOW;
-            case GL_SAMPLER_2D_MULTISAMPLE:
-                return SAMPLER_2D_MULTISAMPLE;
-            case GL_SAMPLER_2D_MULTISAMPLE_ARRAY:
-                return SAMPLER_2D_MULTISAMPLE_ARRAY;
-            case GL_SAMPLER_CUBE_SHADOW:
-                return SAMPLER_CUBE_SHADOW;
-            case GL_SAMPLER_BUFFER:
-                return SAMPLER_BUFFER;
-            case GL_SAMPLER_2D_RECT:
-                return SAMPLER_2D_RECT;
-            case GL_SAMPLER_2D_RECT_SHADOW:
-                return SAMPLER_2D_RECT_SHADOW;
-            case GL_INT_SAMPLER_1D:
-                return INT_SAMPLER_1D;
-            case GL_INT_SAMPLER_2D:
-                return INT_SAMPLER_2D;
-            case GL_INT_SAMPLER_3D:
-                return INT_SAMPLER_3D;
-            case GL_INT_SAMPLER_CUBE:
-                return INT_SAMPLER_CUBE;
-            case GL_INT_SAMPLER_1D_ARRAY:
-                return INT_SAMPLER_1D_ARRAY;
-            case GL_INT_SAMPLER_2D_ARRAY:
-                return INT_SAMPLER_2D_ARRAY;
-            case GL_INT_SAMPLER_2D_MULTISAMPLE:
-                return INT_SAMPLER_2D_MULTISAMPLE;
-            case GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
-                return INT_SAMPLER_2D_MULTISAMPLE_ARRAY;
-            case GL_INT_SAMPLER_BUFFER:
-                return INT_SAMPLER_BUFFER;
-            case GL_INT_SAMPLER_2D_RECT:
-                return INT_SAMPLER_2D_RECT;
-            case GL_UNSIGNED_INT_SAMPLER_1D:
-                return UNSIGNED_INT_SAMPLER_1D;
-            case GL_UNSIGNED_INT_SAMPLER_2D:
-                return UNSIGNED_INT_SAMPLER_2D;
-            case GL_UNSIGNED_INT_SAMPLER_3D:
-                return UNSIGNED_INT_SAMPLER_3D;
-            case GL_UNSIGNED_INT_SAMPLER_CUBE:
-                return UNSIGNED_INT_SAMPLER_CUBE;
-            case GL_UNSIGNED_INT_SAMPLER_1D_ARRAY:
-                return UNSIGNED_INT_SAMPLER_1D_ARRAY;
-            case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
-                return UNSIGNED_INT_SAMPLER_2D_ARRAY;
-            case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE:
-                return UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE;
-            case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
-                return UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY;
-            case GL_UNSIGNED_INT_SAMPLER_BUFFER:
-                return UNSIGNED_INT_SAMPLER_BUFFER;
-            case GL_UNSIGNED_INT_SAMPLER_2D_RECT:
-                return UNSIGNED_INT_SAMPLER_2D_RECT;
-            default:
-                throw new IllegalArgumentException("unknown shader type: " + name);
+        for (GLSLType type : values()) {
+            if (type.id() == name) {
+                return type;
+            }
         }
+        throw new IllegalArgumentException("unknown shader type: " + name);
     }
 }

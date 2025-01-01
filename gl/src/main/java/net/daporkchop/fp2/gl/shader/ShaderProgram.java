@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.introspection.GLSLType;
+import net.daporkchop.fp2.gl.shader.introspection.GLSLTypeCategory;
 import net.daporkchop.fp2.gl.shader.introspection.Uniform;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.fp2.gl.util.GLRequires;
@@ -37,7 +39,6 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -642,7 +643,8 @@ public abstract class ShaderProgram extends GLObject.Normal {
         protected final EnumSet<ShaderType> addedShaderTypes = EnumSet.noneOf(ShaderType.class);
         protected final List<Shader> shaders = new ArrayList<>();
 
-        protected final SamplerBindings samplers = new SamplerBindings();
+        protected final UnitBindings samplers = UnitBindings.createSampler();
+        protected final UnitBindings images = UnitBindings.createImage();
         protected final BlockBindings SSBOs = BlockBindings.createSSBO();
         protected final BlockBindings UBOs = BlockBindings.createUBO();
 
@@ -656,6 +658,11 @@ public abstract class ShaderProgram extends GLObject.Normal {
 
         public final B addSampler(@NotNegative int unit, @NonNull String name) {
             this.samplers.add(this.gl.limits().maxTextureUnits(), unit, name);
+            return uncheckedCast(this);
+        }
+
+        public final B addImage(@NotNegative int unit, @NonNull String name) {
+            this.images.add(this.gl.limits().maxImageUnits(), unit, name);
             return uncheckedCast(this);
         }
 
@@ -686,7 +693,8 @@ public abstract class ShaderProgram extends GLObject.Normal {
         }
 
         protected void configurePostLink(S program) {
-            this.samplers.configurePostLink(program);
+            this.samplers.configurePostLink(this.gl, program);
+            this.images.configurePostLink(this.gl, program);
             this.SSBOs.configurePostLink(this.gl, program);
             this.UBOs.configurePostLink(this.gl, program);
         }
@@ -696,21 +704,38 @@ public abstract class ShaderProgram extends GLObject.Normal {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    protected static final class SamplerBindings {
+    protected static final class UnitBindings {
+        public static UnitBindings createSampler() {
+            return new UnitBindings(GLSLTypeCategory.SAMPLER, GLExtensionSet.empty());
+        }
+
+        public static UnitBindings createImage() {
+            return new UnitBindings(GLSLTypeCategory.IMAGE, GLExtensionSet.of(GLExtension.GL_ARB_shader_image_load_store));
+        }
+
+        private final GLSLTypeCategory category;
+        private final GLExtensionSet requiredExtensions;
+
         private final Map<String, Integer> bindings = new TreeMap<>();
 
-        public void add(int maxTexUnits, int unit, @NonNull String name) {
-            checkIndex(maxTexUnits, unit);
-            checkArg(!this.bindings.containsKey(name), "sampler named '%s' is already configured", name);
+        public void add(int maxUnits, int unit, @NonNull String name) {
+            checkIndex(maxUnits, unit);
+            checkArg(!this.bindings.containsKey(name), "%s named '%s' is already configured", this.category, name);
             this.bindings.put(name, unit);
         }
 
-        public void configurePostLink(ShaderProgram program) {
-            List<Uniform> unboundSamplerUniforms = Arrays.stream(program.getActiveUniforms())
-                    .filter(uniform -> uniform.type().isSampler() && !this.bindings.containsKey(uniform.name()))
+        public void configurePostLink(@NonNull OpenGL gl, @NonNull ShaderProgram program) {
+            if (!gl.supports(this.requiredExtensions)) {
+                //if the extension isn't supported, no bindings should be configured and the shader obviously can't contain any unbound blocks
+                checkState(this.bindings.isEmpty(), "extension %s isn't supported, but a %s binding was configured?!?", this.category, this.requiredExtensions);
+                return;
+            }
+
+            List<Uniform> unboundUniforms = Arrays.stream(program.getActiveUniforms())
+                    .filter(uniform -> uniform.type().category() == this.category && !this.bindings.containsKey(uniform.name()))
                     .collect(Collectors.toList());
-            if (!unboundSamplerUniforms.isEmpty()) {
-                throw new ShaderLinkageException("Program contains unbound samplers: " + unboundSamplerUniforms);
+            if (!unboundUniforms.isEmpty()) {
+                throw new ShaderLinkageException("Program contains unbound " + this.category + "s: " + unboundUniforms);
             }
 
             if (this.bindings.isEmpty()) {

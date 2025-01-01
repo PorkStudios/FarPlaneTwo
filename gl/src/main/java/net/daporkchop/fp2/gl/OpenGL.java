@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -2563,6 +2563,9 @@ public abstract class OpenGL {
         private final int maxTextureUnits;
         private final int maxVertexAttributes;
 
+        @GLRequires(GLExtension.GL_ARB_shader_image_load_store)
+        private final int maxImageUnits;
+
         @GLRequires(GLExtension.GL_ARB_shader_atomic_counters)
         private final int maxAtomicCounterBufferBindings;
 
@@ -2598,11 +2601,9 @@ public abstract class OpenGL {
             this.maxTextureUnits = gl.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
             this.maxVertexAttributes = gl.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
 
-            if (gl.supports(GLExtension.GL_ARB_transform_feedback2)) {
-                this.maxTransformFeedbackBuffers = gl.glGetInteger(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS);
-            } else {
-                this.maxTransformFeedbackBuffers = 0;
-            }
+            this.maxImageUnits = gl.supports(GLExtension.GL_ARB_shader_image_load_store) ? gl.glGetInteger(GL_MAX_IMAGE_UNITS) : 0;
+
+            this.maxTransformFeedbackBuffers = gl.supports(GLExtension.GL_ARB_transform_feedback2) ? gl.glGetInteger(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS) : 0;
 
             this.maxAtomicCounterBufferBindings = gl.supports(GLExtension.GL_ARB_shader_atomic_counters) ? gl.glGetInteger(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS) : 0;
 
@@ -2615,11 +2616,7 @@ public abstract class OpenGL {
                 this.maxUniformBufferBindings = this.maxUniformBlockSize = 0;
             }
 
-            if (gl.supports(GLExtension.GL_ARB_texture_buffer_object)) {
-                this.maxTextureBufferSize = gl.glGetInteger(GL_MAX_TEXTURE_BUFFER_SIZE);
-            } else {
-                this.maxTextureBufferSize = 0;
-            }
+            this.maxTextureBufferSize = gl.supports(GLExtension.GL_ARB_texture_buffer_object) ? gl.glGetInteger(GL_MAX_TEXTURE_BUFFER_SIZE) : 0;
 
             if (gl.supports(GLExtension.GL_ARB_compute_shader)) {
                 this.maxComputeWorkGroupInvocations = gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
