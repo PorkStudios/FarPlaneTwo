@@ -1,0 +1,18 @@
+{
+  "parents": [
+    {
+      "field": {
+        "owner": "me/superckl/biometweaker/common/world/gen/layer/GenLayerReplacement",
+        "name": "parent",
+        "desc": "Lnet/minecraft/world/gen/layer/GenLayer;"
+      }
+    }
+  ],
+
+  "constructorSignature": "(Lnet/minecraft/world/gen/layer/GenLayer;)V",
+  "constructorParameters": [
+    {
+      "parent": 0
+    }
+  ]
+}
