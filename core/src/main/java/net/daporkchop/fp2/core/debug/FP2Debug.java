@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -162,11 +162,27 @@ public class FP2Debug {
                                  + numberFormat.format(stats.bakedTiles() - stats.bakedTilesWithData()) + 'E');*/
 
                         list.add("Render index: " + renderIndexStats.implName());
-                        if (renderIndexStats.selectedTiles() >= 0 && renderIndexStats.indexedTiles() >= 0) {
-                            val culledTiles = renderIndexStats.indexedTiles() - renderIndexStats.selectedTiles();
-                            list.add("Culled: "
-                                     + i18n.formatPercentOf(culledTiles, renderIndexStats.indexedTiles())
-                                     + ' ' + numberFormat.format(culledTiles) + '/' + numberFormat.format(renderIndexStats.indexedTiles()));
+                        boolean addCulledTiles = renderIndexStats.selectedTiles() >= 0 && renderIndexStats.indexedTiles() >= 0;
+                        boolean addCulledCommands = renderIndexStats.selectedCommands() >= 0 && renderIndexStats.indexedCommands() >= 0;
+                        if (addCulledTiles || addCulledCommands) {
+                            val builder = new StringBuilder().append("Culled: ");
+                            if (addCulledTiles) {
+                                val culledTiles = renderIndexStats.indexedTiles() - renderIndexStats.selectedTiles();
+                                builder.append(i18n.formatPercentOf(culledTiles, renderIndexStats.indexedTiles()))
+                                        .append(' ').append(numberFormat.format(culledTiles)).append('/').append(numberFormat.format(renderIndexStats.indexedTiles()))
+                                        .append('T');
+                            }
+                            if (addCulledCommands) {
+                                if (addCulledTiles) {
+                                    builder.append(", ");
+                                }
+
+                                val culledCommands = renderIndexStats.indexedCommands() - renderIndexStats.selectedCommands();
+                                builder.append(i18n.formatPercentOf(culledCommands, renderIndexStats.indexedCommands()))
+                                        .append(' ').append(numberFormat.format(culledCommands)).append('/').append(numberFormat.format(renderIndexStats.indexedCommands()))
+                                        .append('C');
+                            }
+                            list.add(builder.toString());
                         }
 
                         long allocatedVRAM = (long) bakeStorageStats.allocatedIndices() * bakeStorageStats.indexSize() + (long) bakeStorageStats.allocatedVertices() * bakeStorageStats.vertexSize();

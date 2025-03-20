@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -72,8 +72,10 @@ import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
@@ -211,6 +213,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
 
+    private int indexedCommandCount;
     private final GLBuffer countSelectedBuffer;
     private final boolean useIndirectCount;
     private final AsynchronousSmallBufferDownloader debugStatisticsDownloader;
@@ -232,7 +235,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             if (canCountSelected && (useIndirectCount || useStatisticsDownloader)) {
                 //if we can count the number of selected tiles per detail level and at least one of the features which uses that information is also
                 //  supported, then we'll enable selected tile counting
-                this.countSelectedBuffer = GLBuffer.createFunctionallyImmutable(gl, (long) EngineConstants.MAX_LODS * Integer.BYTES, BufferUsage.STREAM_COPY, 0);
+                this.countSelectedBuffer = GLBuffer.createFunctionallyImmutable(gl, (long) EngineConstants.MAX_LODS * (1 + RENDER_PASS_COUNT) * Integer.BYTES, BufferUsage.STREAM_COPY, 0);
                 this.useIndirectCount = useIndirectCount;
                 this.debugStatisticsDownloader = useStatisticsDownloader ? new AsynchronousSmallBufferDownloader(gl, (int) this.countSelectedBuffer.capacity()) : null;
             } else {
@@ -242,7 +245,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             }
 
             this.cullingShader = globalRenderer.shaderRegistry.get(new CullingShaderVariant(this.countSelectedBuffer != null, this.useIndirectCount));
-            this.debugStats = new Stats(-1, -1, 0, this.useIndirectCount ? "GPU culled, glMultiDrawElementsIndirectCount" : "GPU culled, glMultiDrawElementsIndirect");
+            this.debugStats = new Stats(-1, -1, 0, -1, -1, this.useIndirectCount ? "GPU culled, glMultiDrawElementsIndirectCount" : "GPU culled, glMultiDrawElementsIndirect");
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -270,6 +273,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     protected void recomputeTile(@NonNull TilePos pos) {
         Level levelInstance = this.levels.get(pos.level());
         BakeStorage.Location[] locations = this.bakeStorage.find(pos);
+
+        int deltaIndexedCommandCount = 0;
         if (locations == null || this.hiddenPositions.contains(pos)) {
             //the position doesn't have any render data data associated with it or is hidden, and therefore can be entirely omitted from the index
             int baseInstance = this.renderPosTable.remove(pos);
@@ -278,12 +283,17 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     levelInstance.rawDrawListsCPU.get(pass).setZero(baseInstance);
                 }
+
+                deltaIndexedCommandCount -= levelInstance.nonEmptyCommandCounts[baseInstance];
+                levelInstance.nonEmptyCommandCounts[baseInstance] = 0;
+
                 levelInstance.rawDrawListsDirty = true;
             }
         } else {
             //configure the render commands which will be used when selecting this
             int baseInstance = this.renderPosTable.add(pos);
 
+            int nonEmptyCommandCount = 0;
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                 val location = locations[pass];
                 val command = new DrawElementsIndirectCommand();
@@ -294,13 +304,22 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                     command.firstIndex = location.firstIndex;
                     command.baseVertex = location.baseVertex;
                     command.instanceCount = 1;
+
+                    nonEmptyCommandCount++;
                 } else {
                     //otherwise, the draw command will be filled with zeroes
                 }
                 levelInstance.rawDrawListsCPU.get(pass).set(baseInstance, command);
             }
+
+            deltaIndexedCommandCount -= levelInstance.nonEmptyCommandCounts[baseInstance];
+            deltaIndexedCommandCount += nonEmptyCommandCount;
+            levelInstance.nonEmptyCommandCounts[baseInstance] = nonEmptyCommandCount;
+
             levelInstance.rawDrawListsDirty = true;
         }
+
+        this.indexedCommandCount += deltaIndexedCommandCount;
     }
 
     @Override
@@ -356,7 +375,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             //dispatch the compute shader
 
             if (this.countSelectedBuffer != null) { //if we're using MultiDraw with indirect counts, bind the atomic counter
-                this.gl.glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, COUNT_SELECTED_COUNTER_BINDING, this.countSelectedBuffer.id(), (long) level * Integer.BYTES, Integer.BYTES);
+                this.gl.glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, COUNT_SELECTED_COUNTER_BINDING, this.countSelectedBuffer.id(), (long) level * ((1 + RENDER_PASS_COUNT) * Integer.BYTES), RENDER_PASS_COUNT * Integer.BYTES);
             }
 
             //bind the tile positions array and the rawDrawLists+culledDrawLists for each render pass
@@ -373,14 +392,26 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
             int indexedTiles = this.renderPosTable.size();
             int hiddenTiles = this.hiddenPositions.size();
+            int indexedCommands = this.indexedCommandCount;
             this.debugStatisticsDownloader.downloadRange(this.countSelectedBuffer, 0L, (int) this.countSelectedBuffer.capacity(), data -> {
                 //add up the number of selected tiles at each detail level
+                int[] dataArray = NIOBufferUtil.toArray(data.asIntBuffer());
+                assert (dataArray.length % (1 + RENDER_PASS_COUNT)) == 0 : "not a multiple of " + (1 + RENDER_PASS_COUNT) + ": " + dataArray.length;
+
                 int selectedTiles = 0;
-                for (int i : NIOBufferUtil.toArray(data.asIntBuffer())) {
-                    selectedTiles += i;
+                int selectedCommands = 0;
+                for (int i = 0; i < dataArray.length; i += 1 + RENDER_PASS_COUNT) {
+                    selectedTiles += dataArray[i];
+
+                    for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                        selectedCommands += dataArray[i + 1 + pass];
+                    }
                 }
 
-                this.debugStats = new Stats(selectedTiles, indexedTiles, hiddenTiles, this.debugStats.implName());
+                this.debugStats = new Stats(
+                        selectedTiles, indexedTiles, hiddenTiles,
+                        selectedCommands, indexedCommands,
+                        this.debugStats.implName());
             });
         }
     }
@@ -421,7 +452,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             if (this.useIndirectCount) {
                 //use indirect MultiDraw with indirect counts!
                 //  glMemoryBarrier(GL_COMMAND_BARRIER_BIT) also works as a barrier on GL_PARAMETER_BUFFER, so our memory ordering is safe
-                this.gl.glMultiDrawElementsIndirectCount(modeEnum, type, indirect, (long) level * Integer.BYTES, drawCount, stride);
+                this.gl.glMultiDrawElementsIndirectCount(modeEnum, type, indirect, (long) level * ((1 + RENDER_PASS_COUNT) * Integer.BYTES) + Integer.BYTES + (long) pass * Integer.BYTES, drawCount, stride);
             } else {
                 //use ordinary indirect MultiDraw, with unselected tiles skipped by inserting empty commands on the GPU side
                 this.gl.glMultiDrawElementsIndirect(modeEnum, type, indirect, drawCount, stride);
@@ -458,6 +489,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         final PassArray<DirectDrawElementsIndirectCommandList> rawDrawListsCPU;
         final GLMutableBuffer rawDrawListsGPU;
         final GLMutableBuffer culledDrawListsGPU;
+        int[] nonEmptyCommandCounts = PorkUtil.EMPTY_INT_ARRAY;
+
         int capacityTiles;
 
         boolean rawDrawListsDirty;
@@ -485,6 +518,9 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                 this.rawDrawListsCPU.get(pass).appendZero(newCapacityTiles - oldCapacityTiles);
             }
+
+            //extend the command counts array to the new capacity
+            this.nonEmptyCommandCounts = Arrays.copyOf(this.nonEmptyCommandCounts, newCapacityTiles);
 
             //resize both of the GPU-side buffers to RENDER_PASS_COUNT times the number of tiles added
             this.rawDrawListsGPU.capacity((long) newCapacityCommands * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_DRAW);

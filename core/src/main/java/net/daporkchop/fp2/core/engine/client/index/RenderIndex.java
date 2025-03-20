@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -180,6 +180,16 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * The number of tile positions which are explicitly marked as hidden and are excluded from selection.
          */
         private final @NotNegative int hiddenTiles;
+
+        /**
+         * The number of draw commands which were selected during the previous frame. Negative if unknown/unsupported.
+         */
+        private final int selectedCommands;
+
+        /**
+         * The number of draw commands which were considered for selection during the previous frame. Negative if unknown/unsupported.
+         */
+        private final int indexedCommands;
 
         /**
          * The render index implementation's name.

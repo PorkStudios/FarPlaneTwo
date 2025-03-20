@@ -35,6 +35,10 @@ layout(local_size_x = 256) in;
     #error "FP2_INDIRECT_COUNT must be set!"
 #endif
 
+#if !FP2_COUNT_SELECTED && FP2_INDIRECT_COUNT
+    #error "FP2_INDIRECT_COUNT requires FP2_COUNT_SELECTED!"
+#endif
+
 layout(std140) readonly restrict buffer B_TilePositions {
     ivec4 b_tilePositions[];
 };
@@ -48,7 +52,8 @@ layout(std430) writeonly restrict buffer B_CulledDrawLists {
 };
 
 #if FP2_COUNT_SELECTED
-    layout(binding = COUNT_SELECTED_COUNTER_BINDING) uniform atomic_uint ac_selectedCount;
+    layout(binding = COUNT_SELECTED_COUNTER_BINDING) uniform atomic_uint ac_selectedTileCount;
+    layout(binding = COUNT_SELECTED_COUNTER_BINDING) uniform atomic_uint ac_selectedCommandCounts[RENDER_PASS_COUNT];
 #endif
 
 bool select(uint tileIndex) {
@@ -73,34 +78,55 @@ bool select(uint tileIndex) {
 }
 
 void main() {
-    uint tileIndex = gl_WorkGroupID.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z) + gl_LocalInvocationIndex;
+    uint srcCommandIndex = gl_WorkGroupID.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z) + gl_LocalInvocationIndex;
     uint stride = gl_NumWorkGroups.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z);
 
-    bool selected = select(tileIndex);
+    bool selected = select(srcCommandIndex);
 
     #if FP2_COUNT_SELECTED
         //if selected tile counting is enabled and this tile was selected, increment the selected tile count
-        uint selectedIndex;
         if (selected) {
-            selectedIndex = atomicCounterIncrement(ac_selectedCount);
+            atomicCounterIncrement(ac_selectedTileCount);
         }
     #endif
 
     #if FP2_INDIRECT_COUNT
         //if we're rendering using MultiDraw with an indirect count and this tile was selected, copy the commands
-        //  to the culled list at selectedIndex. this will result in the commands for selected tiles being tightly
-        // packed at the front of the list, and unselected tiles will be skipped entirely.
+        //  to the culled list while skipping empty ones. this will result in the commands for selected tiles being
+        //  tightly packed at the front of the list, and unselected tiles will be skipped entirely.
         if (selected) {
-            for (uint pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                b_culledDrawLists[selectedIndex + pass * stride] = b_rawDrawLists[tileIndex + pass * stride];
+            for (uint pass = 0u, commandIndexBase = 0u; pass < RENDER_PASS_COUNT; pass++, commandIndexBase += stride) {
+                DrawElementsIndirectCommand srcCommand = b_rawDrawLists[commandIndexBase + srcCommandIndex];
+
+                //if the command at this render pass is empty, skip it
+                if (srcCommand.count == 0u) {
+                    continue;
+                }
+
+                //determine which index the command should go at.
+                //  pass is a dynamically uniform variable, so we can safely index the atomic counter array with it
+                uint dstCommandIndex = atomicCounterIncrement(ac_selectedCommandCounts[pass]);
+
+                //copy the command to the corresponding destination slot
+                b_culledDrawLists[commandIndexBase + dstCommandIndex] = srcCommand;
             }
         }
     #else
         //if we're rendering using conventional indirect MultiDraw, copy the command list as-is but replace commands
         //  with an empty command if this tile isn't selected, so that rendering the commands becomes a no-op.
-        for (uint pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-            uint commandIndex = tileIndex + pass * stride;
-            b_culledDrawLists[commandIndex] = selected ? b_rawDrawLists[commandIndex] : DrawElementsIndirectCommand(0, 0, 0, 0, 0);
+        for (uint pass = 0u, commandIndex = srcCommandIndex; pass < RENDER_PASS_COUNT; pass++, commandIndex += stride) {
+            DrawElementsIndirectCommand srcCommand = b_rawDrawLists[commandIndex];
+
+            #if FP2_COUNT_SELECTED
+                //if we're rendering using conventional indirect MultiDraw, but selected command counting is still enabled,
+                //  we need to increment the counters.
+                if (selected && srcCommand.count != 0u) {
+                    //pass is a dynamically uniform variable, so we can safely index the atomic counter array with it
+                    atomicCounterIncrement(ac_selectedCommandCounts[pass]);
+                }
+            #endif
+
+            b_culledDrawLists[commandIndex] = selected ? srcCommand : DrawElementsIndirectCommand(0, 0, 0, 0, 0);
         }
     #endif
 }
