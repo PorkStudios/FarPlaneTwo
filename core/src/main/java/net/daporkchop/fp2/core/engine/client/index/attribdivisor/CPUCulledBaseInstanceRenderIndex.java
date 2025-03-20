@@ -99,8 +99,9 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     @Override
     public void close() {
-        try (val ignored0 = this.commandLists;
-             val ignored1 = this.commandListBuffer) {
+        try (val ignored = PResourceUtil.lazyCloseAll(
+                this.commandLists,
+                this.commandListBuffer)) {
             super.close();
         }
     }

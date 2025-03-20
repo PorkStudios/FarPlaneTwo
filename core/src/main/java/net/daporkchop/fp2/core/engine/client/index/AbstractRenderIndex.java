@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -119,8 +119,9 @@ public abstract class AbstractRenderIndex<VertexType extends AttributeStruct> ex
 
         @Override
         public void close() {
-            try (val ignored0 = this.renderPosTable;
-                 val ignored1 = this.vaos) {
+            try (val ignored = PResourceUtil.lazyCloseAll(
+                    this.renderPosTable,
+                    this.vaos)) {
                 super.close();
             }
         }
@@ -150,7 +151,7 @@ public abstract class AbstractRenderIndex<VertexType extends AttributeStruct> ex
 
         @Override
         public void close() {
-            try (val ignored0 = this.vaos) {
+            try (val ignored = this.vaos) {
                 super.close();
             }
         }

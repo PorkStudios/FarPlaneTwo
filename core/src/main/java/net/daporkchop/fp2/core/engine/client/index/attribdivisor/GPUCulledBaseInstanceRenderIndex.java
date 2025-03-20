@@ -253,9 +253,10 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     @Override
     public void close() {
-        try (val ignored0 = this.levels;
-             val ignored1 = this.countSelectedBuffer;
-             val ignored2 = this.debugStatisticsDownloader) {
+        try (val ignored = PResourceUtil.lazyCloseAll(
+                this.levels,
+                this.countSelectedBuffer,
+                this.debugStatisticsDownloader)) {
             super.close();
         }
     }
