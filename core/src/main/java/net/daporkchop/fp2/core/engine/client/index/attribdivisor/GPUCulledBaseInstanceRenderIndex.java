@@ -69,6 +69,7 @@ import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
+import net.daporkchop.fp2.gl.state.MultiBindHelper;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
@@ -213,6 +214,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
 
+    private final MultiBindHelper bindHelper_positions_raw_culled;
+
     private int indexedCommandCount;
     private final GLBuffer countSelectedBuffer;
     private final boolean useIndirectCount;
@@ -245,6 +248,13 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             }
 
             this.cullingShader = globalRenderer.shaderRegistry.get(new CullingShaderVariant(this.countSelectedBuffer != null, this.useIndirectCount));
+
+            this.bindHelper_positions_raw_culled = MultiBindHelper.builder(gl)
+                    .bindBufferBase(IndexedBufferTarget.SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING)
+                    .bindBufferBase(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RAW_DRAW_LISTS_SSBO_BINDING)
+                    .bindBufferBase(IndexedBufferTarget.SHADER_STORAGE_BUFFER, CULLED_DRAW_LISTS_SSBO_BINDING)
+                    .build();
+
             this.debugStats = new Stats(-1, -1, 0, -1, -1, this.useIndirectCount ? "GPU culled, glMultiDrawElementsIndirectCount" : "GPU culled, glMultiDrawElementsIndirect");
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
@@ -255,6 +265,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     public void close() {
         try (val ignored = PResourceUtil.lazyCloseAll(
                 this.levels,
+                this.bindHelper_positions_raw_culled,
                 this.countSelectedBuffer,
                 this.debugStatisticsDownloader)) {
             super.close();
@@ -380,9 +391,11 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             }
 
             //bind the tile positions array and the rawDrawLists+culledDrawLists for each render pass
-            this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING, tilePosArray.bufferSSBO().id());
-            this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RAW_DRAW_LISTS_SSBO_BINDING, levelInstance.rawDrawListsGPU.id());
-            this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, CULLED_DRAW_LISTS_SSBO_BINDING, levelInstance.culledDrawListsGPU.id());
+            this.bindHelper_positions_raw_culled.dispatcher().invokeExact(
+                    this.gl,
+                    tilePosArray.bufferSSBO().id(),
+                    levelInstance.rawDrawListsGPU.id(),
+                    levelInstance.culledDrawListsGPU.id());
 
             //cull the tiles!
             this.gl.glDispatchCompute(capacity / CULLING_SHADER_WORK_GROUP_SIZE, 1, 1);

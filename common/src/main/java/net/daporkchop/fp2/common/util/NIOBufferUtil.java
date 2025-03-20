@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,6 +26,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -229,5 +230,75 @@ public class NIOBufferUtil {
         val result = PUnsafe.allocateUninitializedDoubleArray(buffer.remaining());
         buffer.get(result);
         return result;
+    }
+
+    /**
+     * Allocates a new {@link ByteBuffer} with direct memory using the native {@link ByteOrder}.
+     *
+     * @param capacity the capacity
+     * @return a new {@link ByteBuffer}
+     */
+    public static ByteBuffer allocateDirectNativeByte(@NotNegative int capacity) {
+        return ByteBuffer.allocateDirect(capacity).order(ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Allocates a new {@link ShortBuffer} with direct memory using the native {@link ByteOrder}.
+     *
+     * @param capacity the capacity
+     * @return a new {@link ShortBuffer}
+     */
+    public static ShortBuffer allocateDirectNativeShort(@NotNegative int capacity) {
+        return allocateDirectNativeByte(capacity * Short.BYTES).asShortBuffer();
+    }
+
+    /**
+     * Allocates a new {@link CharBuffer} with direct memory using the native {@link ByteOrder}.
+     *
+     * @param capacity the capacity
+     * @return a new {@link CharBuffer}
+     */
+    public static CharBuffer allocateDirectNativeChar(@NotNegative int capacity) {
+        return allocateDirectNativeByte(capacity * Character.BYTES).asCharBuffer();
+    }
+
+    /**
+     * Allocates a new {@link IntBuffer} with direct memory using the native {@link ByteOrder}.
+     *
+     * @param capacity the capacity
+     * @return a new {@link IntBuffer}
+     */
+    public static IntBuffer allocateDirectNativeInt(@NotNegative int capacity) {
+        return allocateDirectNativeByte(capacity * Integer.BYTES).asIntBuffer();
+    }
+
+    /**
+     * Allocates a new {@link LongBuffer} with direct memory using the native {@link ByteOrder}.
+     *
+     * @param capacity the capacity
+     * @return a new {@link LongBuffer}
+     */
+    public static LongBuffer allocateDirectNativeLong(@NotNegative int capacity) {
+        return allocateDirectNativeByte(capacity * Long.BYTES).asLongBuffer();
+    }
+
+    /**
+     * Allocates a new {@link FloatBuffer} with direct memory using the native {@link ByteOrder}.
+     *
+     * @param capacity the capacity
+     * @return a new {@link FloatBuffer}
+     */
+    public static FloatBuffer allocateDirectNativeFloat(@NotNegative int capacity) {
+        return allocateDirectNativeByte(capacity * Float.BYTES).asFloatBuffer();
+    }
+
+    /**
+     * Allocates a new {@link DoubleBuffer} with direct memory using the native {@link ByteOrder}.
+     *
+     * @param capacity the capacity
+     * @return a new {@link DoubleBuffer}
+     */
+    public static DoubleBuffer allocateDirectNativeDouble(@NotNegative int capacity) {
+        return allocateDirectNativeByte(capacity * Double.BYTES).asDoubleBuffer();
     }
 }
