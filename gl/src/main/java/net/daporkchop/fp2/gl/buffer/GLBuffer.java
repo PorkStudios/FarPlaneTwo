@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.buffer;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -363,15 +364,11 @@ public abstract class GLBuffer extends GLObject.Normal {
                     this.gl.glClearBufferSubData(target.id(), GL_R8, start, size, GL_RED, GL_UNSIGNED_BYTE, null);
                 });
             } else {
-                //allocate a temporary buffer which we'll fill with zeroes and then upload
-                long addr = PUnsafe.allocateMemory(size);
-                try {
-                    PUnsafe.setMemory(addr, size, (byte) 0);
-                    //TODO: if this is an immutable buffer this may fail...
-                    this.bufferSubData(start, addr, size);
-                } finally {
-                    PUnsafe.freeMemory(addr);
-                }
+                //slow fallback approach: map the entire range and fill it with zeroes (invalidating the range in the process)
+                //TODO: if this is an immutable buffer this may fail...
+                this.mapRange(BufferAccess.WRITE_ONLY, GL_MAP_INVALIDATE_RANGE_BIT, start, size, mapping -> {
+                    PUnsafe.setMemory(DirectBufferHackery.address(mapping), size, (byte) 0);
+                });
             }
         }
     }
