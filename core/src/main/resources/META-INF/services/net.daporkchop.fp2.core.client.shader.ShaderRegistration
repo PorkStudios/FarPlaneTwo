@@ -1,7 +1,7 @@
 #
 # Adapted from The MIT License (MIT)
 #
-# Copyright (c) 2020-2024 DaPorkchop_
+# Copyright (c) 2020-2025 DaPorkchop_
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
 # files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,5 +19,8 @@
 
 # This is a listing of all ShaderRegistration implementations for every class which has its own shaders.
 
+net.daporkchop.fp2.core.client.render.compute.ComputeIndirectDrawCommandsCompressor$RegisterShaders
+net.daporkchop.fp2.core.client.render.compute.ComputeTextureMipmapGenerator$RegisterShaders
 net.daporkchop.fp2.core.engine.client.AbstractFarRenderer$RegisterShaders
 net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex$RegisterShaders
+net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUOcclusionCulledBaseInstanceRenderIndex$RegisterShaders

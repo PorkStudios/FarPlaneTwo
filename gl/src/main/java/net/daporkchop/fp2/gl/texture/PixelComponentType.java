@@ -20,20 +20,21 @@
 package net.daporkchop.fp2.gl.texture;
 
 import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.OpenGL;
+import lombok.RequiredArgsConstructor;
 
 /**
- * An OpenGL texture object which owns its underlying texture storage.
- *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @Getter
-public abstract class GLStorageTexture extends GLTexture {
-    protected final @NonNull TextureInternalFormat internalFormat;
+public enum PixelComponentType {
+    FLOAT(false, true, ""),
+    INT(true, true, "i"),
+    UINT(true, false, "u"),
+    ;
 
-    protected GLStorageTexture(@NonNull OpenGL gl, @NonNull TextureTarget target, @NonNull TextureInternalFormat internalFormat) {
-        super(gl, target);
-        this.internalFormat = internalFormat;
-    }
+    private final boolean integer;
+    private final boolean signed;
+
+    private final String glslPrefix;
 }

@@ -30,6 +30,7 @@ in vec2 a_light;
 in vec3 a_color;
 in vec3 a_pos;
 
+//TODO: sync this with occlusion_culled_cube.vert
 //shader inputs for accessing the tile position
 #if FP2_TILE_POS_TECHNIQUE == FP2_TILE_POS_TECHNIQUE_VERTEX_ATTRIBUTE
     //instanced vertex attributes

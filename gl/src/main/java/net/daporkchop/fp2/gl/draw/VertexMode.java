@@ -17,23 +17,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.texture;
+package net.daporkchop.fp2.gl.draw;
 
 import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.OpenGL;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.draw.indirect.DrawArraysIndirectCommand;
+import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 /**
- * An OpenGL texture object which owns its underlying texture storage.
- *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @Getter
-public abstract class GLStorageTexture extends GLTexture {
-    protected final @NonNull TextureInternalFormat internalFormat;
+public enum VertexMode {
+    VERTICES(DrawArraysIndirectCommand._SIZE),
+    INDICES(DrawElementsIndirectCommand._SIZE),
+    ;
 
-    protected GLStorageTexture(@NonNull OpenGL gl, @NonNull TextureTarget target, @NonNull TextureInternalFormat internalFormat) {
-        super(gl, target);
-        this.internalFormat = internalFormat;
-    }
+    private final @NotNegative long indirectCommandSize;
 }

@@ -17,23 +17,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.texture;
+package net.daporkchop.fp2.core.client.listener;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 
 /**
- * An OpenGL texture object which owns its underlying texture storage.
- *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class GLStorageTexture extends GLTexture {
-    protected final @NonNull TextureInternalFormat internalFormat;
-
-    protected GLStorageTexture(@NonNull OpenGL gl, @NonNull TextureTarget target, @NonNull TextureInternalFormat internalFormat) {
-        super(gl, target);
-        this.internalFormat = internalFormat;
-    }
+public interface FramebufferResizeListener {
+    @CalledFromClientThread
+    void onFramebufferResize(int width, int height);
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -510,6 +510,10 @@ public enum GLExtension {
      * @see <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_gpu_shader4.txt">https://registry.khronos.org/OpenGL/extensions/EXT/EXT_gpu_shader4.txt</a>
      */
     GL_EXT_gpu_shader4(null, true),
+    /**
+     * @see <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_shader_ballot.txt">https://registry.khronos.org/OpenGL/extensions/ARB/ARB_shader_ballot.txt</a>
+     */
+    GL_ARB_shader_ballot(null, true),
 
     //Not real extensions, but emulated for feature detection
     /**

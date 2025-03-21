@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2025 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,25 +15,21 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-package net.daporkchop.fp2.gl.texture;
-
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.OpenGL;
-
-/**
- * An OpenGL texture object which owns its underlying texture storage.
  *
- * @author DaPorkchop_
  */
-@Getter
-public abstract class GLStorageTexture extends GLTexture {
-    protected final @NonNull TextureInternalFormat internalFormat;
 
-    protected GLStorageTexture(@NonNull OpenGL gl, @NonNull TextureTarget target, @NonNull TextureInternalFormat internalFormat) {
-        super(gl, target);
-        this.internalFormat = internalFormat;
-    }
+layout(early_fragment_tests) in;
+
+flat in uint vs_out_tileIndex;
+
+//in vec3 vs_out_color;
+//out vec4 fs_out_color;
+
+layout(std430) writeonly restrict buffer B_VisibleTiles {
+    uint b_visibleTiles[];
+};
+
+void main() {
+    b_visibleTiles[vs_out_tileIndex] = 1u;
+    //fs_out_color = vec4(vs_out_color, 1.);
 }

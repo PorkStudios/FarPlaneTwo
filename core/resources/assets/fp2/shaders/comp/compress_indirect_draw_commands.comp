@@ -1,0 +1,81 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-$today.year DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+//synced with net.daporkchop.fp2.core.client.render.compute.ComputeIndirectDrawCommandsCompressor#SHADER_WORK_GROUP_SIZE
+layout(local_size_x = 32) in;
+
+#include <"fp2:shaders/util/indirect_draw.glsl"> // DrawElementsIndirectCommand
+
+#if FP2_COMPRESS_VERTICES
+    #define command_t DrawArraysIndirectCommand
+#elif FP2_COMPRESS_INDICES
+    #define command_t DrawElementsIndirectCommand
+#else
+    #error "Either FP2_COMPRESS_VERTICES or FP2_COMPRESS_INDICES must be set!"
+#endif
+
+#ifndef FP2_COMPRESS_PASS_COUNT
+    #error "FP2_COMPRESS_PASS_COUNT must be set!"
+#endif
+
+uniform uint u_srcCommandCount;
+
+layout(std430) readonly restrict buffer B_SelectedFlags {
+    uint b_selectedFlags[];
+};
+
+layout(std430) readonly restrict buffer B_SrcCommands {
+    command_t b_srcCommands[];
+};
+
+layout(std430) writeonly restrict buffer B_DstCommands {
+    command_t b_dstCommands[];
+};
+
+layout(binding = COUNT_SELECTED_COUNTER_BINDING) uniform atomic_uint ac_selectedCount[FP2_COMPRESS_PASS_COUNT];
+
+void main() {
+    uint srcCommandIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+
+    //don't read past the end of the buffer
+    if (srcCommandIndex >= u_srcCommandCount) {
+        return;
+    }
+
+    //if the command is selected, consider copying it to the destination
+    if (b_selectedFlags[srcCommandIndex] != 0u) {
+        uint commandIndexBase = 0u;
+        for (uint pass = 0u; pass < FP2_COMPRESS_PASS_COUNT; pass++, commandIndexBase += u_srcCommandCount) {
+            command_t srcCommand = b_srcCommands[commandIndexBase + srcCommandIndex];
+
+            //if the command at this render pass is empty, skip it
+            if (srcCommand.count == 0u) {
+                continue;
+            }
+
+            //determine which index the command should go at.
+            //  pass is a dynamically uniform variable, so we can safely index the atomic counter array with it
+            uint dstCommandIndex = atomicCounterIncrement(ac_selectedCount[pass]);
+
+            //copy the command to the corresponding destination slot
+            b_dstCommands[commandIndexBase + dstCommandIndex] = srcCommand;
+        }
+    }
+}

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -411,6 +411,12 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, this.cameraStateUniformsBuffer.buffer().id());
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, this.drawStateUniformsBuffer.buffer().id());
 
+        val reversedZ = this.fp2.client().renderManager().reversedZ();
+        this.gl.glEnable(GL_DEPTH_TEST);
+        this.gl.glDepthFunc(reversedZ != null && reversedZ.isActive() ? GL_GREATER : GL_LESS);
+
+        this.renderIndex.preDraw();
+
         //bind texture UVs
         this.levelRenderer.textureUVs().gpuQuadLists().bind(this.gl);
 
@@ -418,18 +424,12 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.gl.glEnable(GL_CULL_FACE);
         }
 
-        val reversedZ = this.fp2.client().renderManager().reversedZ();
-        this.gl.glEnable(GL_DEPTH_TEST);
-        this.gl.glDepthFunc(reversedZ != null && reversedZ.isActive() ? GL_GREATER : GL_LESS);
-
         this.gl.glEnable(GL_STENCIL_TEST);
         this.gl.glStencilMask(0xFF);
 
         //clear stencil buffer to 0x7F
         this.gl.glClearStencil(0x7F);
         this.gl.glClear(GL_STENCIL_BUFFER_BIT);
-
-        this.renderIndex.preDraw();
     }
 
     private void postRender() {

@@ -17,23 +17,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.texture;
+package net.daporkchop.fp2.core.client.render.compute;
 
-import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.core.client.render.GlobalRenderer;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
+import net.daporkchop.fp2.gl.state.StatePreserver;
 
 /**
- * An OpenGL texture object which owns its underlying texture storage.
- *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class GLStorageTexture extends GLTexture {
-    protected final @NonNull TextureInternalFormat internalFormat;
+abstract class AbstractComputeShaderContainer implements AutoCloseable {
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = ComputeShaderProgram.REQUIRED_EXTENSIONS;
 
-    protected GLStorageTexture(@NonNull OpenGL gl, @NonNull TextureTarget target, @NonNull TextureInternalFormat internalFormat) {
-        super(gl, target);
-        this.internalFormat = internalFormat;
+    protected final @NonNull OpenGL gl;
+    protected final @NonNull ReloadableShaderRegistry shaderRegistry;
+
+    public AbstractComputeShaderContainer(@NonNull OpenGL gl, @NonNull GlobalRenderer globalRenderer) {
+        this.gl = gl.checkSupported(REQUIRED_EXTENSIONS);
+        this.shaderRegistry = globalRenderer.shaderRegistry;
     }
+
+    @Override
+    public void close() {
+        //no-op
+    }
+
+    public abstract void configureModifiedState(@NonNull StatePreserver.Builder builder);
 }
