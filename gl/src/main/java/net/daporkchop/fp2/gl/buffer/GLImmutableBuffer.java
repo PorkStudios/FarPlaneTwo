@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,7 +25,9 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.AnyMemoryRegion;
+import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.nio.ByteBuffer;
@@ -43,14 +45,15 @@ public final class GLImmutableBuffer extends GLBuffer {
 
     /**
      * Creates a new immutable buffer with the given capacity and uninitialized data.
-     * @param gl the OpenGL context
+     *
+     * @param gl       the OpenGL context
      * @param capacity the buffer's capacity
-     * @param flags the buffer's storage flags
+     * @param flags    the buffer's storage flags
      * @return the created buffer
      */
-    public static GLImmutableBuffer create(@NonNull OpenGL gl, @NotNegative long capacity, int flags) {
+    public static GLImmutableBuffer create(@NonNull OpenGL gl, @Positive long capacity, int flags) {
         gl.checkSupported(REQUIRED_EXTENSIONS);
-        return new GLImmutableBuffer(gl, notNegative(capacity, "capacity"), 0L, flags);
+        return new GLImmutableBuffer(gl, positive(capacity, "capacity"), 0L, flags);
     }
 
     /**
@@ -79,20 +82,47 @@ public final class GLImmutableBuffer extends GLBuffer {
         return new GLImmutableBuffer(gl, data, flags);
     }
 
+    /**
+     * Creates a new immutable buffer  initialized to a copy of the given range of the given buffer.
+     * <p>
+     * This behaves like {@link java.util.Arrays#copyOfRange}, with the difference that the second integer argument is the capacity of
+     * the new buffer instead of an upper bound, and that the new buffer is extended with undefined contents at offsets greater than
+     * {@code original.capacity() - from}.
+     *
+     * @param gl       the OpenGL context
+     * @param original the buffer from which a range is to be copied
+     * @param from     the initial index of the range to be copied, inclusive
+     * @param length   the length of the range to be copied
+     * @param flags    the buffer's storage flags
+     * @return the created buffer
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_copy_buffer ARB_copy_buffer} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
+     */
+    @GLRequires(GLExtension.GL_ARB_copy_buffer)
+    public static GLImmutableBuffer createCopyOfRange(@NonNull OpenGL gl, @NonNull GLBuffer original, @NotNegative long from, @NotNegative long length, int flags) {
+        GLImmutableBuffer result = create(gl, length, flags);
+        try {
+            result.copyRange(original, from, 0L, Math.min(original.capacity() - from, length));
+            return result;
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, result);
+        }
+    }
+
     private final int flags;
 
-    private GLImmutableBuffer(OpenGL gl, long size, long data, int flags) {
+    private GLImmutableBuffer(OpenGL gl, long capacity, long data, int flags) {
         super(gl);
 
         try {
-            this.capacity = size;
+            this.capacity = positive(capacity, "capacity");
             this.flags = flags;
 
             if (this.dsa) {
-                gl.glNamedBufferStorage(this.id, size, data, flags);
+                gl.glNamedBufferStorage(this.id, capacity, data, flags);
             } else {
                 this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-                    gl.glBufferStorage(target.id(), size, data, flags);
+                    gl.glBufferStorage(target.id(), capacity, data, flags);
                 });
             }
         } catch (Throwable t) {

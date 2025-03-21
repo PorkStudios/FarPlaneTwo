@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -96,6 +96,30 @@ public abstract class GLBuffer extends GLObject.Normal {
         return gl.supports(GLImmutableBuffer.REQUIRED_EXTENSIONS)
                 ? GLImmutableBuffer.create(gl, data, immutableFlags)
                 : GLMutableBuffer.create(gl, data, mutableUsage);
+    }
+
+    /**
+     * Creates an OpenGL buffer object with "functionally immutable" storage initialized to a copy of the given range of the given buffer.
+     * <p>
+     * This behaves like {@link java.util.Arrays#copyOfRange}, with the difference that the second integer argument is the capacity of
+     * the new buffer instead of an upper bound, and that the new buffer is extended with undefined contents at offsets greater than
+     * {@code original.capacity() - from}.
+     *
+     * @param gl             the OpenGL context
+     * @param original       the buffer from which a range is to be copied
+     * @param from           the initial index of the range to be copied, inclusive
+     * @param length         the length of the range to be copied
+     * @param mutableUsage   the buffer's usage, if it's created with mutable storage
+     * @param immutableFlags the buffer's storage flags, if it's created with immutable storage
+     * @return the created buffer
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_copy_buffer ARB_copy_buffer} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
+     */
+    @GLRequires(GLExtension.GL_ARB_copy_buffer)
+    public static GLBuffer createFunctionallyImmutableCopyOfRange(@NonNull OpenGL gl, @NonNull GLBuffer original, @NotNegative long from, @NotNegative long length, @NonNull BufferUsage mutableUsage, int immutableFlags) {
+        return gl.supports(GLImmutableBuffer.REQUIRED_EXTENSIONS)
+                ? GLImmutableBuffer.createCopyOfRange(gl, original, from, length, immutableFlags)
+                : GLMutableBuffer.createCopyOfRange(gl, original, from, length, mutableUsage);
     }
 
     protected final boolean clearBufferObject;

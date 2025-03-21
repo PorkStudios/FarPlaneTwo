@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,7 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.OpenGLException;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.util.AnyMemoryRegion;
+import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -70,7 +71,7 @@ public final class GLMutableBuffer extends GLBuffer {
     }
 
     /**
-     * Creates a new buffer with the given initial data.
+     * Creates a new buffer initialized to the given data.
      *
      * @param gl    the OpenGL context
      * @param data  the buffer's initial data, also used to determine the buffer's initial capacity
@@ -88,7 +89,7 @@ public final class GLMutableBuffer extends GLBuffer {
     }
 
     /**
-     * Creates a new buffer with the given initial data.
+     * Creates a new buffer initialized to the given data.
      *
      * @param gl    the OpenGL context
      * @param data  the buffer's initial data, also used to determine the buffer's initial capacity
@@ -99,6 +100,34 @@ public final class GLMutableBuffer extends GLBuffer {
         GLMutableBuffer result = new GLMutableBuffer(gl);
         try {
             result.upload(data, usage);
+            return result;
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, result);
+        }
+    }
+
+    /**
+     * Creates a new buffer initialized to a copy of the given range of the given buffer.
+     * <p>
+     * This behaves like {@link java.util.Arrays#copyOfRange}, with the difference that the second integer argument is the capacity of
+     * the new buffer instead of an upper bound, and that the new buffer is extended with undefined contents at offsets greater than
+     * {@code original.capacity() - from}.
+     *
+     * @param gl       the OpenGL context
+     * @param original the buffer from which a range is to be copied
+     * @param from     the initial index of the range to be copied, inclusive
+     * @param length   the length of the range to be copied
+     * @param usage    the buffer's usage
+     * @return the created buffer
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_copy_buffer ARB_copy_buffer} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
+     */
+    @GLRequires(GLExtension.GL_ARB_copy_buffer)
+    public static GLMutableBuffer createCopyOfRange(@NonNull OpenGL gl, @NonNull GLBuffer original, @NotNegative long from, @NotNegative long length, @NonNull BufferUsage usage) {
+        GLMutableBuffer result = new GLMutableBuffer(gl);
+        try {
+            result.capacity(length, usage);
+            result.copyRange(original, from, 0L, Math.min(original.capacity() - from, length));
             return result;
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, result);
