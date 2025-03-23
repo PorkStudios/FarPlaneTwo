@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -35,9 +35,13 @@ import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 @Attribute(name = "modelViewProjectionMatrix", typeMatrix = @MatrixType(cols = 4, rows = 4, componentType = @ScalarType(float.class)))
 @Attribute(name = "positionFloor", typeVector = @VectorType(components = 3, componentType = @ScalarType(int.class)))
 @Attribute(name = "positionFrac", typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
+@Attribute(name = "zNear", typeScalar = @ScalarType(float.class))
 public interface CameraStateUniforms extends AttributeStruct {
     @AttributeSetter
     CameraStateUniforms modelViewProjectionMatrix(float @ArrayLength(16) [] modelViewProjectionMatrix);
+
+    @AttributeSetter
+    CameraStateUniforms zNear(float zNear);
 
     @AttributeSetter
     CameraStateUniforms positionFloor(int x, int y, int z);

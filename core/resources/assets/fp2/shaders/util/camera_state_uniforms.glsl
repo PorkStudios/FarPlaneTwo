@@ -30,4 +30,5 @@ layout(CAMERA_STATE_UNIFORMS_UBO_LAYOUT) uniform CAMERA_STATE_UNIFORMS_UBO_NAME 
     mat4 u_modelViewProjectionMatrix;
     ivec3 u_positionFloor;
     vec3 u_positionFrac;
+    float u_zNear;
 };

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -218,6 +218,8 @@ abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
 
             //configure the camera state
             cameraState.setModelViewMatrixAndProjectionMatrix(modelView, projection, client);
+
+            //zNear is already set by fp2_zNear() (which is called by MixinGameRenderer1_16#fp2_getProjectionMatrix_useReversedZ()), we assume it hasn't changed
         } finally {
             alloc.release(projection);
             alloc.release(modelView);
@@ -269,7 +271,12 @@ abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
     }
 
     @Override
-    public TerrainRenderingBlockedTracker1_16 fp2_vanillaRenderabilityTracker() {
+    public final TerrainRenderingBlockedTracker1_16 fp2_vanillaRenderabilityTracker() {
         return this.fp2_vanillaRenderabilityTracker;
+    }
+
+    @Override
+    public final void fp2_zNear(float zNear) {
+        this.fp2_cameraState.zNear = zNear;
     }
 }

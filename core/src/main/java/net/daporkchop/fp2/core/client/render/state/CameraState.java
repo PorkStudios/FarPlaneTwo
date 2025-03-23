@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -37,6 +37,8 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 public final class CameraState implements Cloneable<CameraState> {
     public final float[] modelViewProjectionMatrix;
 
+    public float zNear;
+
     public int positionFloorX;
     public int positionFloorY;
     public int positionFloorZ;
@@ -51,6 +53,7 @@ public final class CameraState implements Cloneable<CameraState> {
 
     private CameraState(CameraState state) {
         this.modelViewProjectionMatrix = state.modelViewProjectionMatrix.clone();
+        this.zNear = state.zNear;
         this.positionFloorX = state.positionFloorX;
         this.positionFloorY = state.positionFloorY;
         this.positionFloorZ = state.positionFloorZ;
@@ -146,6 +149,7 @@ public final class CameraState implements Cloneable<CameraState> {
      */
     public void configureUniforms(CameraStateUniforms uniforms) {
         uniforms.modelViewProjectionMatrix(this.modelViewProjectionMatrix);
+        uniforms.zNear(this.zNear);
         uniforms.positionFloor(this.positionFloorX, this.positionFloorY, this.positionFloorZ);
         uniforms.positionFrac(this.positionFracX, this.positionFracY, this.positionFracZ);
     }

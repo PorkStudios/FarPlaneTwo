@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -141,6 +141,8 @@ abstract class MixinEntityRenderer1_12 implements IMixinEntityRenderer1_12 {
 
             //configure the camera state
             cameraState.setModelViewMatrixAndProjectionMatrix(modelView, projection, client);
+
+            //zNear is already set by fp2_$everything$_dontUseGluPerspective(), we assume it hasn't changed
         } finally {
             alloc.release(projection);
             alloc.release(modelView);
@@ -204,6 +206,10 @@ abstract class MixinEntityRenderer1_12 implements IMixinEntityRenderer1_12 {
             at = @At(value = "INVOKE",
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
     private void fp2_$everything$_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
+        //save the near clipping plane distance (should always be 0.05f)
+        assert zNear == 0.05f : zNear;
+        this.fp2_cameraState.zNear = zNear;
+
         MatrixHelper.reversedZ((FloatBuffer) this.fp2_tempMatrix.clear(), fov, aspect, zNear);
         glMultMatrix(this.fp2_tempMatrix);
     }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,10 +22,14 @@ package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.renderer;
 import lombok.val;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.util.math.vector.Matrix4f;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -37,7 +41,11 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  * @author DaPorkchop_
  */
 @Mixin(GameRenderer.class)
-public abstract class MixinGameRenderer1_16 {
+abstract class MixinGameRenderer1_16 {
+    @Shadow
+    @Final
+    private Minecraft minecraft;
+
     @Inject(method = "Lnet/minecraft/client/renderer/GameRenderer;renderLevel(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V",
             at = @At("HEAD"),
             require = 1, allow = 1)
@@ -53,6 +61,10 @@ public abstract class MixinGameRenderer1_16 {
                     target = "Lnet/minecraft/util/math/vector/Matrix4f;perspective(DFFF)Lnet/minecraft/util/math/vector/Matrix4f;"),
             require = 1, allow = 1)
     private Matrix4f fp2_getProjectionMatrix_useReversedZ(double fov, float aspect, float zNear, float zFar) {
+        //update the world renderer's zNear value (it's always 0.05f, but i want to be sure not to break things)
+        assert zNear == 0.05f : zNear;
+        ((IMixinWorldRenderer1_16) this.minecraft.levelRenderer).fp2_zNear(zNear);
+
         //use reversed-z projection instead of regular perspective projection
         ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
 
