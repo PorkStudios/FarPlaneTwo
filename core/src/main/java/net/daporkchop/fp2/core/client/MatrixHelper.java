@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,11 +21,11 @@ package net.daporkchop.fp2.core.client;
 
 import lombok.experimental.UtilityClass;
 import lombok.val;
+import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.FloatBuffer;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -37,29 +37,29 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class MatrixHelper {
-    public final int MAT4_ELEMENTS = 16;
+    public static final int MAT4_ELEMENTS = 16;
 
-    public final int MAT4_SIZE = 16 * FLOAT_SIZE;
+    public static final int MAT4_SIZE = 16 * FLOAT_SIZE;
 
-    public int matrixIndex(int x, int y) {
+    static {
+        //float array must be tightly packed so that we can write to them using unsafe
+        PUnsafe.requireTightlyPackedFloatArrays();
+    }
+
+    private static int matrixIndex(int x, int y) {
+        assert x >= 0 && x < 4 && y >= 0 && y < 4 : "x=" + x + ", y=" + y;
         return x * 4 + y;
     }
 
-    private void swap(float[] arr, int i0, int i1) {
-        float t = arr[i0];
-        arr[i0] = arr[i1];
-        arr[i1] = t;
-    }
-
-    public long matrixOffset(int x, int y) {
+    private static long matrixOffset(int x, int y) {
         return (long) matrixIndex(x, y) * FLOAT_SIZE;
     }
 
-    public void reversedZ(float[] dst, float fovy, float aspect, float zNear) {
-        reversedZ(dst, PUnsafe.ARRAY_FLOAT_BASE_OFFSET, fovy, aspect, zNear);
+    public static void reversedZ(float[] dst, float fovy, float aspect, float zNear) {
+        reversedZ(dst, PUnsafe.arrayFloatBaseOffset(), fovy, aspect, zNear);
     }
 
-    public void reversedZ(FloatBuffer dst, float fovy, float aspect, float zNear) {
+    public static void reversedZ(FloatBuffer dst, float fovy, float aspect, float zNear) {
         if (dst.hasArray()) {
             reversedZ(dst.array(), PUnsafe.arrayFloatElementOffset(dst.arrayOffset()), fovy, aspect, zNear);
         } else {
@@ -67,10 +67,9 @@ public class MatrixHelper {
         }
     }
 
-    public void reversedZ(Object base, long offset, float fovy, float aspect, float zNear) {
+    private static void reversedZ(Object base, long offset, float fovy, float aspect, float zNear) {
         //from http://dev.theomader.com/depth-precision/
-        float radians = (float) Math.toRadians(fovy);
-        float f = 1.0f / (float) Math.tan(radians * 0.5f);
+        float f = (float) (1.0d / Math.tan(Math.toRadians(fovy) * 0.5d));
 
         PUnsafe.setMemory(base, offset, MAT4_SIZE, (byte) 0);
 
@@ -89,72 +88,58 @@ public class MatrixHelper {
         }
     }
 
-    public void multiply4x4(float[] a, float[] b, float[] dst) {
+    public static void multiply4x4(float[] a, float[] b, float[] dst) {
         //check array length at head to allow JIT to optimize array bounds checks out in method body
         checkArg(a.length >= MAT4_ELEMENTS && b.length >= MAT4_ELEMENTS && dst.length >= MAT4_ELEMENTS);
 
-        //parentheses are to allow out-of-order execution to make more of a difference due to the JVM's strict floating-point precision rules
-        dst[0] = (b[0] * a[0] + b[1] * a[4]) + (b[2] * a[8] + b[3] * a[12]);
-        dst[1] = (b[0] * a[1] + b[1] * a[5]) + (b[2] * a[9] + b[3] * a[13]);
-        dst[2] = (b[0] * a[2] + b[1] * a[6]) + (b[2] * a[10] + b[3] * a[14]);
-        dst[3] = (b[0] * a[3] + b[1] * a[7]) + (b[2] * a[11] + b[3] * a[15]);
-        dst[4] = (b[4] * a[0] + b[5] * a[4]) + (b[6] * a[8] + b[7] * a[12]);
-        dst[5] = (b[4] * a[1] + b[5] * a[5]) + (b[6] * a[9] + b[7] * a[13]);
-        dst[6] = (b[4] * a[2] + b[5] * a[6]) + (b[6] * a[10] + b[7] * a[14]);
-        dst[7] = (b[4] * a[3] + b[5] * a[7]) + (b[6] * a[11] + b[7] * a[15]);
-        dst[8] = (b[8] * a[0] + b[9] * a[4]) + (b[10] * a[8] + b[11] * a[12]);
-        dst[9] = (b[8] * a[1] + b[9] * a[5]) + (b[10] * a[9] + b[11] * a[13]);
-        dst[10] = (b[8] * a[2] + b[9] * a[6]) + (b[10] * a[10] + b[11] * a[14]);
-        dst[11] = (b[8] * a[3] + b[9] * a[7]) + (b[10] * a[11] + b[11] * a[15]);
-        dst[12] = (b[12] * a[0] + b[13] * a[4]) + (b[14] * a[8] + b[15] * a[12]);
-        dst[13] = (b[12] * a[1] + b[13] * a[5]) + (b[14] * a[9] + b[15] * a[13]);
-        dst[14] = (b[12] * a[2] + b[13] * a[6]) + (b[14] * a[10] + b[15] * a[14]);
-        dst[15] = (b[12] * a[3] + b[13] * a[7]) + (b[14] * a[11] + b[15] * a[15]);
+        float a00 = a[matrixIndex(0, 0)], a01 = a[matrixIndex(0, 1)], a02 = a[matrixIndex(0, 2)], a03 = a[matrixIndex(0, 3)];
+        float a10 = a[matrixIndex(1, 0)], a11 = a[matrixIndex(1, 1)], a12 = a[matrixIndex(1, 2)], a13 = a[matrixIndex(1, 3)];
+        float a20 = a[matrixIndex(2, 0)], a21 = a[matrixIndex(2, 1)], a22 = a[matrixIndex(2, 2)], a23 = a[matrixIndex(2, 3)];
+        float a30 = a[matrixIndex(3, 0)], a31 = a[matrixIndex(3, 1)], a32 = a[matrixIndex(3, 2)], a33 = a[matrixIndex(3, 3)];
+
+        float b00 = b[matrixIndex(0, 0)], b01 = b[matrixIndex(0, 1)], b02 = b[matrixIndex(0, 2)], b03 = b[matrixIndex(0, 3)];
+        float b10 = b[matrixIndex(1, 0)], b11 = b[matrixIndex(1, 1)], b12 = b[matrixIndex(1, 2)], b13 = b[matrixIndex(1, 3)];
+        float b20 = b[matrixIndex(2, 0)], b21 = b[matrixIndex(2, 1)], b22 = b[matrixIndex(2, 2)], b23 = b[matrixIndex(2, 3)];
+        float b30 = b[matrixIndex(3, 0)], b31 = b[matrixIndex(3, 1)], b32 = b[matrixIndex(3, 2)], b33 = b[matrixIndex(3, 3)];
+
+        dst[matrixIndex(0, 0)] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
+        dst[matrixIndex(0, 1)] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
+        dst[matrixIndex(0, 2)] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
+        dst[matrixIndex(0, 3)] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
+        dst[matrixIndex(1, 0)] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
+        dst[matrixIndex(1, 1)] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
+        dst[matrixIndex(1, 2)] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
+        dst[matrixIndex(1, 3)] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
+        dst[matrixIndex(2, 0)] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
+        dst[matrixIndex(2, 1)] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
+        dst[matrixIndex(2, 2)] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
+        dst[matrixIndex(2, 3)] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
+        dst[matrixIndex(3, 0)] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
+        dst[matrixIndex(3, 1)] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
+        dst[matrixIndex(3, 2)] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
+        dst[matrixIndex(3, 3)] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
     }
 
-    public void multiply4x4(double[] a, double[] b, double[] dst) {
-        //check array length at head to allow JIT to optimize array bounds checks out in method body
-        checkArg(a.length >= MAT4_ELEMENTS && b.length >= MAT4_ELEMENTS && dst.length >= MAT4_ELEMENTS);
-
-        //parentheses are to allow out-of-order execution to make more of a difference due to the JVM's strict floating-point precision rules
-        dst[0] = (b[0] * a[0] + b[1] * a[4]) + (b[2] * a[8] + b[3] * a[12]);
-        dst[1] = (b[0] * a[1] + b[1] * a[5]) + (b[2] * a[9] + b[3] * a[13]);
-        dst[2] = (b[0] * a[2] + b[1] * a[6]) + (b[2] * a[10] + b[3] * a[14]);
-        dst[3] = (b[0] * a[3] + b[1] * a[7]) + (b[2] * a[11] + b[3] * a[15]);
-        dst[4] = (b[4] * a[0] + b[5] * a[4]) + (b[6] * a[8] + b[7] * a[12]);
-        dst[5] = (b[4] * a[1] + b[5] * a[5]) + (b[6] * a[9] + b[7] * a[13]);
-        dst[6] = (b[4] * a[2] + b[5] * a[6]) + (b[6] * a[10] + b[7] * a[14]);
-        dst[7] = (b[4] * a[3] + b[5] * a[7]) + (b[6] * a[11] + b[7] * a[15]);
-        dst[8] = (b[8] * a[0] + b[9] * a[4]) + (b[10] * a[8] + b[11] * a[12]);
-        dst[9] = (b[8] * a[1] + b[9] * a[5]) + (b[10] * a[9] + b[11] * a[13]);
-        dst[10] = (b[8] * a[2] + b[9] * a[6]) + (b[10] * a[10] + b[11] * a[14]);
-        dst[11] = (b[8] * a[3] + b[9] * a[7]) + (b[10] * a[11] + b[11] * a[15]);
-        dst[12] = (b[12] * a[0] + b[13] * a[4]) + (b[14] * a[8] + b[15] * a[12]);
-        dst[13] = (b[12] * a[1] + b[13] * a[5]) + (b[14] * a[9] + b[15] * a[13]);
-        dst[14] = (b[12] * a[2] + b[13] * a[6]) + (b[14] * a[10] + b[15] * a[14]);
-        dst[15] = (b[12] * a[3] + b[13] * a[7]) + (b[14] * a[11] + b[15] * a[15]);
-    }
-
-    public void offsetDepth(float[] mat, float offset) {
+    public static void offsetDepth(float[] mat, float offset) {
         //check array length at head to allow JIT to optimize array bounds checks out in method body
         checkArg(mat.length >= MAT4_ELEMENTS);
 
         //multiply offset by w to work around division by w on GPU
-        float w = (mat[3] + mat[7]) + (mat[11] + mat[15]);
-        mat[14] += offset * abs(w);
+        float w = mat[matrixIndex(0, 3)] + mat[matrixIndex(1, 3)] + mat[matrixIndex(2, 3)] + mat[matrixIndex(3, 3)];
+        mat[matrixIndex(3, 2)] += offset * Math.abs(w);
     }
 
-    public void flip(float[] mat) {
+    public static void flip(float[] mat) {
         //check array length at head to allow JIT to optimize array bounds checks out in method body
         checkArg(mat.length >= MAT4_ELEMENTS);
 
         //swap opposite pairs
-        swap(mat, matrixIndex(0, 1), matrixIndex(1, 0));
-        swap(mat, matrixIndex(0, 2), matrixIndex(2, 0));
-        swap(mat, matrixIndex(0, 3), matrixIndex(3, 0));
-        swap(mat, matrixIndex(1, 2), matrixIndex(2, 1));
-        swap(mat, matrixIndex(1, 3), matrixIndex(3, 1));
-        swap(mat, matrixIndex(2, 3), matrixIndex(3, 2));
+        PArrays.swap(mat, matrixIndex(0, 1), matrixIndex(1, 0));
+        PArrays.swap(mat, matrixIndex(0, 2), matrixIndex(2, 0));
+        PArrays.swap(mat, matrixIndex(0, 3), matrixIndex(3, 0));
+        PArrays.swap(mat, matrixIndex(1, 2), matrixIndex(2, 1));
+        PArrays.swap(mat, matrixIndex(1, 3), matrixIndex(3, 1));
+        PArrays.swap(mat, matrixIndex(2, 3), matrixIndex(3, 2));
     }
 
     /**
