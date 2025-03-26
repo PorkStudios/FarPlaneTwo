@@ -27,8 +27,10 @@ import net.daporkchop.fp2.common.util.NIOBufferUtil;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
+import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.closeable.QuietCloseable;
+import net.daporkchop.lib.common.misc.threadlocal.TL;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -38,19 +40,15 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.Buffer;
 import java.nio.IntBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
@@ -60,6 +58,7 @@ import static org.objectweb.asm.Type.*;
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class MultiBindHelper implements QuietCloseable {
     /**
      * Clears multiple consecutive indexed buffer binding targets to buffer ID {@code 0}.
@@ -69,7 +68,8 @@ public final class MultiBindHelper implements QuietCloseable {
      * @param first  the first binding index
      * @param count  the number of binding indices to clear
      */
-    public static void bindIndexedBuffers(@NonNull OpenGL gl, @NonNull IndexedBufferTarget target, @NotNegative int first, @NotNegative int count) {
+    public static void unbindIndexedBuffers(@NonNull OpenGL gl, @NonNull IndexedBufferTarget target, @NotNegative int first, @NotNegative int count) {
+        checkRangeLen(gl.limits().maxBindings(target), first, count);
         int targetId = target.id();
 
         if (gl.supports(GLExtension.GL_ARB_multi_bind)) {
@@ -92,6 +92,7 @@ public final class MultiBindHelper implements QuietCloseable {
      * @param buffers the IDs of the buffers to bind
      */
     public static void bindIndexedBuffers(@NonNull OpenGL gl, @NonNull IndexedBufferTarget target, @NotNegative int first, int @NonNull [] buffers) {
+        checkRangeLen(gl.limits().maxBindings(target), first, buffers.length);
         int targetId = target.id();
 
         if (gl.supports(GLExtension.GL_ARB_multi_bind)) {
@@ -106,65 +107,50 @@ public final class MultiBindHelper implements QuietCloseable {
     }
 
     /**
+     * Clears multiple consecutive image texture bindings to texture ID {@code 0}.
+     *
+     * @param gl    the OpenGL context
+     * @param first the first image unit
+     * @param count the number of image units to clear
+     */
+    @GLRequires(GLExtension.GL_ARB_shader_image_load_store)
+    public static void unbindImageTextures(@NonNull OpenGL gl, @NotNegative int first, @NotNegative int count) {
+        checkRangeLen(gl.limits().maxImageUnits(), first, count);
+
+        if (gl.supports(GLExtension.GL_ARB_multi_bind)) {
+            // If possible, use glBindImageTextures to bind all the images to 0
+            gl.glBindImageTextures(first, count);
+        } else {
+            // Fall back to using a loop
+            for (int i = 0; i < count; i++) {
+                gl.glBindImageTexture(first + i, 0, 0, false, 0, GL_READ_ONLY, GL_R8);
+            }
+        }
+    }
+
+    /**
      * @return a new {@link Builder}
      */
     public static Builder builder(@NonNull OpenGL gl) {
         return new Builder(gl);
     }
 
-    final @NonNull MethodHandle dispatcher;
+    private static final TL<IntBuffer> BUFFERS_INSTANCE = TL.create();
 
-    MultiBindHelper(@NonNull Builder builder) {
-        List<SingleBinding> inputBindings = new ArrayList<>(builder.singleBindings);
-
-        List<BindingGroup> bindingGroups;
-        if (builder.gl.supports(GLExtension.GL_ARB_multi_bind)) {
-            Map<IndexedBufferTarget, List<SingleBinding>> groupedBindings = inputBindings.stream()
-                    .sorted()
-                    .collect(Collectors.groupingBy(binding -> binding.target));
-
-            //find sequential runs of binding indices and group them together
-            bindingGroups = new ArrayList<>(inputBindings.size());
-            for (val group : groupedBindings.values()) {
-                do {
-                    SingleBinding first = group.remove(0);
-
-                    List<Integer> argumentIndices = new ArrayList<>();
-                    argumentIndices.add(first.argumentIndex);
-
-                    while (!group.isEmpty()) {
-                        SingleBinding next = group.get(0);
-                        if (first.bindBufferRange || next.bindBufferRange //we don't support glBindBuffersRange() yet
-                                || next.index != first.index + argumentIndices.size()) {
-                            break;
-                        }
-
-                        group.remove(0);
-                        argumentIndices.add(next.argumentIndex);
-                    }
-
-                    bindingGroups.add(new BindingGroup(
-                            first.target, first.index, first.bindBufferRange,
-                            argumentIndices.stream().mapToInt(Integer::intValue).toArray()));
-                } while (!group.isEmpty());
-            }
-        } else {
-            bindingGroups = inputBindings.stream()
-                    .sorted()
-                    .map(binding -> new BindingGroup(
-                            binding.target, binding.index, binding.bindBufferRange,
-                            new int[]{ binding.argumentIndex }))
-                    .collect(Collectors.toList());
+    static IntBuffer getBuffersBuffer(int capacity) {
+        IntBuffer buffers = BUFFERS_INSTANCE.get();
+        if (buffers == null || buffers.capacity() < capacity) {
+            buffers = NIOBufferUtil.allocateDirectNativeInt(capacity);
+            BUFFERS_INSTANCE.set(buffers);
         }
-
-        this.dispatcher = generateBindingClass(bindingGroups)
-                .bindTo(NIOBufferUtil.allocateDirectNativeInt(bindingGroups.stream()
-                        .mapToInt(group -> group.argumentIndices.length)
-                        .max().orElse(0)));
+        return buffers;
     }
 
+    private final @NonNull MethodHandle dispatcher;
+    private final @NonNull MethodHandle unbindDispatcher;
+
     //TODO: cache generated classes
-    private static MethodHandle generateBindingClass(List<BindingGroup> bindingGroups) {
+    private static MultiBindHelper generateBindingClass(List<BindingGroup> bindingGroups) {
         BindingGroup[] inputBindingsArray = new BindingGroup[bindingGroups.stream()
                 .flatMapToInt(bindingGroup -> Arrays.stream(bindingGroup.argumentIndices))
                 .max().orElse(-1) + 1];
@@ -179,9 +165,8 @@ public final class MultiBindHelper implements QuietCloseable {
         MethodType dispatchFunctionType;
         {
             List<Class<?>> dispatchFunctionArgumentTypes = new ArrayList<>();
-            dispatchFunctionArgumentTypes.add(IntBuffer.class);
             dispatchFunctionArgumentTypes.add(OpenGL.class);
-            for (int lvt = 2, i = 0; i < inputBindingsArray.length; i++) {
+            for (int lvt = 1, i = 0; i < inputBindingsArray.length; i++) {
                 val inputBinding = inputBindingsArray[i];
 
                 baseArgumentLvtIndices[i] = lvt;
@@ -199,7 +184,7 @@ public final class MultiBindHelper implements QuietCloseable {
         }
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        cw.visit(V1_8, ACC_PUBLIC | ACC_FINAL, getInternalName(MultiBindHelper.class), null, "java/lang/Object", null);
+        cw.visit(V1_8, ACC_PUBLIC | ACC_FINAL, getInternalName(MultiBindHelper.class) + "$Impl", null, "java/lang/Object", null);
 
         int largestBindingGroup = 0;
         boolean anyBindBuffersRange = false;
@@ -209,15 +194,19 @@ public final class MultiBindHelper implements QuietCloseable {
         }
         boolean anyMultiBind = largestBindingGroup > 1;
 
-        { //public static void dispatch(IntBuffer buffers, OpenGL gl, ...)
+        { //public static void dispatch(OpenGL gl, ...)
             MethodVisitor mv = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, "dispatch", dispatchFunctionType.toMethodDescriptorString(), null, null);
             mv.visitCode();
 
-            final int buffersLvtIndex = 0;
-            final int glLvtIndex = buffersLvtIndex + 1;
+            final int glLvtIndex = 0;
+            int buffersLvtIndex = -1;
 
             if (anyMultiBind) {
-                //TODO: allocate buffer locally?
+                buffersLvtIndex = getArgumentsAndReturnSizes(dispatchFunctionType.toMethodDescriptorString()) >> 2;
+
+                mv.visitLdcInsn(largestBindingGroup);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(MultiBindHelper.class), "getBuffersBuffer", getMethodDescriptor(getType(IntBuffer.class), INT_TYPE), MultiBindHelper.class.isInterface());
+                mv.visitVarInsn(ASTORE, buffersLvtIndex);
             }
 
             for (val bindingGroup : bindingGroups) {
@@ -259,15 +248,43 @@ public final class MultiBindHelper implements QuietCloseable {
             mv.visitEnd();
         }
 
+        { //static void unbind(OpenGL gl)
+            MethodVisitor mv = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, "unbind", getMethodDescriptor(VOID_TYPE, getType(OpenGL.class)), null, null);
+            mv.visitCode();
+
+            final int glLvtIndex = 0;
+
+            for (val bindingGroup : bindingGroups) {
+                mv.visitVarInsn(ALOAD, glLvtIndex);
+                mv.visitLdcInsn(bindingGroup.target.id());
+                mv.visitLdcInsn(bindingGroup.firstIndex);
+
+                if (bindingGroup.argumentIndices.length == 1) {
+                    mv.visitLdcInsn(0);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(OpenGL.class), "glBindBufferBase", "(III)V", false);
+                } else {
+                    mv.visitLdcInsn(bindingGroup.argumentIndices.length);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(OpenGL.class), "glBindBuffersBase", "(III)V", false);
+                }
+            }
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
         cw.visitEnd();
 
         MethodHandles.Lookup dispatcherLookup = PUnsafe.defineHiddenClass(MethodHandles.lookup(), true, cw.toByteArray());
-        return dispatcherLookup.findStatic(dispatcherLookup.lookupClass(), "dispatch", dispatchFunctionType);
+        return new MultiBindHelper(
+                dispatcherLookup.findStatic(dispatcherLookup.lookupClass(), "dispatch", dispatchFunctionType),
+                dispatcherLookup.findStatic(dispatcherLookup.lookupClass(), "unbind", MethodType.methodType(void.class, OpenGL.class)));
     }
 
     @Override
     public void close() {
-        //TODO: release native memory
+        //for now this is a no-op
     }
 
     /**
@@ -275,6 +292,15 @@ public final class MultiBindHelper implements QuietCloseable {
      */
     public MethodHandle dispatcher() {
         return this.dispatcher;
+    }
+
+    /**
+     * Resets all binding points affected by this object to {@code 0}, effectively unbinding everything.
+     *
+     * @param gl the OpenGL context
+     */
+    public void unbind(@NonNull OpenGL gl) {
+        this.unbindDispatcher.invokeExact(gl);
     }
 
     /**
@@ -321,7 +347,49 @@ public final class MultiBindHelper implements QuietCloseable {
          * @return a new {@link MultiBindHelper}
          */
         public MultiBindHelper build() {
-            return new MultiBindHelper(this);
+            List<SingleBinding> inputBindings = new ArrayList<>(this.singleBindings);
+
+            List<BindingGroup> bindingGroups;
+            if (this.gl.supports(GLExtension.GL_ARB_multi_bind)) {
+                Map<IndexedBufferTarget, List<SingleBinding>> groupedBindings = inputBindings.stream()
+                        .sorted()
+                        .collect(Collectors.groupingBy(binding -> binding.target));
+
+                //find sequential runs of binding indices and group them together
+                bindingGroups = new ArrayList<>(inputBindings.size());
+                for (val group : groupedBindings.values()) {
+                    do {
+                        SingleBinding first = group.remove(0);
+
+                        List<Integer> argumentIndices = new ArrayList<>();
+                        argumentIndices.add(first.argumentIndex);
+
+                        while (!group.isEmpty()) {
+                            SingleBinding next = group.get(0);
+                            if (first.bindBufferRange || next.bindBufferRange //we don't support glBindBuffersRange() yet
+                                    || next.index != first.index + argumentIndices.size()) {
+                                break;
+                            }
+
+                            group.remove(0);
+                            argumentIndices.add(next.argumentIndex);
+                        }
+
+                        bindingGroups.add(new BindingGroup(
+                                first.target, first.index, first.bindBufferRange,
+                                argumentIndices.stream().mapToInt(Integer::intValue).toArray()));
+                    } while (!group.isEmpty());
+                }
+            } else {
+                bindingGroups = inputBindings.stream()
+                        .sorted()
+                        .map(binding -> new BindingGroup(
+                                binding.target, binding.index, binding.bindBufferRange,
+                                new int[]{binding.argumentIndex}))
+                        .collect(Collectors.toList());
+            }
+
+            return generateBindingClass(bindingGroups);
         }
     }
 
