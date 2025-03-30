@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -50,6 +50,11 @@ public abstract class MixinMinecraft1_12 implements ClientThreadMarkedFutureExec
     @Shadow
     @Final
     public Profiler profiler;
+
+    @Shadow
+    public int displayWidth;
+    @Shadow
+    public int displayHeight;
 
     @Unique
     private ClientThreadMarkedFutureExecutor1_12 fp2_executor;
@@ -112,5 +117,12 @@ public abstract class MixinMinecraft1_12 implements ClientThreadMarkedFutureExec
             require = 1, allow = 1)
     private void fp2_createDisplay_notifySetPixelFormatFailed(CallbackInfo ci) {
         throw new IllegalStateException("LWJGL was unable to set the pixel format!\nThis could cause FarPlaneTwo to break, crashing the game to be safe!");
+    }
+
+    @Inject(method = "updateFramebufferSize()V",
+            at = @At("RETURN"),
+            require = 1, allow = 1)
+    private void fp2_updateFramebufferSize_notifyFramebufferResize(CallbackInfo ci) {
+        fp2().client().framebufferResizeListeners().dispatcher().onFramebufferResize(this.displayWidth, this.displayHeight);
     }
 }

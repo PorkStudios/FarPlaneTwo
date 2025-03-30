@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
+import net.daporkchop.fp2.core.client.listener.FramebufferResizeListener;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.RenderManager;
@@ -44,6 +45,7 @@ import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.GLProfile;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.function.PFunctions;
 import net.daporkchop.lib.logging.Logger;
 
@@ -69,6 +71,7 @@ public abstract class FP2Client {
     private ReloadableShaderRegistry reloadableShaderRegistry;
 
     private final ListenerList<TextureUVs.ReloadListener> textureUVsReloadListeners = ListenerList.create(TextureUVs.ReloadListener.class);
+    private final ListenerList<FramebufferResizeListener> framebufferResizeListeners = ListenerList.create(FramebufferResizeListener.class);
 
     @Setter(AccessLevel.PROTECTED)
     private Logger chat;
@@ -189,6 +192,18 @@ public abstract class FP2Client {
      * @return the current {@link IFarPlayerClient}, or an empty {@link Optional} if the client is not connected
      */
     public abstract Optional<? extends IFarPlayerClient> currentPlayer();
+
+    public final ListenerList<FramebufferResizeListener>.Handle addFramebufferResizeListener(@NonNull FramebufferResizeListener listener) {
+        ListenerList<FramebufferResizeListener>.Handle handle = this.framebufferResizeListeners.add(listener);
+        try {
+            this.fireFramebufferResize(listener);
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, handle);
+        }
+        return handle;
+    }
+
+    protected abstract void fireFramebufferResize(@NonNull FramebufferResizeListener listener);
 
     @Deprecated
     public abstract int vanillaRenderDistanceChunks();

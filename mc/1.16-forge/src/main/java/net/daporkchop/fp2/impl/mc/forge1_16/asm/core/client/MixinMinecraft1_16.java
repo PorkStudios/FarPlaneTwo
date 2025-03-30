@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,14 +15,15 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client;
 
 import net.daporkchop.fp2.impl.mc.forge1_16.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor1_16;
+import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.profiler.IProfiler;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -30,6 +31,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -40,6 +42,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public abstract class MixinMinecraft1_16 implements ClientThreadMarkedFutureExecutor1_16.Holder {
     @Shadow
     private IProfiler profiler;
+
+    @Shadow
+    @Final
+    private MainWindow window;
 
     @Unique
     private ClientThreadMarkedFutureExecutor1_16 fp2_executor;
@@ -65,5 +71,14 @@ public abstract class MixinMinecraft1_16 implements ClientThreadMarkedFutureExec
         this.profiler.push("fp2_scheduled_tasks");
         this.fp2_executor.doAllWork();
         this.profiler.pop();
+    }
+
+    @Inject(method = "resizeDisplay()V",
+            at = @At("RETURN"),
+            require = 1, allow = 1)
+    private void fp2_resizeDisplay_notifyFramebufferResize(CallbackInfo ci) {
+        //client instance might not be initialized by the time this gets triggered
+        fp2().optionalClient().ifPresent(client ->
+                client.framebufferResizeListeners().dispatcher().onFramebufferResize(this.window.getWidth(), this.window.getHeight()));
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
+import net.daporkchop.fp2.core.client.listener.FramebufferResizeListener;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.RenderManager;
 import net.daporkchop.fp2.core.config.FP2Config;
@@ -146,6 +147,12 @@ public class FP2Client1_16 extends FP2Client {
         return netHandler != null
                 ? ((IMixinClientPlayNetHandler1_16) netHandler).fp2_playerClient()
                 : Optional.empty();
+    }
+
+    @Override
+    protected void fireFramebufferResize(@NonNull FramebufferResizeListener listener) {
+        val window = this.mc.getWindow();
+        listener.onFramebufferResize(window.getWidth(), window.getHeight());
     }
 
     @Override

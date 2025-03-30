@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
+import net.daporkchop.fp2.core.client.listener.FramebufferResizeListener;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.RenderManager;
 import net.daporkchop.fp2.core.minecraft.util.log.ChatLogger;
@@ -149,6 +150,11 @@ public class FP2Client1_12 extends FP2Client {
         return connection != null
                 ? ((IMixinNetHandlerPlayClient1_12) connection).fp2_playerClient()
                 : Optional.empty();
+    }
+
+    @Override
+    protected void fireFramebufferResize(@NonNull FramebufferResizeListener listener) {
+        listener.onFramebufferResize(this.mc.displayWidth, this.mc.displayHeight);
     }
 
     @Override
