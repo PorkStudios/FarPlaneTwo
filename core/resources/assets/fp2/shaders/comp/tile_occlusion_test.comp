@@ -1,0 +1,206 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-$today.year DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+//synced with net.daporkchop.fp2.core.engine.client.index.attribdivisor.AbstractGPUCulledBaseInstanceRenderIndex#CULLING_SHADER_WORK_GROUP_SIZE
+layout(local_size_x = 256) in;
+
+#include <"fp2:shaders/common.glsl"> // T_SHIFT, T_VOXELS
+
+#include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_modelViewProjectionMatrix, u_positionFrac, u_positionFloor, u_zNear
+#include <"fp2:shaders/util/frustum.glsl"> // isBoxInFrustum()
+//#include <"fp2:shaders/util/vanilla_renderability.glsl"> // isVanillaRenderableLevel0()
+
+#define min4(a0, a1, a2, a3) (min(min(min(a0, a1), a2), a3))
+#define max4(a0, a1, a2, a3) (max(max(max(a0, a1), a2), a3))
+#define min8(a0, a1, a2, a3, a4, a5, a6, a7) (min(min(min(min(min(min(min(a0, a1), a2), a3), a4), a5), a6), a7))
+#define max8(a0, a1, a2, a3, a4, a5, a6, a7) (max(max(max(max(max(max(max(a0, a1), a2), a3), a4), a5), a6), a7))
+
+const bool REVERSEZ_ENABLED = bool(FP2_REVERSEZ_ENABLED);
+
+//TODO: should these be set dynamically? minecraft never changes them
+const float DEPTH_RANGE_MIN = -1.0;
+//const float DEPTH_RANGE_MIN = 0.0;
+const float DEPTH_RANGE_MAX = 1.0;
+
+uniform sampler2D u_depthTexture;
+
+layout(std140) readonly restrict buffer B_TilePositions {
+    ivec4 b_tilePositions[];
+};
+
+layout(std430) readonly restrict buffer B_SrcVisibleTiles {
+    uint b_srcVisibleTiles[];
+};
+
+layout(std430) writeonly restrict buffer B_DstSelectedTiles {
+    uint b_dstSelectedTiles[];
+};
+
+void aabbClipSpaceToNormalizedDevice(in vec4 clipSpacePoints[8], out vec3 normalizedDevicePoints[8]) {
+    for (uint i = 0u; i < 8u; i++) {
+        normalizedDevicePoints[i] = clipSpacePoints[i].xyz / clipSpacePoints[i].w;
+    }
+}
+
+/**
+ * Gets the projected bounds of an AABB in window space.
+ *
+ * @param bmin the AABB's minimum corner
+ * @param bmax the AABB's maximum corner
+ */
+bool projectBox(vec3 bmin, vec3 bmax, out vec3 ndc_bounds_min, out vec3 ndc_bounds_max) {
+    //TODO: these expressions could be simplified a bit for our specific use case, possibly improving accuracy...
+    vec4 SX = u_modelViewProjectionMatrix * vec4(bmax.x - bmin.x, 0.0, 0.0, 0.0);
+    vec4 SY = u_modelViewProjectionMatrix * vec4(0.0, bmax.y - bmin.y, 0.0, 0.0);
+    vec4 SZ = u_modelViewProjectionMatrix * vec4(0.0, 0.0, bmax.z - bmin.z, 0.0);
+
+    vec4 P0 = u_modelViewProjectionMatrix * vec4(bmin.x, bmin.y, bmin.z, 1.0);
+    vec4 P1 = P0 + SZ;
+    vec4 P2 = P0 + SY;
+    vec4 P3 = P2 + SZ;
+    vec4 P4 = P0 + SX;
+    vec4 P5 = P4 + SZ;
+    vec4 P6 = P4 + SY;
+    vec4 P7 = P6 + SZ;
+
+    //if the box intersects the near plane, we can't transform it without dividing by zero. fortunately
+    //  this isn't a problem, since if it intersects the near plane it logically cannot be culled!
+    //TODO: i think i'm computing zNear incorrectly?
+    if (REVERSEZ_ENABLED) {
+        if (max8(P0.w, P1.w, P2.w, P3.w, P4.w, P5.w, P6.w, P7.w) > u_zNear) {
+            return false;
+        }
+    } else {
+        if (min8(P0.w, P1.w, P2.w, P3.w, P4.w, P5.w, P6.w, P7.w) < u_zNear) {
+            return false;
+        }
+    }
+
+    if (false) {
+        P0.xy = clamp(P0.xy, -P0.w, P0.w);
+        P1.xy = clamp(P1.xy, -P1.w, P1.w);
+        P2.xy = clamp(P2.xy, -P2.w, P2.w);
+        P3.xy = clamp(P3.xy, -P3.w, P3.w);
+        P4.xy = clamp(P4.xy, -P4.w, P4.w);
+        P5.xy = clamp(P5.xy, -P5.w, P5.w);
+        P6.xy = clamp(P6.xy, -P6.w, P6.w);
+        P7.xy = clamp(P7.xy, -P7.w, P7.w);
+    }
+
+    ndc_bounds_min = min8(
+        P0.xyz / P0.w, P1.xyz / P1.w, P2.xyz / P2.w, P3.xyz / P3.w,
+        P4.xyz / P4.w, P5.xyz / P5.w, P6.xyz / P6.w, P7.xyz / P7.w);
+    ndc_bounds_max = max8(
+        P0.xyz / P0.w, P1.xyz / P1.w, P2.xyz / P2.w, P3.xyz / P3.w,
+        P4.xyz / P4.w, P5.xyz / P5.w, P6.xyz / P6.w, P7.xyz / P7.w);
+
+    return true;
+}
+
+bool select(uint tileIndex) {
+    if (b_srcVisibleTiles[tileIndex] == 0u) {
+        return false;
+    }
+
+    ivec4 pos = b_tilePositions[tileIndex];
+
+    // If the tile's level is negative, it indicates that the tile doesn't exist and can definitely be skipped
+    if (pos.w < 0) {
+        return false;
+    }
+
+    // Level-0 tiles must not overlap vanilla renderable terrain
+    /*if (pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) {
+        return false;
+    }*/
+
+    // Check if the tile is inside the view frustum
+    ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
+    ivec3 position_relative = position_absolute - u_positionFloor;
+    vec3 aabb_min = vec3(position_relative) - u_positionFrac;
+    vec3 aabb_max = vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac;
+    if (!isBoxInFrustum(aabb_min, aabb_max)) {
+        return false;
+    }
+
+    // Compute the tile's normalized device coordinates
+    vec3 ndc_bounds_min;
+    vec3 ndc_bounds_max;
+    if (!projectBox(aabb_min, aabb_max, ndc_bounds_min, ndc_bounds_max)) {
+        // If the tile intersects the near plane, it must be visible
+        return true;
+    }
+
+    vec2 uv_bounds_min = ndc_bounds_min.xy * 0.5 + 0.5;
+    vec2 uv_bounds_max = ndc_bounds_max.xy * 0.5 + 0.5;
+
+    uv_bounds_min = clamp(uv_bounds_min, 0.0, 1.0);
+    uv_bounds_max = clamp(uv_bounds_max, 0.0, 1.0);
+
+    // Depth value of the frontmost point
+    float tile_depth = REVERSEZ_ENABLED
+            ? ndc_bounds_max.z
+            : ndc_bounds_min.z;
+
+    if (!REVERSEZ_ENABLED) {
+        tile_depth = tile_depth * 0.5 + 0.5;
+    }
+
+    vec2 viewport_size = vec2(textureSize(u_depthTexture, 0));
+    vec2 view_size = (uv_bounds_max - uv_bounds_min) * viewport_size;
+    float lod = ceil(log2(max(view_size.x, view_size.y) * 0.5));
+
+    if (true) {
+        float samples[4];
+        samples[0] = textureLod(u_depthTexture, vec2(uv_bounds_min.x, uv_bounds_min.y), lod).x;
+        samples[1] = textureLod(u_depthTexture, vec2(uv_bounds_min.x, uv_bounds_max.y), lod).x;
+        samples[2] = textureLod(u_depthTexture, vec2(uv_bounds_max.x, uv_bounds_min.y), lod).x;
+        samples[3] = textureLod(u_depthTexture, vec2(uv_bounds_max.x, uv_bounds_max.y), lod).x;
+        if (REVERSEZ_ENABLED) {
+            if (min4(samples[0], samples[1], samples[2], samples[3]) >= tile_depth) {
+                return false;
+            }
+        } else {
+            if (max4(samples[0], samples[1], samples[2], samples[3]) <= tile_depth) {
+                return false;
+            }
+        }
+    } else {
+        //float s = textureLod(u_depthTexture, clamp(ndc_bounds_min.xy, 0.0, 1.0), lod).x;
+        float s = textureLod(u_depthTexture, uv_bounds_min, lod).x;
+        if (REVERSEZ_ENABLED) {
+            if (s >= tile_depth) {
+                return false;
+            }
+        } else {
+            if (s <= tile_depth) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void main() {
+    uint tileIndex = gl_WorkGroupID.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z) + gl_LocalInvocationIndex;
+
+    b_dstSelectedTiles[tileIndex] = uint(select(tileIndex));
+}

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,8 +30,9 @@ import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.texture.GLTexture2D;
 import net.daporkchop.fp2.gl.texture.PixelFormat;
 import net.daporkchop.fp2.gl.texture.PixelType;
-import net.daporkchop.fp2.gl.texture.TextureFiltering;
+import net.daporkchop.fp2.gl.texture.TextureMagFilter;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
+import net.daporkchop.fp2.gl.texture.TextureMinFilter;
 import net.daporkchop.fp2.gl.texture.TextureTarget;
 import net.daporkchop.fp2.gl.util.list.DirectFloatList;
 import net.daporkchop.fp2.gl.util.list.DirectIVec2List;
@@ -91,7 +92,7 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
                 listsList.appendZero(capacity - listsList.size());
 
                 newListsTexture = GLTexture2D.create(this.gl, TextureInternalFormat.RG32UI, 1, width, height);
-                newListsTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+                newListsTexture.filter(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
                 newListsTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RG_INTEGER, PixelType.UNSIGNED_INT, listsList.byteBufferView());
             }
 
@@ -111,11 +112,11 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
                 quadsTintList.appendZero(capacity - quadsTintList.size());
 
                 newQuadsCoordTexture = GLTexture2D.create(this.gl, TextureInternalFormat.RGBA32F, 1, width, height);
-                newQuadsCoordTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+                newQuadsCoordTexture.filter(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
                 newQuadsCoordTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RGBA, PixelType.FLOAT, quadsCoordList.byteBufferView());
 
                 newQuadsTintTexture = GLTexture2D.create(this.gl, TextureInternalFormat.R32F, 1, width, height);
-                newQuadsTintTexture.filter(TextureFiltering.NEAREST, TextureFiltering.NEAREST);
+                newQuadsTintTexture.filter(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
                 newQuadsTintTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RED, PixelType.FLOAT, quadsTintList.byteBufferView());
             }
         } catch (Throwable t) {

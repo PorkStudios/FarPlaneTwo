@@ -1,0 +1,78 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-$today.year DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+//synced with net.daporkchop.fp2.core.client.render.compute.ComputeTextureCopier#SHADER_WORK_GROUP_TILE_SIZE
+layout(local_size_x = 16, local_size_y = 16) in;
+
+//
+//
+// MACROS
+//
+//
+
+#ifndef FP2_COPY_SRC_SAMPLER
+    #error "FP2_COPY_SRC_SAMPLER must be defined!"
+#endif // FP2_COPY_SRC_SAMPLER
+
+#ifndef FP2_COPY_FORMAT_IMAGE_LAYOUT
+    #error "FP2_COPY_FORMAT_IMAGE_LAYOUT must be defined!"
+#endif // FP2_COPY_FORMAT_IMAGE_LAYOUT
+
+#ifndef FP2_COPY_FORMAT_IMAGE_TYPE
+    #error "FP2_COPY_FORMAT_IMAGE_TYPE must be defined!"
+#endif // FP2_COPY_FORMAT_IMAGE_TYPE
+
+#ifndef FP2_COPY_FORMAT_SAMPLER_TYPE
+    #error "FP2_COPY_FORMAT_SAMPLER_TYPE must be defined!"
+#endif // FP2_COPY_FORMAT_SAMPLER_TYPE
+
+#if FP2_COPY_SRC_SAMPLER
+    uniform FP2_COPY_FORMAT_SAMPLER_TYPE u_srcTexture;
+    uniform int u_srcTextureLod;
+
+    uvec2 srcLevelSize() {
+        return uvec2(textureSize(u_srcTexture, u_srcTextureLod));
+    }
+#else
+    uniform layout(FP2_COPY_FORMAT_IMAGE_LAYOUT) restrict readonly FP2_COPY_FORMAT_IMAGE_TYPE u_srcImage;
+
+    uvec2 srcLevelSize() {
+        return imageSize(u_srcImage);
+    }
+#endif
+
+uniform layout(FP2_COPY_FORMAT_IMAGE_LAYOUT) restrict writeonly FP2_COPY_FORMAT_IMAGE_TYPE u_dstImage;
+
+void main() {
+    uvec2 texelCoord = gl_WorkGroupID.xy * gl_WorkGroupSize.xy + gl_LocalInvocationID.xy;
+
+    if (any(greaterThanEqual(texelCoord, srcLevelSize()))) {
+        //this sample is out-of-bounds in the destination level, skip it
+        return;
+    }
+
+    imageStore(u_dstImage, ivec2(texelCoord),
+        #if FP2_COPY_SRC_SAMPLER
+            texelFetch(u_srcTexture, ivec2(texelCoord), u_srcTextureLod)
+        #else
+            imageLoad(u_srcImage, ivec2(texelCoord))
+        #endif
+        );
+}

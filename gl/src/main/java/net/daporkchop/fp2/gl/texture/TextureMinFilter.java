@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,21 +15,28 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-layout(early_fragment_tests) in;
+package net.daporkchop.fp2.gl.texture;
 
-flat in uint vs_out_tileIndex;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-//in vec3 vs_out_color;
-//out vec4 fs_out_color;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
-layout(std430) writeonly restrict buffer B_DstSelectedTiles {
-    uint b_dstSelectedTiles[];
-};
+/**
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+@Getter
+public enum TextureMinFilter {
+    NEAREST(GL_NEAREST),
+    LINEAR(GL_LINEAR),
+    NEAREST_MIPMAP_NEAREST(GL_NEAREST_MIPMAP_NEAREST),
+    LINEAR_MIPMAP_NEAREST(GL_LINEAR_MIPMAP_NEAREST),
+    NEAREST_MIPMAP_LINEAR(GL_NEAREST_MIPMAP_LINEAR),
+    LINEAR_MIPMAP_LINEAR(GL_LINEAR_MIPMAP_LINEAR),
+    ;
 
-void main() {
-    b_dstSelectedTiles[vs_out_tileIndex] = 1u;
-    //fs_out_color = vec4(vs_out_color, 1.);
+    private final int id;
 }

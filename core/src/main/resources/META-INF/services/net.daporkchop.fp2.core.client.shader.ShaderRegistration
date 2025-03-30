@@ -20,6 +20,7 @@
 # This is a listing of all ShaderRegistration implementations for every class which has its own shaders.
 
 net.daporkchop.fp2.core.client.render.compute.ComputeIndirectDrawCommandsCompressor$RegisterShaders
+net.daporkchop.fp2.core.client.render.compute.ComputeTextureCopier$RegisterShaders
 net.daporkchop.fp2.core.client.render.compute.ComputeTextureMipmapGenerator$RegisterShaders
 net.daporkchop.fp2.core.engine.client.AbstractFarRenderer$RegisterShaders
 net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex$RegisterShaders

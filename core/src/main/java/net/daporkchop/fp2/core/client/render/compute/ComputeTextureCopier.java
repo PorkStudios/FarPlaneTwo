@@ -41,6 +41,7 @@ import net.daporkchop.fp2.gl.texture.GLTexture2D;
 import net.daporkchop.fp2.gl.texture.PixelComponentType;
 import net.daporkchop.fp2.gl.texture.PixelKind;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
+import net.daporkchop.fp2.gl.texture.TextureTarget;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.math.PMath;
 
@@ -57,12 +58,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderContainer {
+public final class ComputeTextureCopier extends AbstractComputeShaderContainer {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = AbstractComputeShaderContainer.REQUIRED_EXTENSIONS
             .add(GLExtension.GL_ARB_shader_image_load_store);
 
-    private static final int SHADER_WORK_GROUP_TILE_SIZE = 16; //synced with resources/assets/fp2/shaders/comp/generate_mipmap.comp
-    private static final int MAX_LEVELS_PER_DISPATCH = 1; //synced with resources/assets/fp2/shaders/comp/generate_mipmap.comp
+    private static final int SHADER_WORK_GROUP_TILE_SIZE = 16; //synced with resources/assets/fp2/shaders/comp/texture_copy.comp
 
     private static final int SRC_SAMPLER_BINDING = 7; //TODO: improve this
     private static final int SRC_IMAGE_BINDING = 0;
@@ -74,38 +74,32 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
     @RequiredArgsConstructor
     @EqualsAndHashCode
     @ToString
-    private static final class MipmapGeneratorShaderVariant {
-        final @NonNull MipmapMode mode;
+    private static final class TextureCopyShaderVariant {
         final @NonNull TextureInternalFormat imageFormat;
         final boolean srcSampler;
 
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-            builder.put("FP2_MIPMAP_MODE", this.mode.ordinal());
-            builder.put("FP2_MIPMAP_SRC_SAMPLER", this.srcSampler);
+            builder.put("FP2_COPY_SRC_SAMPLER", this.srcSampler);
 
-            builder.put("FP2_MIPMAP_FORMAT_IMAGE_LAYOUT", this.imageFormat.name().toLowerCase(Locale.ROOT));
-            builder.put("FP2_MIPMAP_FORMAT_IMAGE_TYPE", this.imageFormat.sampledType().glslPrefix() + "image2D");
-            builder.put("FP2_MIPMAP_FORMAT_SAMPLER_TYPE", this.imageFormat.sampledType().glslPrefix() + "sampler2D");
-            builder.put("FP2_MIPMAP_FORMAT_RAW_TEXEL_TYPE", this.imageFormat.sampledType().glslPrefix() + "vec4");
+            builder.put("FP2_COPY_FORMAT_IMAGE_LAYOUT", this.imageFormat.name().toLowerCase(Locale.ROOT));
+            builder.put("FP2_COPY_FORMAT_IMAGE_TYPE", this.imageFormat.sampledType().glslPrefix() + "image2D");
+            builder.put("FP2_COPY_FORMAT_SAMPLER_TYPE", this.imageFormat.sampledType().glslPrefix() + "sampler2D");
             return builder.build();
         }
 
-        public static List<MipmapGeneratorShaderVariant> allVariants() {
+        public static List<TextureCopyShaderVariant> allVariants() {
             TextureInternalFormat[] imageFormats = TextureInternalFormat.colorFormatsFloat();
-            MipmapMode[] mipmapModes = MipmapMode.values();
             val srcSamplers = new boolean[]{false, true};
 
-            List<MipmapGeneratorShaderVariant> result = new ArrayList<>(imageFormats.length * mipmapModes.length * srcSamplers.length);
+            List<TextureCopyShaderVariant> result = new ArrayList<>(imageFormats.length * srcSamplers.length);
             for (val imageFormat : imageFormats) {
                 if (imageFormat.defaultFormat().components() == 3) { //3-component formats aren't supported by image load/store
                     continue;
                 }
 
-                for (val mipmapMode : mipmapModes) {
-                    for (val srcSampler : srcSamplers) {
-                        result.add(new MipmapGeneratorShaderVariant(mipmapMode, imageFormat, srcSampler));
-                    }
+                for (val srcSampler : srcSamplers) {
+                    result.add(new TextureCopyShaderVariant(imageFormat, srcSampler));
                 }
             }
             return result;
@@ -122,18 +116,18 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
 
         @Override
         public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
-            for (val variant : MipmapGeneratorShaderVariant.allVariants()) {
+            for (val variant : TextureCopyShaderVariant.allVariants()) {
                 shaderRegistry.createCompute(variant, shaderMacros.withDefined(variant.defines()), builder -> builder
                                 .addSampler(SRC_SAMPLER_BINDING, "u_srcTexture")
                                 .addImage(SRC_IMAGE_BINDING, "u_srcImage")
                                 .addImage(DST_IMAGE_BINDING, "u_dstImage"))
-                        .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/generate_mipmap.comp"))
+                        .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/texture_copy.comp"))
                         .build();
             }
         }
     }
 
-    public ComputeTextureMipmapGenerator(@NonNull OpenGL gl, @NonNull GlobalRenderer globalRenderer) {
+    public ComputeTextureCopier(@NonNull OpenGL gl, @NonNull GlobalRenderer globalRenderer) {
         super(gl.checkSupported(REQUIRED_EXTENSIONS), globalRenderer);
     }
 
@@ -152,91 +146,54 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
      * @param srcLevel   the level of the source texture to generate mipmaps from
      * @param dstTexture the destination texture
      * @param dstLevel   the first level of the destination texture to write the generated mipmaps to
-     * @param levels     the number of mipmap levels to be generated
-     * @param mode       the texel resampling mode
      */
-    public void generateMipmaps(@NonNull GLTexture2D srcTexture, @NotNegative int srcLevel,
-                                @NonNull GLTexture2D dstTexture, @NotNegative int dstLevel,
-                                @NotNegative int levels,
-                                @NonNull MipmapMode mode) {
+    public void copyTextureLevel(@NonNull GLTexture2D srcTexture, @NotNegative int srcLevel,
+                                 @NonNull GLTexture2D dstTexture, @NotNegative int dstLevel) {
         checkIndex(srcTexture.levels(), srcLevel);
-        checkRangeLen(dstTexture.levels(), dstLevel, levels);
+        checkIndex(dstTexture.levels(), dstLevel);
 
-        checkArg(Math.max(srcTexture.width() >> (srcLevel + 1), 1) == Math.max(dstTexture.width() >> dstLevel, 1)
-                        && Math.max(srcTexture.height() >> (srcLevel + 1), 1) == Math.max(dstTexture.height() >> dstLevel, 1),
-                "src and dst texture resolutions don't match!");
+        int srcWidth = Math.max(srcTexture.width() >> srcLevel, 1);
+        int srcHeight = Math.max(srcTexture.height() >> srcLevel, 1);
+        int dstWidth = Math.max(dstTexture.width() >> dstLevel, 1);
+        int dstHeight = Math.max(dstTexture.height() >> dstLevel, 1);
+
+        checkArg(srcWidth == dstWidth && srcHeight == dstHeight, "src and dst texture resolutions don't match!");
 
         TextureInternalFormat srcFormat = srcTexture.internalFormat();
         TextureInternalFormat dstFormat = dstTexture.internalFormat();
         PixelComponentType sampledType = srcFormat.sampledType();
         checkArg(sampledType == dstFormat.sampledType(), "src: %s, dst: %s", sampledType, dstFormat.sampledType());
-        checkArg(dstFormat.defaultFormat().kind() == PixelKind.COLOR, "cannot write mipmaps to a %s texture", dstFormat.defaultFormat().kind());
+        checkArg(dstFormat.defaultFormat().kind() == PixelKind.COLOR, "cannot copy to a %s texture", dstFormat.defaultFormat().kind());
 
         //if the source is a depth texture, the first pass needs to read from the source texture using a sampler
         boolean srcSampler = srcFormat.defaultFormat().kind() != PixelKind.COLOR;
+        srcSampler = true; //TODO
 
-        //if the source texture needs to be read by a sampler and the mipmap generation will need more than one shader dispatch,
-        //  we'll separate the first dispatch from subsequent ones so that all subsequent shader invocations read from their parent
-        //  level using image load/store instead of a sampler
-        if (srcSampler && levels > MAX_LEVELS_PER_DISPATCH) {
-            this.generateMipmaps(
-                    srcTexture, srcLevel,
-                    dstTexture, dstLevel,
-                    MAX_LEVELS_PER_DISPATCH,
-                    mode);
-
-            this.generateMipmaps(
-                    dstTexture, dstLevel + (MAX_LEVELS_PER_DISPATCH - 1),
-                    dstTexture, dstLevel + MAX_LEVELS_PER_DISPATCH,
-                    levels - MAX_LEVELS_PER_DISPATCH,
-                    mode);
-            return;
-        }
-
-        val shader = this.shaderRegistry.<ComputeShaderProgram>get(new MipmapGeneratorShaderVariant(mode, dstFormat, srcSampler)).get();
+        val shader = this.shaderRegistry.<ComputeShaderProgram>get(new TextureCopyShaderVariant(dstFormat, srcSampler)).get();
         val uniformSetter = shader.bindUnsafe();
 
-        for (int level = 0; level < levels; level += MAX_LEVELS_PER_DISPATCH) {
-            int levelsThisDispatch = Math.min(levels - level, MAX_LEVELS_PER_DISPATCH);
+        int numGroupsX = PMath.roundUp(dstWidth, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
+        int numGroupsY = PMath.roundUp(dstHeight, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
 
-            int dstWidthThisDispatch = Math.max(dstTexture.width() >> (dstLevel + level), 1);
-            int dstHeightThisDispatch = Math.max(dstTexture.height() >> (dstLevel + level), 1);
-
-            int numGroupsX = PMath.roundUp(dstWidthThisDispatch, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
-            int numGroupsY = PMath.roundUp(dstHeightThisDispatch, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
-
-            if (srcSampler) {
-                uniformSetter.set1i(shader.uniformLocation("u_srcTextureLod"), srcLevel + level);
-                srcTexture.bindToUnitUnsafe(SRC_SAMPLER_BINDING);
-            } else {
-                //TODO: on subsequent dispatches, bind the destination texture instead of the source
-                this.gl.glBindImageTexture(SRC_IMAGE_BINDING, srcTexture.id(), srcLevel + level, false, 0, GL_READ_ONLY, srcTexture.internalFormat().id());
-            }
-
-            for (int dispatchLevel = 0; dispatchLevel < levelsThisDispatch; dispatchLevel++) {
-                this.gl.glBindImageTexture(DST_IMAGE_BINDING + dispatchLevel, dstTexture.id(), dstLevel + level + dispatchLevel, false, 0, GL_WRITE_ONLY, dstTexture.internalFormat().id());
-            }
-
-            this.gl.glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-            this.gl.glDispatchCompute(numGroupsX, numGroupsY, 1);
+        if (srcSampler) {
+            uniformSetter.set1i(shader.uniformLocation("u_srcTextureLod"), srcLevel);
+            srcTexture.bindToUnitUnsafe(SRC_SAMPLER_BINDING);
+        } else {
+            //TODO: on subsequent dispatches, bind the destination texture instead of the source
+            this.gl.glBindImageTexture(SRC_IMAGE_BINDING, srcTexture.id(), srcLevel, false, 0, GL_READ_ONLY, srcTexture.internalFormat().id());
         }
 
-        //this.gl.glBindImageTextures(DST_IMAGE_BINDING, Math.min(levels, MAX_LEVELS_PER_DISPATCH));
+        this.gl.glBindImageTexture(DST_IMAGE_BINDING, dstTexture.id(), dstLevel, false, 0, GL_WRITE_ONLY, dstTexture.internalFormat().id());
+
+        this.gl.glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        this.gl.glDispatchCompute(numGroupsX, numGroupsY, 1);
     }
 
     @Override
     public void configureModifiedState(@NonNull StatePreserver.Builder builder) {
         builder.activeProgram();
+        builder.texture(TextureTarget.TEXTURE_2D, SRC_SAMPLER_BINDING);
         //TODO: add image bindings to StatePreserver
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public enum MipmapMode {
-        MIN,
-        MAX,
-        ;
     }
 }

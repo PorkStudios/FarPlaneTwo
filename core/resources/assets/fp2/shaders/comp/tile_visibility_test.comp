@@ -1,0 +1,67 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-$today.year DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+//synced with net.daporkchop.fp2.core.engine.client.index.attribdivisor.AbstractGPUCulledBaseInstanceRenderIndex#CULLING_SHADER_WORK_GROUP_SIZE
+layout(local_size_x = 256) in;
+
+#include <"fp2:shaders/common.glsl"> // T_SHIFT, T_VOXELS
+
+#include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_positionFrac, u_positionFloor
+#include <"fp2:shaders/util/frustum.glsl"> // isBoxInFrustum()
+#include <"fp2:shaders/util/vanilla_renderability.glsl"> // isVanillaRenderableLevel0()
+
+layout(std140) readonly restrict buffer B_TilePositions {
+    ivec4 b_tilePositions[];
+};
+
+layout(std430) writeonly restrict buffer B_DstSelectedTiles {
+    uint b_dstSelectedTiles[];
+};
+
+bool select(uint tileIndex) {
+    ivec4 pos = b_tilePositions[tileIndex];
+
+    // If the tile's level is negative, it indicates that the tile doesn't exist and can definitely be skipped
+    if (pos.w < 0) {
+        return false;
+    }
+
+    // Level-0 tiles must not overlap vanilla renderable terrain
+    if (pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) {
+        return false;
+    }
+
+    // Check if the tile is inside the view frustum
+    ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
+    ivec3 position_relative = position_absolute - u_positionFloor;
+    vec3 aabb_min = vec3(position_relative) - u_positionFrac;
+    vec3 aabb_max = vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac;
+    if (!isBoxInFrustum(aabb_min, aabb_max)) {
+        return false;
+    }
+
+    return true;
+}
+
+void main() {
+    uint tileIndex = gl_WorkGroupID.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z) + gl_LocalInvocationIndex;
+
+    b_dstSelectedTiles[tileIndex] = uint(select(tileIndex));
+}

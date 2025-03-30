@@ -79,7 +79,9 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
     protected static final GLExtensionSet REQUIRED_EXTENSIONS_INDIRECT_COUNT = REQUIRED_EXTENSIONS_COUNT_SELECTED
             .add(GLExtension.GL_ARB_indirect_parameters);
 
-    protected static final int CULLING_SHADER_WORK_GROUP_SIZE = 256; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.comp
+    //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.comp
+    //synced with resources/assets/fp2/shaders/comp/tile_visibility_and_occlusion_test.comp
+    protected static final int CULLING_SHADER_WORK_GROUP_SIZE = 256;
 
     protected static final long COUNT_SELECTED_BUFFER_LEVEL_STRIDE = (1 + RENDER_PASS_COUNT) * Integer.BYTES;
     protected static final long COUNT_SELECTED_BUFFER_TILES_OFFSET = 0L;

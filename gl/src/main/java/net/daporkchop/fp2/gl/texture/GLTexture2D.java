@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,7 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.math.BinMath;
 
 import java.nio.ByteBuffer;
 
@@ -36,6 +37,19 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public final class GLTexture2D extends GLSampledTexture {
+    public static int requiredLevels(@Positive int width, @Positive int height) {
+        positive(width, "width");
+        positive(height, "height");
+
+        int levels = 1;
+        while (width != 1 || height != 1) {
+            width = Math.max(width >> 1, 1);
+            height = Math.max(height >> 1, 1);
+            levels++;
+        }
+        return levels;
+    }
+
     public static GLTexture2D create(@NonNull OpenGL gl, @NonNull TextureInternalFormat internalFormat, @Positive int levels, @Positive int width, @Positive int height) {
         return new GLTexture2D(gl, internalFormat, levels, width, height);
     }

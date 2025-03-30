@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -218,6 +219,8 @@ public final class ComputeIndirectDrawCommandsCompressor extends AbstractCompute
                 selectedFlagsBuffer.id(),
                 srcCommandsBuffer.id(),
                 dstCommandsBuffer.id());
+
+        this.gl.glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         //dispatch the compute shader!
         this.gl.glDispatchCompute(PMath.roundUp(srcCommandCount, SHADER_WORK_GROUP_SIZE) / SHADER_WORK_GROUP_SIZE, 1, 1);

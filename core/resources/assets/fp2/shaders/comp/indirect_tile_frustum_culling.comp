@@ -18,6 +18,7 @@
  *
  */
 
+//synced with net.daporkchop.fp2.core.engine.client.index.attribdivisor.AbstractGPUCulledBaseInstanceRenderIndex#CULLING_SHADER_WORK_GROUP_SIZE
 layout(local_size_x = 256) in;
 
 #include <"fp2:shaders/common.glsl"> // T_SHIFT, T_VOXELS
@@ -69,12 +70,16 @@ bool select(uint tileIndex) {
         return false;
     }
 
+    // Check if the tile is inside the view frustum
     ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
     ivec3 position_relative = position_absolute - u_positionFloor;
-
-    return isBoxInFrustum(
+    if (!isBoxInFrustum(
             vec3(position_relative) - u_positionFrac,
-            vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac);
+            vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac)) {
+        return false;
+    }
+
+    return true;
 }
 
 void main() {

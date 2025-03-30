@@ -18,18 +18,6 @@
  *
  */
 
-layout(early_fragment_tests) in;
-
-flat in uint vs_out_tileIndex;
-
-//in vec3 vs_out_color;
-//out vec4 fs_out_color;
-
-layout(std430) writeonly restrict buffer B_DstSelectedTiles {
-    uint b_dstSelectedTiles[];
-};
-
 void main() {
-    b_dstSelectedTiles[vs_out_tileIndex] = 1u;
-    //fs_out_color = vec4(vs_out_color, 1.);
+    //no-op
 }
