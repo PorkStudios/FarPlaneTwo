@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,10 +23,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
 import net.daporkchop.fp2.core.log4j.util.log.Log4jAsPorkLibLogger;
-import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.ImmediateFutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12;
@@ -83,9 +81,6 @@ public final class FP2Forge1_12 extends FP2Core {
         return DimensionType.byName(id.path()).getId();
     }
 
-    private FP2Client1_12 client;
-    private FP2Server1_12 server;
-
     @Mod.Metadata
     private ModMetadata metadata;
 
@@ -99,12 +94,12 @@ public final class FP2Forge1_12 extends FP2Core {
         this.init();
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            this.client = new FP2Client1_12(this, Minecraft.getMinecraft());
-            this.client.init(ImmediateFutureExecutor.INSTANCE);
+            this.client(new FP2Client1_12(this, Minecraft.getMinecraft()));
+            this.client().init(ImmediateFutureExecutor.INSTANCE);
         }
 
-        this.server = new FP2Server1_12(this);
-        this.server.init(ImmediateFutureExecutor.INSTANCE);
+        this.server(new FP2Server1_12(this));
+        this.server().init(ImmediateFutureExecutor.INSTANCE);
 
         FP2Network1_12_2.init();
 
@@ -147,30 +142,6 @@ public final class FP2Forge1_12 extends FP2Core {
     //
     // FP2Core
     //
-
-    @Override
-    public boolean hasClient() {
-        return this.client != null;
-    }
-
-    @Override
-    public FP2Client client() {
-        if (this.client != null) {
-            return this.client;
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    @Override
-    public boolean hasServer() {
-        return true; //the server is always present, be it integrated or dedicated
-    }
-
-    @Override
-    public FP2Server server() {
-        return this.server;
-    }
 
     @Override
     protected Path configDir() {

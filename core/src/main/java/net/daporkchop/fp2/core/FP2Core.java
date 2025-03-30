@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -52,13 +52,15 @@ import javax.swing.JOptionPane;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-@Setter(AccessLevel.PROTECTED)
 public abstract class FP2Core implements FP2 {
     public static final String MODID = FP2.MODID;
 
@@ -69,13 +71,15 @@ public abstract class FP2Core implements FP2 {
         return (FP2Core) FP2.fp2();
     }
 
+    private FP2Client client;
+    private FP2Server server;
+
     private final FEventBus eventBus = new EventBus();
 
-    @Setter(AccessLevel.NONE)
     private FP2Config globalConfig;
 
-    @NonNull
-    private Logger log;
+    @Setter(value = AccessLevel.PROTECTED)
+    private @NonNull Logger log;
 
     @SneakyThrows
     protected FP2Core() {
@@ -104,24 +108,64 @@ public abstract class FP2Core implements FP2 {
     /**
      * @return whether or not the active game distribution contains a client
      */
-    public abstract boolean hasClient();
+    public final boolean hasClient() {
+        return this.client != null;
+    }
 
     /**
      * @return the {@link FP2Client} instance for interacting with client features
      * @throws UnsupportedOperationException if the active game distribution does not contain a client
      */
-    public abstract FP2Client client();
+    public final FP2Client client() {
+        FP2Client client = this.client;
+        if (client == null) {
+            throw new UnsupportedOperationException();
+        }
+        return client;
+    }
+
+    /**
+     * @return an {@link Optional} containing the {@link FP2Client} instance if the active game distribution contains a client
+     */
+    public final Optional<FP2Client> optionalClient() {
+        return Optional.ofNullable(this.client);
+    }
+
+    protected final synchronized void client(@NonNull FP2Client client) {
+        checkState(this.client == null);
+        this.client = client;
+    }
 
     /**
      * @return whether or not the active game distribution contains a server
      */
-    public abstract boolean hasServer();
+    public final boolean hasServer() {
+        return this.server != null;
+    }
 
     /**
      * @return the {@link FP2Server} instance for interacting with server features
      * @throws UnsupportedOperationException if the active game distribution does not contain a server
      */
-    public abstract FP2Server server();
+    public final FP2Server server() {
+        FP2Server server = this.server;
+        if (server == null) {
+            throw new UnsupportedOperationException();
+        }
+        return server;
+    }
+
+    /**
+     * @return an {@link Optional} containing the {@link FP2Server} instance if the active game distribution contains a server
+     */
+    public final Optional<FP2Server> optionalServer() {
+        return Optional.ofNullable(this.server);
+    }
+
+    protected final synchronized void server(@NonNull FP2Server server) {
+        checkState(this.server == null);
+        this.server = server;
+    }
 
     /**
      * @return the directory where fp2's config file is stored

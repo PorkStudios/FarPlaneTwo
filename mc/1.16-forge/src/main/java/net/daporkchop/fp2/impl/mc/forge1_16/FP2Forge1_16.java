@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,10 +23,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
 import net.daporkchop.fp2.core.log4j.util.log.Log4jAsPorkLibLogger;
-import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.ATMinecraft1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.FP2Client1_16;
@@ -66,9 +64,6 @@ public final class FP2Forge1_16 extends FP2Core {
         return Identifier.from(world.dimension().location().toString());
     }
 
-    private FP2Client1_16 client;
-    private FP2Server1_16 server;
-
     public FP2Forge1_16() {
         FMLJavaModLoadingContext.get().getModEventBus().register(this);
     }
@@ -94,8 +89,8 @@ public final class FP2Forge1_16 extends FP2Core {
     public void clientSetup(FMLClientSetupEvent event) {
         Minecraft minecraft = event.getMinecraftSupplier().get();
 
-        this.client = new FP2Client1_16(this, minecraft);
-        this.client.init(new ParallelDispatchEventAsFutureExecutor1_16(event, cause -> {
+        this.client(new FP2Client1_16(this, minecraft));
+        this.client().init(new ParallelDispatchEventAsFutureExecutor1_16(event, cause -> {
             //This ensures that if an exception is thrown by code running on the client thread, we actually crash the game.
             // Unfortunately the internal DeferredWorkQueue doesn't provide a nice way to achieve this, and will not
             // until 1.20: https://github.com/MinecraftForge/MinecraftForge/pull/9449.
@@ -114,8 +109,8 @@ public final class FP2Forge1_16 extends FP2Core {
      */
     private void commonSetup2 /* electric boogaloo */(ParallelDispatchEvent event) {
         //server is present on both sides
-        this.server = new FP2Server1_16(this);
-        this.server.init(new ParallelDispatchEventAsFutureExecutor1_16(event, cause -> {
+        this.server(new FP2Server1_16(this));
+        this.server().init(new ParallelDispatchEventAsFutureExecutor1_16(event, cause -> {
             this.log().fatal(new Error("Failed to initialize FP2 server state", cause));
             System.exit(1);
         }));
@@ -140,30 +135,6 @@ public final class FP2Forge1_16 extends FP2Core {
     //
     // FP2Core
     //
-
-    @Override
-    public boolean hasClient() {
-        return this.client != null;
-    }
-
-    @Override
-    public FP2Client client() {
-        if (this.client != null) {
-            return this.client;
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    @Override
-    public boolean hasServer() {
-        return true; //the server is always present, be it integrated or dedicated
-    }
-
-    @Override
-    public FP2Server server() {
-        return this.server;
-    }
 
     @Override
     protected Path configDir() {
