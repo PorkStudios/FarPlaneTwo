@@ -1890,6 +1890,62 @@ public abstract class OpenGL {
     public abstract void glInvalidateBufferSubData(int buffer, long offset, long length);
 
     /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateFramebuffer(int target, int attachment);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateFramebuffer(int target, int @NonNull [] attachments);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateFramebuffer(int target, @NonNull IntBuffer attachments);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateSubFramebuffer(int target, int attachment, int x, int y, int width, int height);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateSubFramebuffer(int target, int @NonNull [] attachments, int x, int y, int width, int height);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateSubFramebuffer(int target, @NonNull IntBuffer attachments, int x, int y, int width, int height);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateTexImage(int texture, int level);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateTexSubImage(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth);
+
+    /**
      * @apiNote requires {@link GLExtension#GL_ARB_multi_draw_indirect GL_ARB_multi_draw_indirect}
      * @since OpenGL 4.3
      */
@@ -2517,6 +2573,48 @@ public abstract class OpenGL {
      */
     @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glBlitNamedFramebuffer(int readFramebuffer, int drawFramebuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata })
+    public abstract void glInvalidateNamedFramebufferData(int framebuffer, int attachment);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata })
+    public abstract void glInvalidateNamedFramebufferData(int framebuffer, int @NonNull [] attachments);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata })
+    public abstract void glInvalidateNamedFramebufferData(int framebuffer, @NonNull IntBuffer attachments);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata })
+    public abstract void glInvalidateNamedFramebufferSubData(int framebuffer, int attachment, int x, int y, int width, int height);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata })
+    public abstract void glInvalidateNamedFramebufferSubData(int framebuffer, int @NonNull [] attachments, int x, int y, int width, int height);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata })
+    public abstract void glInvalidateNamedFramebufferSubData(int framebuffer, @NonNull IntBuffer attachments, int x, int y, int width, int height);
 
     //
     //

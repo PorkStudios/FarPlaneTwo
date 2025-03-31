@@ -503,17 +503,21 @@ public enum GLExtension {
      */
     GL_ARB_debug_output(null, false),
     /**
+     * @see <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_shader_ballot.txt">https://registry.khronos.org/OpenGL/extensions/ARB/ARB_shader_ballot.txt</a>
+     */
+    GL_ARB_shader_ballot(null, true),
+    /**
      * @see <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_sparse_buffer.txt">https://registry.khronos.org/OpenGL/extensions/ARB/ARB_sparse_buffer.txt</a>
      */
     GL_ARB_sparse_buffer(null, false),
     /**
+     * @see <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_texture_filter_minmax.txt">https://registry.khronos.org/OpenGL/extensions/ARB/ARB_texture_filter_minmax.txt</a>
+     */
+    GL_ARB_texture_filter_minmax(null, false),
+    /**
      * @see <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_gpu_shader4.txt">https://registry.khronos.org/OpenGL/extensions/EXT/EXT_gpu_shader4.txt</a>
      */
     GL_EXT_gpu_shader4(null, true),
-    /**
-     * @see <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_shader_ballot.txt">https://registry.khronos.org/OpenGL/extensions/ARB/ARB_shader_ballot.txt</a>
-     */
-    GL_ARB_shader_ballot(null, true),
 
     //Not real extensions, but emulated for feature detection
     /**

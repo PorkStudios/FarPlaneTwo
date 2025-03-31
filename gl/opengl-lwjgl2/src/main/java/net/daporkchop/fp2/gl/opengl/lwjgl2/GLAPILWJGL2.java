@@ -2064,6 +2064,78 @@ public final class GLAPILWJGL2 extends OpenGL {
         super.debugCheckError();
     }
 
+    @Override
+    public void glInvalidateFramebuffer(int target, int attachment) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        //we can safely use APIUtil.getBufferInt() here: GL43.glInvalidateFramebuffer() doesn't use it
+        IntBuffer attachmentsBuffer = this.getBufferInt(1).duplicate();
+        attachmentsBuffer.put(attachment).flip();
+        this.glInvalidateFramebuffer(target, attachmentsBuffer);
+    }
+
+    @Override
+    public void glInvalidateFramebuffer(int target, int @NonNull [] attachments) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        //we can safely use APIUtil.getBufferInt() here: GL43.glInvalidateFramebuffer() doesn't use it
+        IntBuffer attachmentsBuffer = this.getBufferInt(attachments.length).duplicate();
+        attachmentsBuffer.put(attachments).flip();
+        this.glInvalidateFramebuffer(target, attachmentsBuffer);
+    }
+
+    @Override
+    public void glInvalidateFramebuffer(int target, @NonNull IntBuffer attachments) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43.glInvalidateFramebuffer(target, attachments);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, int attachment, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        //we can safely use APIUtil.getBufferInt() here: GL43.glInvalidateSubFramebuffer() doesn't use it
+        IntBuffer attachmentsBuffer = this.getBufferInt(1).duplicate();
+        attachmentsBuffer.put(attachment).flip();
+        this.glInvalidateSubFramebuffer(target, attachmentsBuffer, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, int @NonNull [] attachments, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        //we can safely use APIUtil.getBufferInt() here: GL43.glInvalidateSubFramebuffer() doesn't use it
+        IntBuffer attachmentsBuffer = this.getBufferInt(attachments.length).duplicate();
+        attachmentsBuffer.put(attachments).flip();
+        this.glInvalidateSubFramebuffer(target, attachmentsBuffer, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, @NonNull IntBuffer attachments, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43.glInvalidateSubFramebuffer(target, attachments, x, y, width, height);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateTexImage(int texture, int level) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43.glInvalidateTexImage(texture, level);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateTexSubImage(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43.glInvalidateTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth);
+        super.debugCheckError();
+    }
+
     private static final MethodHandle glMultiDrawArraysIndirect;
     private static final MethodHandle nglMultiDrawArraysIndirect;
     private static final MethodHandle nglMultiDrawArraysIndirectBO;
@@ -3187,6 +3259,62 @@ public final class GLAPILWJGL2 extends OpenGL {
         super.checkSupported(this.GL_ARB_direct_state_access, GLExtension.GL_ARB_direct_state_access);
 
         GL45.glBlitNamedFramebuffer(readFramebuffer, drawFramebuffer, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, int attachment) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        //we can safely use APIUtil.getBufferInt() here: GL45.glInvalidateNamedFramebufferData() doesn't use it
+        IntBuffer attachmentsBuffer = this.getBufferInt(1).duplicate();
+        attachmentsBuffer.put(attachment).flip();
+        this.glInvalidateNamedFramebufferData(framebuffer, attachmentsBuffer);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, int @NonNull [] attachments) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        //we can safely use APIUtil.getBufferInt() here: GL45.glInvalidateNamedFramebufferData() doesn't use it
+        IntBuffer attachmentsBuffer = this.getBufferInt(attachments.length).duplicate();
+        attachmentsBuffer.put(attachments).flip();
+        this.glInvalidateNamedFramebufferData(framebuffer, attachmentsBuffer);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, @NonNull IntBuffer attachments) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL45.glInvalidateNamedFramebufferData(framebuffer, attachments);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, int attachment, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        //we can safely use APIUtil.getBufferInt() here: GL45.glInvalidateNamedFramebufferSubData() doesn't use it
+        IntBuffer attachmentsBuffer = this.getBufferInt(1).duplicate();
+        attachmentsBuffer.put(attachment).flip();
+        this.glInvalidateNamedFramebufferSubData(framebuffer, attachmentsBuffer, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, int @NonNull [] attachments, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        //we can safely use APIUtil.getBufferInt() here: GL45.glInvalidateNamedFramebufferSubData() doesn't use it
+        IntBuffer attachmentsBuffer = this.getBufferInt(attachments.length).duplicate();
+        attachmentsBuffer.put(attachments).flip();
+        this.glInvalidateNamedFramebufferSubData(framebuffer, attachmentsBuffer, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, @NonNull IntBuffer attachments, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL45.glInvalidateNamedFramebufferSubData(framebuffer, attachments, x, y, width, height);
         super.debugCheckError();
     }
 

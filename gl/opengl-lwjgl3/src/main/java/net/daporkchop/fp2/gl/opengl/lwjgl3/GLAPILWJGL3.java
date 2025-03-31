@@ -1734,6 +1734,70 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public void glInvalidateFramebuffer(int target, int attachment) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43C.glInvalidateFramebuffer(target, attachment);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateFramebuffer(int target, int @NonNull [] attachments) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43C.glInvalidateFramebuffer(target, attachments);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateFramebuffer(int target, @NonNull IntBuffer attachments) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43C.glInvalidateFramebuffer(target, attachments);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, int attachment, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43C.glInvalidateSubFramebuffer(target, attachment, x, y, width, height);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, int @NonNull [] attachments, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43C.glInvalidateSubFramebuffer(target, attachments, x, y, width, height);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, @NonNull IntBuffer attachments, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43C.glInvalidateSubFramebuffer(target, attachments, x, y, width, height);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateTexImage(int texture, int level) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43C.glInvalidateTexImage(texture, level);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateTexSubImage(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth) {
+        super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL43C.glInvalidateTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth);
+        super.debugCheckError();
+    }
+
+    @Override
     public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
         super.checkSupported(this.GL_ARB_multi_draw_indirect, GLExtension.GL_ARB_multi_draw_indirect);
 
@@ -2586,6 +2650,54 @@ public final class GLAPILWJGL3 extends OpenGL {
         super.checkSupported(this.GL_ARB_direct_state_access, GLExtension.GL_ARB_direct_state_access);
 
         GL45C.glBlitNamedFramebuffer(readFramebuffer, drawFramebuffer, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, int attachment) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL45C.glInvalidateNamedFramebufferData(framebuffer, attachment);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, int @NonNull [] attachments) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL45C.glInvalidateNamedFramebufferData(framebuffer, attachments);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, @NonNull IntBuffer attachments) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL45C.glInvalidateNamedFramebufferData(framebuffer, attachments);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, int attachment, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL45C.glInvalidateNamedFramebufferSubData(framebuffer, attachment, x, y, width, height);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, int @NonNull [] attachments, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL45C.glInvalidateNamedFramebufferSubData(framebuffer, attachments, x, y, width, height);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, @NonNull IntBuffer attachments, int x, int y, int width, int height) {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_invalidate_subdata);
+
+        GL45C.glInvalidateNamedFramebufferSubData(framebuffer, attachments, x, y, width, height);
         super.debugCheckError();
     }
 

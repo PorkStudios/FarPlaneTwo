@@ -1252,6 +1252,54 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glInvalidateFramebuffer(int target, int attachment) {
+        super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
+        this.delegate.glInvalidateFramebuffer(target, attachment);
+    }
+
+    @Override
+    public void glInvalidateFramebuffer(int target, int @NonNull [] attachments) {
+        super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
+        this.delegate.glInvalidateFramebuffer(target, attachments);
+    }
+
+    @Override
+    public void glInvalidateFramebuffer(int target, @NonNull IntBuffer attachments) {
+        super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
+        this.delegate.glInvalidateFramebuffer(target, attachments);
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, int attachment, int x, int y, int width, int height) {
+        super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
+        this.delegate.glInvalidateSubFramebuffer(target, attachment, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, int @NonNull [] attachments, int x, int y, int width, int height) {
+        super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
+        this.delegate.glInvalidateSubFramebuffer(target, attachments, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateSubFramebuffer(int target, @NonNull IntBuffer attachments, int x, int y, int width, int height) {
+        super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
+        this.delegate.glInvalidateSubFramebuffer(target, attachments, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateTexImage(int texture, int level) {
+        super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
+        this.delegate.glInvalidateTexImage(texture, level);
+    }
+
+    @Override
+    public void glInvalidateTexSubImage(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth) {
+        super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
+        this.delegate.glInvalidateTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth);
+    }
+
+    @Override
     public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
         super.checkSupported(GLExtension.GL_ARB_multi_draw_indirect);
         this.delegate.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
@@ -1817,6 +1865,46 @@ final class LegacyOpenGL extends OpenGL {
     public void glBlitNamedFramebuffer(int readFramebuffer, int drawFramebuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
         super.checkSupported(GLExtension.GL_ARB_direct_state_access);
         this.delegate.glBlitNamedFramebuffer(readFramebuffer, drawFramebuffer, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+    }
+
+    private static final GLExtensionSet direct_state_access_AND_invalidate_subdata = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_direct_state_access)
+            .add(GLExtension.GL_ARB_invalidate_subdata);
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, int attachment) {
+        super.checkSupported(direct_state_access_AND_invalidate_subdata);
+        this.delegate.glInvalidateNamedFramebufferData(framebuffer, attachment);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, int @NonNull [] attachments) {
+        super.checkSupported(direct_state_access_AND_invalidate_subdata);
+        this.delegate.glInvalidateNamedFramebufferData(framebuffer, attachments);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferData(int framebuffer, @NonNull IntBuffer attachments) {
+        super.checkSupported(direct_state_access_AND_invalidate_subdata);
+        this.delegate.glInvalidateNamedFramebufferData(framebuffer, attachments);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, int attachment, int x, int y, int width, int height) {
+        super.checkSupported(direct_state_access_AND_invalidate_subdata);
+        this.delegate.glInvalidateNamedFramebufferSubData(framebuffer, attachment, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, int @NonNull [] attachments, int x, int y, int width, int height) {
+        super.checkSupported(direct_state_access_AND_invalidate_subdata);
+        this.delegate.glInvalidateNamedFramebufferSubData(framebuffer, attachments, x, y, width, height);
+    }
+
+    @Override
+    public void glInvalidateNamedFramebufferSubData(int framebuffer, @NonNull IntBuffer attachments, int x, int y, int width, int height) {
+        super.checkSupported(direct_state_access_AND_invalidate_subdata);
+        this.delegate.glInvalidateNamedFramebufferSubData(framebuffer, attachments, x, y, width, height);
     }
 
     //
