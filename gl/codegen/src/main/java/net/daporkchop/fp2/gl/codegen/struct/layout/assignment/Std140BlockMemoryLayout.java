@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -58,7 +58,7 @@ public class Std140BlockMemoryLayout {
         return result;
     }
 
-    public static LayoutInfo computeLayout(OpenGL gl, StructAttributeType type) {
+    public static LayoutInfo computeLayout(StructAttributeType type) {
         return new LayoutInfo(type, layout(type), "std140", true, Std140BlockMemoryLayout::compatibleTargets);
     }
 
@@ -210,9 +210,6 @@ public class Std140BlockMemoryLayout {
     }
 
     private static VectorLayout layout(VectorAttributeType type) {
-        long size;
-        long alignment;
-
         //1. If the member is a scalar consuming N basic machine units, the base align-
         //   ment is N.
 
@@ -221,8 +218,12 @@ public class Std140BlockMemoryLayout {
 
         //3. If the member is a three-component vector with components consuming N
         //   basic machine units, the base alignment is 4N.
+        //^ note: this doesn't mean that the size of a vec3 is rounded up, only its alignment!!!
 
-        alignment = size = type.componentType().interpretedType().size() * (type.components() == 3 ? 4L : type.components());
+        long componentSize = type.componentType().interpretedType().size();
+
+        long size = componentSize * type.components();
+        long alignment = componentSize * (type.components() == 3 ? 4L : type.components());
 
         return new VectorLayout(size, alignment, type.componentType(),
                 JavaPrimitiveType.from(type.componentType().interpretedType()),
