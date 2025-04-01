@@ -26,6 +26,10 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.core.client.render.state.CameraState;
+import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
+import net.daporkchop.fp2.core.client.render.state.DrawState;
+import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
@@ -34,6 +38,7 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
@@ -127,25 +132,30 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
 
     /**
      * Called after {@link #select}, but before any calls to {@link #draw}.
+     *
+     * @param args additional draw-related state
      */
-    public void preDraw() {
+    public void preDraw(DrawArguments args) {
         //no-op
     }
 
     /**
      * Draws the selected tiles at the given detail level using the currently bound shader.
      *
+     * @param args          additional draw-related state
      * @param level         the detail level
      * @param pass          the render pass
      * @param shader        the shader which is currently bound and is going to be rendered with
      * @param uniformSetter a handle for setting uniform values in the draw shader
      */
-    public abstract void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter);
+    public abstract void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter);
 
     /**
-     * Called after {@link #preDraw()} and after all calls to {@link #draw}.
+     * Called after {@link #preDraw(DrawArguments)} and after all calls to {@link #draw}.
+     *
+     * @param args additional draw-related state
      */
-    public void postDraw() {
+    public void postDraw(DrawArguments args) {
         //no-op
     }
 
@@ -195,6 +205,23 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * The render index implementation's name.
          */
         private final @NonNull String implName;
+    }
+
+    /**
+     * Additional useful state variables available during the draw phase.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    public static final class DrawArguments {
+        public final @NonNull CameraState cameraState;
+        public final @NonNull UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer;
+        public final @NonNull DrawState drawState;
+        public final @NonNull UniformBuffer<DrawStateUniforms> drawStateUniformBuffer;
+
+        public final @NonNull TerrainRenderingBlockedTracker blockedTracker;
+
+        public final boolean reversedZ;
     }
 
     /**

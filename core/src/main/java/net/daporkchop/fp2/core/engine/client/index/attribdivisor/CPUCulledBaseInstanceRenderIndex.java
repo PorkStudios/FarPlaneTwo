@@ -188,14 +188,14 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
-    public void preDraw() {
-        super.preDraw();
+    public void preDraw(DrawArguments args) {
+        super.preDraw(args);
         this.renderPosTable.flush();
         this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this.commandListBuffer.id());
     }
 
     @Override
-    public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
+    public void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val list = this.commandLists.get(level, pass);
         int size = list.size();
         if (size != 0) {

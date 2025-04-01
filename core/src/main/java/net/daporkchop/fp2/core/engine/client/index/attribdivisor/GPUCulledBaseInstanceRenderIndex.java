@@ -173,7 +173,7 @@ public final class GPUCulledBaseInstanceRenderIndex<VertexType extends Attribute
     private final MultiBindHelper bindHelper_positions_raw_culled;
 
     public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
-        super(gl.checkSupported(REQUIRED_EXTENSIONS), bakeStorage, alloc, globalRenderer, cameraStateUniformsBuffer);
+        super(gl.checkSupported(REQUIRED_EXTENSIONS), bakeStorage, alloc, globalRenderer, cameraStateUniformsBuffer, "GPU frustum culled");
 
         try {
             this.cullingShader = globalRenderer.shaderRegistry.get(new CullingShaderVariant(this.countSelectedBuffer != null, this.useIndirectCount));

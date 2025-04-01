@@ -386,8 +386,14 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         FP2Config.Debug.DebugColorMode debugColorMode = FP2_DEBUG ? this.fp2.globalConfig().debug().debugColors() : FP2Config.Debug.DebugColorMode.DISABLED;
         val capturedShaderPrograms = this.captureShaderPrograms(debugColorMode, drawState.fogMode);
 
+        RenderIndex.DrawArguments drawArguments = new RenderIndex.DrawArguments(
+                cameraState, this.cameraStateUniformsBuffer,
+                drawState, this.drawStateUniformsBuffer,
+                this.levelRenderer.blockedTracker(),
+                this.fp2.client().renderManager().isReversedZSupportedAndActive());
+
         try (val ignored = this.statePreserverDraw.backup()) { //back up opengl state prior to rendering
-            this.preRender();
+            this.preRender(drawArguments);
 
             //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
             //- for each detail level:
@@ -396,26 +402,25 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             //  from rendering over vanilla water
 
             for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
-                this.renderSolid(capturedShaderPrograms, level);
-                this.renderCutout(capturedShaderPrograms, level);
+                this.renderSolid(drawArguments, capturedShaderPrograms, level);
+                this.renderCutout(drawArguments, capturedShaderPrograms, level);
             }
 
-            this.renderTransparent(capturedShaderPrograms);
+            this.renderTransparent(drawArguments, capturedShaderPrograms);
 
-            this.postRender();
+            this.postRender(drawArguments);
         }
     }
 
-    private void preRender() {
+    private void preRender(RenderIndex.DrawArguments drawArguments) {
+        this.renderIndex.preDraw(drawArguments);
+
         //bind uniform buffers
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, this.cameraStateUniformsBuffer.buffer().id());
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, this.drawStateUniformsBuffer.buffer().id());
 
-        val reversedZ = this.fp2.client().renderManager().reversedZ();
         this.gl.glEnable(GL_DEPTH_TEST);
-        this.gl.glDepthFunc(reversedZ != null && reversedZ.isActive() ? GL_GREATER : GL_LESS);
-
-        this.renderIndex.preDraw();
+        this.gl.glDepthFunc(drawArguments.reversedZ ? GL_GREATER : GL_LESS);
 
         //bind texture UVs
         this.levelRenderer.textureUVs().gpuQuadLists().bind(this.gl);
@@ -432,11 +437,11 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glClear(GL_STENCIL_BUFFER_BIT);
     }
 
-    private void postRender() {
-        this.renderIndex.postDraw();
+    private void postRender(RenderIndex.DrawArguments drawArguments) {
+        this.renderIndex.postDraw(drawArguments);
     }
 
-    private void renderSolid(CapturedShaderPrograms capturedShaderPrograms, int level) {
+    private void renderSolid(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms, int level) {
         //GlStateManager.disableAlpha();
 
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -444,12 +449,12 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         val shader = capturedShaderPrograms.blockShaderProgram;
         val uniformSetter = shader.bindUnsafe();
-        this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_SOLID, shader, uniformSetter);
+        this.renderIndex.draw(drawArguments, this.drawMode, level, RenderConstants.LAYER_SOLID, shader, uniformSetter);
 
         //GlStateManager.enableAlpha();
     }
 
-    private void renderCutout(CapturedShaderPrograms capturedShaderPrograms, int level) {
+    private void renderCutout(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms, int level) {
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
 
         this.gl.glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
@@ -457,17 +462,17 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         val shader = capturedShaderPrograms.blockCutoutShaderProgram;
         val uniformSetter = shader.bindUnsafe();
-        this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_CUTOUT, shader, uniformSetter);
+        this.renderIndex.draw(drawArguments, this.drawMode, level, RenderConstants.LAYER_CUTOUT, shader, uniformSetter);
 
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    private void renderTransparent(CapturedShaderPrograms capturedShaderPrograms) {
-        this.renderTransparentStencilPass(capturedShaderPrograms);
-        this.renderTransparentFragmentPass(capturedShaderPrograms);
+    private void renderTransparent(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms) {
+        this.renderTransparentStencilPass(drawArguments, capturedShaderPrograms);
+        this.renderTransparentFragmentPass(drawArguments, capturedShaderPrograms);
     }
 
-    private void renderTransparentStencilPass(CapturedShaderPrograms capturedShaderPrograms) {
+    private void renderTransparentStencilPass(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms) {
         this.gl.glColorMask(false, false, false, false);
         this.gl.glDepthMask(false);
 
@@ -477,14 +482,14 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
             this.gl.glStencilFunc(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
-            this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+            this.renderIndex.draw(drawArguments, this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
         }
 
         this.gl.glDepthMask(true);
         this.gl.glColorMask(true, true, true, true);
     }
 
-    private void renderTransparentFragmentPass(CapturedShaderPrograms capturedShaderPrograms) {
+    private void renderTransparentFragmentPass(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms) {
         this.gl.glEnable(GL_BLEND);
         this.gl.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
@@ -497,7 +502,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
             this.gl.glStencilFunc(GL_EQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
-            this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+            this.renderIndex.draw(drawArguments, this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
         }
 
         this.gl.glDisable(GL_BLEND);

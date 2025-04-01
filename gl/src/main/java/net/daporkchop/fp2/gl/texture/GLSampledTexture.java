@@ -23,7 +23,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
@@ -118,6 +120,36 @@ public abstract class GLSampledTexture extends GLStorageTexture {
             this.bind(target -> {
                 action.accept(new BoundParameterSetter(this.gl, target));
             });
+        }
+    }
+
+    /**
+     * Hints that the texture's storage should be invalidated.
+     * <p>
+     * After invalidation, the texture contents become undefined.
+     * <p>
+     * This may do nothing if the OpenGL implementation doesn't support texture invalidation.
+     */
+    public final void invalidateHint() {
+        this.checkOpen();
+        if (this.invalidateSubdata) {
+            this.invalidate();
+        }
+    }
+
+    /**
+     * Invalidates this texture's contents.
+     * <p>
+     * After invalidation, the texture contents become undefined.
+     *
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public final void invalidate() {
+        this.checkOpen();
+        for (int level = 0; level < this.levels; level++) {
+            this.gl.glInvalidateTexImage(this.id, level);
         }
     }
 

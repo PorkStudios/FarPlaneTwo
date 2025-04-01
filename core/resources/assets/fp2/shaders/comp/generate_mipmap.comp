@@ -126,6 +126,5 @@ void main() {
     texel_t src11 = loadTexelSafe(srcTexelCoord + uvec2(1u, 1u));
 
     texel_t result = mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
-
     imageStore(u_dstImage, ivec2(dstTexelCoord), result);
 }

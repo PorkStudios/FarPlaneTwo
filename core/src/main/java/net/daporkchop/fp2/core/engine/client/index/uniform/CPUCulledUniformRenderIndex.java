@@ -134,7 +134,7 @@ public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> ext
     }
 
     @Override
-    public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
+    public void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val selectedLocations = this.selectedLocations[level];
         if (!selectedLocations.isEmpty()) {
             val indexFormat = this.bakeStorage.indexFormat.type();

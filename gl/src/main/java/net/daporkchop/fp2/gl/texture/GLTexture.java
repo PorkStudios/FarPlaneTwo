@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -34,6 +34,7 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  */
 public abstract class GLTexture extends GLObject.Normal {
     protected final boolean immutableStorage;
+    protected final boolean invalidateSubdata;
 
     private final TextureTarget target;
 
@@ -42,6 +43,7 @@ public abstract class GLTexture extends GLObject.Normal {
 
         try {
             this.immutableStorage = gl.supports(GLExtension.GL_ARB_texture_storage);
+            this.invalidateSubdata = gl.supports(GLExtension.GL_ARB_invalidate_subdata);
 
             this.target = target;
         } catch (Throwable t) {

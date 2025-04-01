@@ -23,21 +23,17 @@ layout(local_size_x = 256) in;
 
 #include <"fp2:shaders/common.glsl"> // T_SHIFT, T_VOXELS
 
-#include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_modelViewProjectionMatrix, u_positionFrac, u_positionFloor, u_zNear
+#include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_modelViewProjectionMatrix, u_positionFrac, u_positionFloor
 #include <"fp2:shaders/util/frustum.glsl"> // isBoxInFrustum()
-//#include <"fp2:shaders/util/vanilla_renderability.glsl"> // isVanillaRenderableLevel0()
+#include <"fp2:shaders/util/vanilla_renderability.glsl"> // isVanillaRenderableLevel0()
 
 #define min4(a0, a1, a2, a3) (min(min(min(a0, a1), a2), a3))
 #define max4(a0, a1, a2, a3) (max(max(max(a0, a1), a2), a3))
 #define min8(a0, a1, a2, a3, a4, a5, a6, a7) (min(min(min(min(min(min(min(a0, a1), a2), a3), a4), a5), a6), a7))
 #define max8(a0, a1, a2, a3, a4, a5, a6, a7) (max(max(max(max(max(max(max(a0, a1), a2), a3), a4), a5), a6), a7))
 
-const bool REVERSEZ_ENABLED = bool(FP2_REVERSEZ_ENABLED);
-
-//TODO: should these be set dynamically? minecraft never changes them
-const float DEPTH_RANGE_MIN = -1.0;
-//const float DEPTH_RANGE_MIN = 0.0;
-const float DEPTH_RANGE_MAX = 1.0;
+const bool REVERSEDZ = bool(FP2_REVERSEDZ);
+const bool AUTO_REDUCE = bool(FP2_AUTO_REDUCE);
 
 uniform sampler2D u_depthTexture;
 
@@ -82,15 +78,8 @@ bool projectBox(vec3 bmin, vec3 bmax, out vec3 ndc_bounds_min, out vec3 ndc_boun
 
     //if the box intersects the near plane, we can't transform it without dividing by zero. fortunately
     //  this isn't a problem, since if it intersects the near plane it logically cannot be culled!
-    //TODO: i think i'm computing zNear incorrectly?
-    if (REVERSEZ_ENABLED) {
-        if (max8(P0.w, P1.w, P2.w, P3.w, P4.w, P5.w, P6.w, P7.w) > u_zNear) {
-            return false;
-        }
-    } else {
-        if (min8(P0.w, P1.w, P2.w, P3.w, P4.w, P5.w, P6.w, P7.w) < u_zNear) {
-            return false;
-        }
+    if (isClippedNear(P0) || isClippedNear(P1) || isClippedNear(P2) || isClippedNear(P3) || isClippedNear(P4) || isClippedNear(P5) || isClippedNear(P6) || isClippedNear(P7)) {
+        return false;
     }
 
     if (false) {
@@ -110,14 +99,35 @@ bool projectBox(vec3 bmin, vec3 bmax, out vec3 ndc_bounds_min, out vec3 ndc_boun
     ndc_bounds_max = max8(
         P0.xyz / P0.w, P1.xyz / P1.w, P2.xyz / P2.w, P3.xyz / P3.w,
         P4.xyz / P4.w, P5.xyz / P5.w, P6.xyz / P6.w, P7.xyz / P7.w);
+    return true;
 
+    /*vec4 clipSpacePositions[8];
+    aabbCornersToClipSpace(bmin, bmax, bmax - bmin, clipSpacePositions);
+
+    //if the box intersects the near plane, we can't transform it without dividing by zero. fortunately
+    //  this isn't a problem, since if it intersects the near plane it logically cannot be culled!
+    for (uint i = 0u; i < 8u; i++) {
+        if (isClippedNear(clipSpacePositions[i])) {
+            return false;
+        }
+    }
+
+    ndc_bounds_min = vec3(1.0);
+    ndc_bounds_max = vec3(-1.0); //TODO: adjust for clip control settings
+    for (uint i = 0u; i < 8u; i++) {
+        if (!isClippedFar(clipSpacePositions[i]) && !isClippedSides(clipSpacePositions[i])) {
+            vec3 ndcPosition = clipSpacePositions[i].xyz / clipSpacePositions[i].w;
+            ndc_bounds_min = min(ndc_bounds_min, ndcPosition);
+            ndc_bounds_max = max(ndc_bounds_max, ndcPosition);
+        }
+    }*/
     return true;
 }
 
 bool select(uint tileIndex) {
-    if (b_srcVisibleTiles[tileIndex] == 0u) {
+    /*if (b_srcVisibleTiles[tileIndex] == 0u) {
         return false;
-    }
+    }*/
 
     ivec4 pos = b_tilePositions[tileIndex];
 
@@ -127,9 +137,9 @@ bool select(uint tileIndex) {
     }
 
     // Level-0 tiles must not overlap vanilla renderable terrain
-    /*if (pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) {
+    if (pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) {
         return false;
-    }*/
+    }
 
     // Check if the tile is inside the view frustum
     ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
@@ -155,44 +165,43 @@ bool select(uint tileIndex) {
     uv_bounds_max = clamp(uv_bounds_max, 0.0, 1.0);
 
     // Depth value of the frontmost point
-    float tile_depth = REVERSEZ_ENABLED
+    float tile_depth = REVERSEDZ
             ? ndc_bounds_max.z
             : ndc_bounds_min.z;
 
-    if (!REVERSEZ_ENABLED) {
+    if (!REVERSEDZ) {
         tile_depth = tile_depth * 0.5 + 0.5;
     }
 
     vec2 viewport_size = vec2(textureSize(u_depthTexture, 0));
     vec2 view_size = (uv_bounds_max - uv_bounds_min) * viewport_size;
-    float lod = ceil(log2(max(view_size.x, view_size.y) * 0.5));
 
-    if (true) {
-        float samples[4];
-        samples[0] = textureLod(u_depthTexture, vec2(uv_bounds_min.x, uv_bounds_min.y), lod).x;
-        samples[1] = textureLod(u_depthTexture, vec2(uv_bounds_min.x, uv_bounds_max.y), lod).x;
-        samples[2] = textureLod(u_depthTexture, vec2(uv_bounds_max.x, uv_bounds_min.y), lod).x;
-        samples[3] = textureLod(u_depthTexture, vec2(uv_bounds_max.x, uv_bounds_max.y), lod).x;
-        if (REVERSEZ_ENABLED) {
-            if (min4(samples[0], samples[1], samples[2], samples[3]) >= tile_depth) {
-                return false;
-            }
-        } else {
-            if (max4(samples[0], samples[1], samples[2], samples[3]) <= tile_depth) {
-                return false;
-            }
+    float compare_depth;
+    if (AUTO_REDUCE) {
+        //TODO: is this correct?
+        float lod = ceil(log2(max(view_size.x, view_size.y)));
+
+        compare_depth = textureLod(u_depthTexture, (uv_bounds_min + uv_bounds_max) * 0.5, lod).x;
+    } else {
+        float lod = ceil(log2(max(view_size.x, view_size.y) * 0.5));
+        vec4 samples = vec4(
+                textureLod(u_depthTexture, vec2(uv_bounds_min.x, uv_bounds_min.y), lod).x,
+                textureLod(u_depthTexture, vec2(uv_bounds_min.x, uv_bounds_max.y), lod).x,
+                textureLod(u_depthTexture, vec2(uv_bounds_max.x, uv_bounds_min.y), lod).x,
+                textureLod(u_depthTexture, vec2(uv_bounds_max.x, uv_bounds_max.y), lod).x);
+
+        compare_depth = REVERSEDZ
+                ? min4(samples.x, samples.y, samples.z, samples.w)
+                : max4(samples.x, samples.y, samples.z, samples.w);
+    }
+
+    if (REVERSEDZ) {
+        if (compare_depth >= tile_depth) {
+            return false;
         }
     } else {
-        //float s = textureLod(u_depthTexture, clamp(ndc_bounds_min.xy, 0.0, 1.0), lod).x;
-        float s = textureLod(u_depthTexture, uv_bounds_min, lod).x;
-        if (REVERSEZ_ENABLED) {
-            if (s >= tile_depth) {
-                return false;
-            }
-        } else {
-            if (s <= tile_depth) {
-                return false;
-            }
+        if (compare_depth <= tile_depth) {
+            return false;
         }
     }
 

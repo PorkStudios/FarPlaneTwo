@@ -108,7 +108,7 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
 
     protected Stats latestDebugStats;
 
-    public AbstractGPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
+    public AbstractGPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer, String implName) {
         super(gl.checkSupported(REQUIRED_EXTENSIONS), bakeStorage, alloc, globalRenderer);
 
         try {
@@ -131,7 +131,7 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
                 this.debugStatisticsDownloader = null;
             }
 
-            this.latestDebugStats = new Stats(-1, -1, 0, -1, -1, this.useIndirectCount ? "GPU culled, glMultiDrawElementsIndirectCount" : "GPU culled, glMultiDrawElementsIndirect");
+            this.latestDebugStats = new Stats(-1, -1, 0, -1, -1, implName + ", " + (this.useIndirectCount ? "glMultiDrawElementsIndirectCount" : "glMultiDrawElementsIndirect"));
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -230,8 +230,8 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
     }
 
     @Override
-    public void preDraw() {
-        super.preDraw();
+    public void preDraw(DrawArguments args) {
+        super.preDraw(args);
 
         if (this.useIndirectCount) { //if we're using MultiDraw with indirect counts, we need to bind the GL_PARAMETER_BUFFER
             this.gl.glBindBuffer(GL_PARAMETER_BUFFER, this.countSelectedBuffer.id());
@@ -239,7 +239,7 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
     }
 
     @Override
-    public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
+    public void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val levelInstance = this.levels.get(level);
         if (levelInstance.capacityTiles != 0) {
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
@@ -266,8 +266,8 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
     }
 
     @Override
-    public void postDraw() {
-        super.postDraw();
+    public void postDraw(DrawArguments args) {
+        super.postDraw(args);
 
         if (this.debugStatisticsDownloader != null) { //if debug statistics are supported, tick the statistics downloader to fetch the values from the latest frame
             this.debugStatisticsDownloader.tick();

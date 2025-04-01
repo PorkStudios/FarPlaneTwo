@@ -33,6 +33,7 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.listener.FramebufferResizeListener;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
+import net.daporkchop.fp2.core.client.render.ReversedZ;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.compute.ComputeIndirectDrawCommandsCompressor;
 import net.daporkchop.fp2.core.client.render.compute.ComputeTextureCopier;
@@ -109,18 +110,26 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
     @EqualsAndHashCode
     @ToString
     private static final class TileOcclusionTestVariant {
-        final boolean reverseZEnabled;
+        final boolean reversedZ;
+        final boolean autoReduce;
 
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-            builder.put("FP2_REVERSEZ_ENABLED", this.reverseZEnabled);
+            builder.put("FP2_REVERSEDZ", this.reversedZ);
+            builder.put("FP2_AUTO_REDUCE", this.autoReduce);
             return builder.build();
         }
 
         public static List<TileOcclusionTestVariant> allVariants(@NonNull OpenGL gl) {
-            List<TileOcclusionTestVariant> result = new ArrayList<>(2);
-            result.add(new TileOcclusionTestVariant(false));
-            result.add(new TileOcclusionTestVariant(true));
+            boolean[] reversedZStates = gl.supports(ReversedZ.REQUIRED_EXTENSIONS) ? new boolean[]{ false, true } : new boolean[]{ false };
+            boolean[] autoReduceStates = gl.supports(GLExtension.GL_ARB_texture_filter_minmax) ? new boolean[]{ false, true } : new boolean[]{ false };
+
+            List<TileOcclusionTestVariant> result = new ArrayList<>(reversedZStates.length * autoReduceStates.length);
+            for (boolean reversedZ : reversedZStates) {
+                for (boolean autoReduce : autoReduceStates) {
+                    result.add(new TileOcclusionTestVariant(reversedZ, autoReduce));
+                }
+            }
             return result;
         }
     }
@@ -160,6 +169,8 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
                         .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
                         .addSSBO(SRC_VISIBLE_TILES_SSBO_BINDING, SRC_VISIBLE_TILES_SSBO_NAME)
                         .addSSBO(DST_SELECTED_TILES_SSBO_BINDING, DST_SELECTED_TILES_SSBO_NAME)
+                        .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
+                        .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
                         .build();
             }
         }
@@ -204,14 +215,18 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
 
     private final ListenerList<FramebufferResizeListener>.Handle framebufferResizeListenerHandle;
 
+    private final boolean autoReduce;
+
     public GPUOcclusionCulledBaseInstanceRenderIndex(FP2Client client, OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
-        super(gl.checkSupported(REQUIRED_EXTENSIONS), bakeStorage, alloc, globalRenderer, cameraStateUniformsBuffer);
+        super(gl.checkSupported(REQUIRED_EXTENSIONS), bakeStorage, alloc, globalRenderer, cameraStateUniformsBuffer, "GPU occlusion culled");
 
         try {
             this.shaderRegistry = globalRenderer.shaderRegistry;
 
             this.occlusionCulledCubeShader = globalRenderer.shaderRegistry.get(OCCLUSION_CULLED_CUBE_KEY);
             this.tileVisibilityTestShader = globalRenderer.shaderRegistry.get(TILE_VISIBILITY_TEST_KEY);
+
+            this.autoReduce = gl.supports(GLExtension.GL_ARB_texture_filter_minmax);
 
             this.textureCopier = new ComputeTextureCopier(gl, globalRenderer);
             this.mipmapGenerator = new ComputeTextureMipmapGenerator(gl, globalRenderer);
@@ -281,8 +296,11 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
         this.depthTexture_color = GLTexture2D.create(this.gl, TextureInternalFormat.R32F, GLTexture2D.requiredLevels(width, height), width, height);
 
         this.depthTexture_color.filter(TextureMinFilter.NEAREST_MIPMAP_NEAREST, TextureMagFilter.NEAREST);
-        this.depthTexture_color.setParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        this.depthTexture_color.setParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        this.depthTexture_color.setParameters(parameterSetter -> {
+            parameterSetter.set(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            parameterSetter.set(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            parameterSetter.set(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        });
 
         //attach the new depth texture to the framebuffer
         this.copyFramebuffer.attachTexture(FramebufferAttachment.DEPTH_ATTACHMENT, this.depthTexture_depth, 0);
@@ -344,11 +362,8 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
     }
 
     @Override
-    public void preDraw() {
-        super.preDraw();
-
-        val reversedZ = FP2Core.fp2().client().renderManager().reversedZ();
-        boolean reversedZEnabled = reversedZ != null && reversedZ.isActive();
+    public void preDraw(DrawArguments args) {
+        super.preDraw(args);
 
         //TODO: this needs to run after we've rendered all the tiles from the previous frame
         int oldDrawFramebuffer = this.gl.glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
@@ -356,6 +371,8 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
         try {
             this.gl.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this.copyFramebuffer.id());
             this.gl.glBindFramebuffer(GL_READ_FRAMEBUFFER, oldDrawFramebuffer);
+
+            this.gl.glInvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT);
 
             //blit the active depth buffer into the depth texture
             this.gl.glBlitFramebuffer(
@@ -368,6 +385,8 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
             this.gl.glBindFramebuffer(GL_READ_FRAMEBUFFER, oldReadFramebuffer);
         }
 
+        this.depthTexture_color.invalidate();
+
         //copy the depth buffer (again!!) into a texture with a color format so that we can generate mipmaps from it
         this.textureCopier.copyTextureLevel(
                 this.depthTexture_depth, 0,
@@ -378,15 +397,21 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
                 this.depthTexture_color, 0,
                 this.depthTexture_color, 1,
                 this.depthTexture_color.levels() - 1,
-                reversedZEnabled ? ComputeTextureMipmapGenerator.MipmapMode.MIN : ComputeTextureMipmapGenerator.MipmapMode.MAX);
+                args.reversedZ ? ComputeTextureMipmapGenerator.MipmapMode.MIN : ComputeTextureMipmapGenerator.MipmapMode.MAX);
 
         //for now we will perform just a single occlusion culling pass
-        val tileOcclusionTestProgram = this.shaderRegistry.get(new TileOcclusionTestVariant(reversedZEnabled)).get();
+        val tileOcclusionTestProgram = this.shaderRegistry.get(new TileOcclusionTestVariant(args.reversedZ, this.autoReduce)).get();
         tileOcclusionTestProgram.bindUnsafe(); //active program binding will be restored by StatePreserver
 
         //bind camera state uniforms
-        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, CAMERA_STATE_UNIFORMS_UBO_BINDING, this.cameraStateUniformsBuffer.buffer().id());
+        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, CAMERA_STATE_UNIFORMS_UBO_BINDING, args.cameraStateUniformsBuffer.buffer().id());
 
+        //bind terrain rendering blocked tracker, so that level-0 tiles can be skipped if they overlap with vanilla terrain
+        args.blockedTracker.bindGlBuffers(this.gl, VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_SSBO_BINDING);
+
+        if (this.autoReduce) {
+            this.depthTexture_color.setParameter(GL_TEXTURE_REDUCTION_MODE_ARB, args.reversedZ ? GL_MIN : GL_MAX);
+        }
         this.depthTexture_color.bindToUnitUnsafe(DEPTH_TEXTURE_SAMPLER2D_BINDING);
 
         //ensure that the occlusion test shader reads the correct values from the visibility test shader
@@ -436,8 +461,8 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
     }
 
     @Override
-    public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
-        super.draw(mode, level, pass, shader, uniformSetter);
+    public void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
+        super.draw(args, mode, level, pass, shader, uniformSetter);
     }
 
     /**
