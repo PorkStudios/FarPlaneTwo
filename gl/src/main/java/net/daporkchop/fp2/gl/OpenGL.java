@@ -2700,11 +2700,17 @@ public abstract class OpenGL {
 
         @GLRequires(GLExtension.GL_ARB_shader_storage_buffer_object)
         private final int maxShaderStorageBufferBindings;
+        @GLRequires(GLExtension.GL_ARB_shader_storage_buffer_object)
+        private final int maxShaderStorageBlockSize;
+        @GLRequires(GLExtension.GL_ARB_shader_storage_buffer_object)
+        private final int shaderStorageBufferOffsetAlignment;
 
         @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
         private final int maxUniformBufferBindings;
         @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
         private final int maxUniformBlockSize;
+        @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
+        private final int uniformBufferOffsetAlignment;
 
         @GLRequires(GLExtension.GL_ARB_texture_buffer_object)
         private final int maxTextureBufferSize;
@@ -2733,13 +2739,24 @@ public abstract class OpenGL {
 
             this.maxAtomicCounterBufferBindings = gl.supports(GLExtension.GL_ARB_shader_atomic_counters) ? gl.glGetInteger(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS) : 0;
 
-            this.maxShaderStorageBufferBindings = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
+            if (gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object)) {
+                this.maxShaderStorageBufferBindings = gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
+                this.maxShaderStorageBlockSize = gl.glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
+                this.shaderStorageBufferOffsetAlignment = gl.glGetInteger(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT);
+            } else {
+                this.maxShaderStorageBufferBindings = 0;
+                this.maxShaderStorageBlockSize = 0;
+                this.shaderStorageBufferOffsetAlignment = 0;
+            }
 
             if (gl.supports(GLExtension.GL_ARB_uniform_buffer_object)) {
                 this.maxUniformBufferBindings = gl.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
                 this.maxUniformBlockSize = gl.glGetInteger(GL_MAX_UNIFORM_BLOCK_SIZE);
+                this.uniformBufferOffsetAlignment = gl.glGetInteger(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT);
             } else {
-                this.maxUniformBufferBindings = this.maxUniformBlockSize = 0;
+                this.maxUniformBufferBindings = 0;
+                this.maxUniformBlockSize = 0;
+                this.uniformBufferOffsetAlignment = 0;
             }
 
             this.maxTextureBufferSize = gl.supports(GLExtension.GL_ARB_texture_buffer_object) ? gl.glGetInteger(GL_MAX_TEXTURE_BUFFER_SIZE) : 0;

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.codegen.struct.layout.assignment;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
@@ -57,15 +58,29 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @UtilityClass
 public class SharedBlockMemoryLayout {
     public static EnumSet<AttributeTarget> compatibleTargets(OpenGL gl, StructAttributeType type) {
-        return EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.UBO, AttributeTarget.SSBO);
+        if (!gl.supports(GLExtension.GL_ARB_uniform_buffer_object)) {
+            return EnumSet.noneOf(AttributeTarget.class);
+        }
+
+        return EnumSet.of(AttributeTarget.UBO);
+
+        //vertex attributes and SSBOs are disabled for now, since they're typically used in arrays and this code currently can't
+        //  automagically determine alignment/stride
+        /*EnumSet<AttributeTarget> result = EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.UBO);
+        if (gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object)) {
+            result.add(AttributeTarget.SSBO);
+        }
+        return result;*/
     }
 
     @SneakyThrows
     public static LayoutInfo computeLayout(OpenGL gl, StructAttributeType type) {
+        gl.checkSupported(GLExtension.GL_ARB_uniform_buffer_object);
+
         //compile a dummy shader
-        StringBuilder source = new StringBuilder().append("uniform DUMMY_UNIFORM_BLOCK");
+        StringBuilder source = new StringBuilder().append("layout(shared) uniform DUMMY_UNIFORM_BLOCK");
         toGLSL(source, type, new HashSet<>());
-        source.insert(0, "#version " + gl.version().glsl() + "\n\n");
+        source.insert(0, "#version " + gl.version().glsl() + "\n#extension GL_ARB_uniform_buffer_object : require\n");
         source.append("void main() {\n}\n");
 
         int shader = gl.glCreateShader(GL_VERTEX_SHADER);
@@ -75,7 +90,7 @@ public class SharedBlockMemoryLayout {
             gl.glCompileShader(shader);
 
             if (gl.glGetShaderi(shader, GL_COMPILE_STATUS) == GL_FALSE) {
-                throw new ShaderCompilationException(gl.glGetShaderInfoLog(shader));
+                throw new ShaderCompilationException("failed to determine shared buffer layout for " + type.structName() + ":\n" + gl.glGetShaderInfoLog(shader));
             }
 
             gl.glAttachShader(program, shader);
@@ -84,7 +99,7 @@ public class SharedBlockMemoryLayout {
 
             //check for errors
             if (gl.glGetProgrami(program, GL_LINK_STATUS) == GL_FALSE) {
-                throw new ShaderLinkageException(gl.glGetProgramInfoLog(program));
+                throw new ShaderLinkageException("failed to determine shared buffer layout for " + type.structName() + ":\n" + gl.glGetProgramInfoLog(program));
             }
 
             return new LayoutInfo(type, layout(type, introspectLayout(type, gl, program, "")), "shared", true, SharedBlockMemoryLayout::compatibleTargets);
@@ -242,6 +257,7 @@ public class SharedBlockMemoryLayout {
             size = Math.max(size, introspected.fields[i].offset - introspected.offset + fieldLayouts[i].size());
         }
 
+        //TODO: we should try to determine the alignment here, at least for the top-level struct...
         return new StructLayout(size, 0L, fieldLayouts, fieldOffsets);
     }
 

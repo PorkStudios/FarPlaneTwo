@@ -52,7 +52,7 @@ public class AttributeFormatFactory {
         checkArg(!requestedSupportedTargets.isEmpty(), "at least one target must be requested");
         if (PackedInterleavedMemoryLayout.compatibleTargets(gl, structType).containsAll(requestedSupportedTargets)) {
             return PackedInterleavedMemoryLayout.computeLayout(gl, structType);
-        } else if (false && SharedBlockMemoryLayout.compatibleTargets(gl, structType).containsAll(requestedSupportedTargets)) {
+        } else if (SharedBlockMemoryLayout.compatibleTargets(gl, structType).containsAll(requestedSupportedTargets)) {
             return SharedBlockMemoryLayout.computeLayout(gl, structType);
         } else if (Std140BlockMemoryLayout.compatibleTargets(gl, structType).containsAll(requestedSupportedTargets)) {
             return Std140BlockMemoryLayout.computeLayout(structType);
