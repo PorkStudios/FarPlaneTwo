@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -120,6 +120,9 @@ public final class StatePreserver {
     private int activeTexture;
     private final TextureBinding[] textureBindings;
 
+    //image bindings
+    private final ImageBinding[] imageBindings;
+
     StatePreserver(Builder builder) {
         this.gl = builder.gl;
         this.compatibility = this.gl.supports(GLExtension.GL_ARB_compatibility);
@@ -133,6 +136,7 @@ public final class StatePreserver {
 
         this.indexedBufferBindings = builder.indexedBuffers.toArray(new IndexedBufferBinding[0]);
         this.textureBindings = builder.textures.toArray(new TextureBinding[0]);
+        this.imageBindings = builder.images.toArray(new ImageBinding[0]);
     }
 
     /**
@@ -237,6 +241,26 @@ public final class StatePreserver {
             }
         }
 
+        //image bindings
+        for (ImageBinding binding : this.imageBindings) {
+            binding.name = gl.glGetInteger(GL_IMAGE_BINDING_NAME, binding.unit);
+            if (binding.name != 0) {
+                binding.level = gl.glGetInteger(GL_IMAGE_BINDING_LEVEL, binding.unit);
+                binding.layered = gl.glGetBoolean(GL_IMAGE_BINDING_LAYERED, binding.unit);
+                binding.layer = gl.glGetInteger(GL_IMAGE_BINDING_LAYER, binding.unit);
+                binding.access = gl.glGetInteger(GL_IMAGE_BINDING_ACCESS, binding.unit);
+                binding.format = gl.glGetInteger(GL_IMAGE_BINDING_FORMAT, binding.unit);
+            } else {
+                //skip some glGet calls if nothing is bound to this image unit...
+                //these default values are the same ones used when calling glBindImageTextures() with a null array
+                binding.level = 0;
+                binding.layered = false;
+                binding.layer = 0;
+                binding.access = GL_READ_ONLY;
+                binding.format = GL_R8;
+            }
+        }
+
         this.restoreDefaultValues();
 
         return this::restore;
@@ -305,6 +329,12 @@ public final class StatePreserver {
             }
         }*/
         gl.glActiveTexture(GL_TEXTURE0);
+
+        //image bindings
+        //no-op, we currently don't care about this
+        /*for (ImageBinding binding : this.imageBindings) {
+            gl.glBindImageTexture(binding.unit, 0, 0, false, 0, GL_READ_ONLY, GL_R8);
+        }*/
     }
 
     private void restore() {
@@ -381,6 +411,11 @@ public final class StatePreserver {
             }
         }
         gl.glActiveTexture(this.activeTexture);
+
+        //image bindings
+        for (ImageBinding binding : this.imageBindings) {
+            gl.glBindImageTexture(binding.unit, binding.name, binding.level, binding.layered, binding.layer, binding.access, binding.format);
+        }
     }
 
     private static void glEnableOrDisable(OpenGL gl, int cap, boolean state) {
@@ -423,6 +458,23 @@ public final class StatePreserver {
     /**
      * @author DaPorkchop_
      */
+    @RequiredArgsConstructor
+    @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+    static final class ImageBinding {
+        @EqualsAndHashCode.Include
+        final int unit;
+
+        int name;
+        int level;
+        boolean layered;
+        int layer;
+        int access;
+        int format;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
     @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
     public static final class Builder {
         final OpenGL gl;
@@ -431,6 +483,7 @@ public final class StatePreserver {
 
         final Set<IndexedBufferBinding> indexedBuffers = new HashSet<>();
         final Set<TextureBinding> textures = new HashSet<>();
+        final Set<ImageBinding> images = new HashSet<>();
 
         byte framebuffer = 0;
 
@@ -488,6 +541,21 @@ public final class StatePreserver {
 
         public Builder texture(TextureTarget target, @NotNegative int unit) {
             this.textures.add(new TextureBinding(target, checkIndex(this.gl.limits().maxTextureUnits(), unit)));
+            return this;
+        }
+
+        public Builder image(@NotNegative int unit) {
+            this.gl.checkSupported(GLExtension.GL_ARB_shader_image_load_store);
+            this.images.add(new ImageBinding(checkIndex(this.gl.limits().maxImageUnits(), unit)));
+            return this;
+        }
+
+        public Builder images(@NotNegative int first, @NotNegative int count) {
+            this.gl.checkSupported(GLExtension.GL_ARB_shader_image_load_store);
+            checkRangeLen(this.gl.limits().maxImageUnits(), first, count);
+            for (int i = 0; i < count; i++) {
+                this.images.add(new ImageBinding(first + i));
+            }
             return this;
         }
 

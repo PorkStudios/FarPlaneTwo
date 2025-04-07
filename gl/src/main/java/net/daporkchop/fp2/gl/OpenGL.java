@@ -1235,6 +1235,11 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 3.0
      */
+    public abstract boolean glGetBoolean(int pname, int idx);
+
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract int glGetInteger(int pname, int idx);
 
     /**

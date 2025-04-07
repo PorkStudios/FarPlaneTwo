@@ -665,6 +665,11 @@ final class LegacyOpenGL extends OpenGL {
     //
 
     @Override
+    public boolean glGetBoolean(int pname, int idx) {
+        return this.delegate.glGetBoolean(pname, idx);
+    }
+
+    @Override
     public int glGetInteger(int pname, int idx) {
         return this.delegate.glGetInteger(pname, idx);
     }

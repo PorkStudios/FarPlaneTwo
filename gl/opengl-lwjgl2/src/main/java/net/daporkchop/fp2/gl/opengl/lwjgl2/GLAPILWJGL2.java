@@ -1253,6 +1253,13 @@ public final class GLAPILWJGL2 extends OpenGL {
     //
 
     @Override
+    public boolean glGetBoolean(int pname, int idx) {
+        val res = GL30.glGetBoolean(pname, idx);
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
     public int glGetInteger(int pname, int idx) {
         val res = GL30.glGetInteger(pname, idx);
         super.debugCheckError();
