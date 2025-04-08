@@ -155,6 +155,25 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public void glGetBoolean(int pname, boolean @NonNull [] data) {
+        MemoryStack stack = MemoryStack.stackGet();
+        int stackPointer = stack.getPointer();
+        try {
+            //allocate temporary direct buffer for results
+            ByteBuffer dataBuffer = stack.malloc(data.length);
+
+            this.glGetBoolean(pname, dataBuffer);
+
+            //copy result values into destination array
+            for (int i = 0; i < data.length; i++) {
+                data[i] = dataBuffer.get() != 0;
+            }
+        } finally {
+            stack.setPointer(stackPointer);
+        }
+    }
+
+    @Override
     public int glGetInteger(int pname) {
         val res = GL11C.glGetInteger(pname);
         super.debugCheckError();
@@ -163,6 +182,12 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public void glGetInteger(int pname, @NonNull IntBuffer data) {
+        GL11C.glGetIntegerv(pname, data);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glGetInteger(int pname, int @NonNull [] data) {
         GL11C.glGetIntegerv(pname, data);
         super.debugCheckError();
     }
@@ -181,6 +206,12 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public void glGetFloat(int pname, float @NonNull [] data) {
+        GL11C.glGetFloatv(pname, data);
+        super.debugCheckError();
+    }
+
+    @Override
     public double glGetDouble(int pname) {
         val res = GL11C.glGetDouble(pname);
         super.debugCheckError();
@@ -189,6 +220,12 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public void glGetDouble(int pname, @NonNull DoubleBuffer data) {
+        GL11C.glGetDoublev(pname, data);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glGetDouble(int pname, double @NonNull [] data) {
         GL11C.glGetDoublev(pname, data);
         super.debugCheckError();
     }
@@ -736,7 +773,7 @@ public final class GLAPILWJGL3 extends OpenGL {
 
     @Override
     public int[] glGetProgramiv(int program, int pname, int count) {
-        int[] res = new int[count];
+        int[] res = PUnsafe.allocateUninitializedIntArray(count);
         GL20C.glGetProgramiv(program, pname, res);
         super.debugCheckError();
         return res;
@@ -937,10 +974,47 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public void glGetBoolean(int pname, int idx, @NonNull ByteBuffer data) {
+        GL30C.glGetBooleani_v(pname, idx, data);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glGetBoolean(int pname, int idx, boolean @NonNull [] data) {
+        MemoryStack stack = MemoryStack.stackGet();
+        int stackPointer = stack.getPointer();
+        try {
+            //allocate temporary direct buffer for results
+            ByteBuffer dataBuffer = stack.malloc(data.length);
+
+            this.glGetBoolean(pname, idx, dataBuffer);
+
+            //copy result values into destination array
+            for (int i = 0; i < data.length; i++) {
+                data[i] = dataBuffer.get() != 0;
+            }
+        } finally {
+            stack.setPointer(stackPointer);
+        }
+    }
+
+    @Override
     public int glGetInteger(int pname, int idx) {
         val res = GL30C.glGetIntegeri(pname, idx);
         super.debugCheckError();
         return res;
+    }
+
+    @Override
+    public void glGetInteger(int pname, int idx, @NonNull IntBuffer data) {
+        GL30C.glGetIntegeri_v(pname, idx, data);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glGetInteger(int pname, int idx, int @NonNull [] data) {
+        GL30C.glGetIntegeri_v(pname, idx, data);
+        super.debugCheckError();
     }
 
     @Override
@@ -1268,7 +1342,7 @@ public final class GLAPILWJGL3 extends OpenGL {
             super.debugCheckError();
 
             //copy results to an array
-            int[] result = new int[uniformNames.length];
+            int[] result = PUnsafe.allocateUninitializedIntArray(uniformNames.length);
             resultBuffer.get(result);
             return result;
         } finally {

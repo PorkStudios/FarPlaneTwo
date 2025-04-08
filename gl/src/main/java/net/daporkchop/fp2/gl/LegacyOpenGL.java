@@ -100,12 +100,22 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glGetBoolean(int pname, boolean @NonNull [] data) {
+        this.delegate.glGetBoolean(pname, data);
+    }
+
+    @Override
     public int glGetInteger(int pname) {
         return this.delegate.glGetInteger(pname);
     }
 
     @Override
     public void glGetInteger(int pname, @NonNull IntBuffer data) {
+        this.delegate.glGetInteger(pname, data);
+    }
+
+    @Override
+    public void glGetInteger(int pname, int @NonNull [] data) {
         this.delegate.glGetInteger(pname, data);
     }
 
@@ -120,12 +130,22 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glGetFloat(int pname, float @NonNull [] data) {
+        this.delegate.glGetFloat(pname, data);
+    }
+
+    @Override
     public double glGetDouble(int pname) {
         return this.delegate.glGetDouble(pname);
     }
 
     @Override
     public void glGetDouble(int pname, @NonNull DoubleBuffer data) {
+        this.delegate.glGetDouble(pname, data);
+    }
+
+    @Override
+    public void glGetDouble(int pname, double @NonNull [] data) {
         this.delegate.glGetDouble(pname, data);
     }
 
@@ -675,8 +695,28 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glGetBoolean(int pname, int idx, @NonNull ByteBuffer data) {
+        this.delegate.glGetBoolean(pname, idx, data);
+    }
+
+    @Override
+    public void glGetBoolean(int pname, int idx, boolean @NonNull [] data) {
+        this.delegate.glGetBoolean(pname, idx, data);
+    }
+
+    @Override
     public int glGetInteger(int pname, int idx) {
         return this.delegate.glGetInteger(pname, idx);
+    }
+
+    @Override
+    public void glGetInteger(int pname, int idx, @NonNull IntBuffer data) {
+        this.delegate.glGetInteger(pname, idx, data);
+    }
+
+    @Override
+    public void glGetInteger(int pname, int idx, int @NonNull [] data) {
+        this.delegate.glGetInteger(pname, idx, data);
     }
 
     @Override

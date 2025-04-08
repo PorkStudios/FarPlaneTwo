@@ -404,6 +404,20 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
+    public void glGetBoolean(int pname, boolean @NonNull [] data) {
+        //we can safely use APIUtil.getBufferByte() here: GL11.glGetBoolean() doesn't use it
+        ByteBuffer dataBuffer = this.getBufferByte(Math.max(data.length, 16)).duplicate();
+
+        GL11.glGetBoolean(pname, dataBuffer);
+        super.debugCheckError();
+
+        //copy result values into destination array
+        for (int i = 0; i < data.length; i++) {
+            data[i] = dataBuffer.get() != 0;
+        }
+    }
+
+    @Override
     public int glGetInteger(int pname) {
         val res = GL11.glGetInteger(pname);
         super.debugCheckError();
@@ -414,6 +428,17 @@ public final class GLAPILWJGL2 extends OpenGL {
     public void glGetInteger(int pname, @NonNull IntBuffer data) {
         GL11.glGetInteger(pname, DirectBufferHackery.wrapInt(DirectBufferHackery.address(data), 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
         super.debugCheckError();
+    }
+
+    @Override
+    public void glGetInteger(int pname, int @NonNull [] data) {
+        //we can safely use APIUtil.getBufferInt() here: GL11.glGetInteger() doesn't use it
+        IntBuffer dataBuffer = this.getBufferInt(Math.max(data.length, 16)).duplicate();
+
+        GL11.glGetInteger(pname, dataBuffer);
+        super.debugCheckError();
+
+        dataBuffer.get(data);
     }
 
     @Override
@@ -430,6 +455,17 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
+    public void glGetFloat(int pname, float @NonNull [] data) {
+        //we can safely use APIUtil.getBufferFloat() here: GL11.glGetFloat() doesn't use it
+        FloatBuffer dataBuffer = this.getBufferFloat(Math.max(data.length, 16)).duplicate();
+
+        GL11.glGetFloat(pname, dataBuffer);
+        super.debugCheckError();
+
+        dataBuffer.get(data);
+    }
+
+    @Override
     public double glGetDouble(int pname) {
         val res = GL11.glGetDouble(pname);
         super.debugCheckError();
@@ -440,6 +476,17 @@ public final class GLAPILWJGL2 extends OpenGL {
     public void glGetDouble(int pname, @NonNull DoubleBuffer data) {
         GL11.glGetDouble(pname, DirectBufferHackery.wrapDouble(DirectBufferHackery.address(data), 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
         super.debugCheckError();
+    }
+
+    @Override
+    public void glGetDouble(int pname, double @NonNull [] data) {
+        //we can safely use APIUtil.getBufferDouble() here: GL11.glGetDouble() doesn't use it
+        DoubleBuffer dataBuffer = this.getBufferDouble(Math.max(data.length, 16)).duplicate();
+
+        GL11.glGetDouble(pname, dataBuffer);
+        super.debugCheckError();
+
+        dataBuffer.get(data);
     }
 
     @Override
@@ -1070,7 +1117,7 @@ public final class GLAPILWJGL2 extends OpenGL {
         IntBuffer buffer = this.getBufferInt(count);
         GL20.glGetProgram(program, pname, buffer);
         super.debugCheckError();
-        int[] res = new int[count];
+        int[] res = PUnsafe.allocateUninitializedIntArray(count);
         buffer.slice().get(res);
         return res;
     }
@@ -1270,10 +1317,48 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
+    public void glGetBoolean(int pname, int idx, @NonNull ByteBuffer data) {
+        GL30.glGetBoolean(pname, idx, DirectBufferHackery.wrapByte(DirectBufferHackery.address(data), 4)); //LWJGL2 will throw a fit if the buffer doesn't have at least 4 elements
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glGetBoolean(int pname, int idx, boolean @NonNull [] data) {
+        //we can safely use APIUtil.getBufferByte() here: GL30.glGetBoolean() doesn't use it
+        ByteBuffer dataBuffer = this.getBufferByte(Math.max(data.length, 4)).duplicate();
+
+        GL30.glGetBoolean(pname, idx, dataBuffer);
+        super.debugCheckError();
+
+        //copy result values into destination array
+        for (int i = 0; i < data.length; i++) {
+            data[i] = dataBuffer.get() != 0;
+        }
+    }
+
+    @Override
     public int glGetInteger(int pname, int idx) {
         val res = GL30.glGetInteger(pname, idx);
         super.debugCheckError();
         return res;
+    }
+
+    @Override
+    public void glGetInteger(int pname, int idx, @NonNull IntBuffer data) {
+        GL30.glGetInteger(pname, idx, DirectBufferHackery.wrapInt(DirectBufferHackery.address(data), 4)); //LWJGL2 will throw a fit if the buffer doesn't have at least 4 elements
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glGetInteger(int pname, int idx, int @NonNull [] data) {
+        //we can safely use APIUtil.getBufferInt() here: GL30.glGetInteger() doesn't use it
+        IntBuffer dataBuffer = this.getBufferInt(Math.max(data.length, 4)).duplicate();
+
+        GL30.glGetInteger(pname, idx, dataBuffer);
+        super.debugCheckError();
+
+        dataBuffer.get(data);
+
     }
 
     @Override
@@ -1597,7 +1682,7 @@ public final class GLAPILWJGL2 extends OpenGL {
         GL31.glGetUniformIndices(program, uniformNames, tmpBuffer);
         super.debugCheckError();
 
-        int[] result = new int[uniformNames.length];
+        int[] result = PUnsafe.allocateUninitializedIntArray(uniformNames.length);
         tmpBuffer.duplicate().get(result);
         return result;
     }

@@ -668,12 +668,22 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.1
      */
+    public abstract void glGetBoolean(int pname, boolean @NonNull [] data);
+
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract int glGetInteger(int pname);
 
     /**
      * @since OpenGL 1.1
      */
     public abstract void glGetInteger(int pname, @NonNull IntBuffer data);
+
+    /**
+     * @since OpenGL 1.1
+     */
+    public abstract void glGetInteger(int pname, int @NonNull [] data);
 
     /**
      * @since OpenGL 1.1
@@ -688,12 +698,22 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.1
      */
+    public abstract void glGetFloat(int pname, float @NonNull [] data);
+
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract double glGetDouble(int pname);
 
     /**
      * @since OpenGL 1.1
      */
     public abstract void glGetDouble(int pname, @NonNull DoubleBuffer data);
+
+    /**
+     * @since OpenGL 1.1
+     */
+    public abstract void glGetDouble(int pname, double @NonNull [] data);
 
     /**
      * @since OpenGL 1.1
@@ -1249,7 +1269,27 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 3.0
      */
+    public abstract void glGetBoolean(int pname, int idx, @NonNull ByteBuffer data);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glGetBoolean(int pname, int idx, boolean @NonNull [] data);
+
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract int glGetInteger(int pname, int idx);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glGetInteger(int pname, int idx, @NonNull IntBuffer data);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glGetInteger(int pname, int idx, int @NonNull [] data);
 
     /**
      * @since OpenGL 3.0
