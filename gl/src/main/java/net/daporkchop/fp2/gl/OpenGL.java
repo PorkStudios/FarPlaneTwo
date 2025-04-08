@@ -214,7 +214,9 @@ public abstract class OpenGL {
 
     // No OpenGL version
     protected final boolean GL_ARB_debug_output;
+    protected final boolean GL_ARB_parallel_shader_compile;
     protected final boolean GL_ARB_sparse_buffer;
+    protected final boolean GL_KHR_parallel_shader_compile;
 
     protected OpenGL(@NonNull GLVersion version, @NonNull GLExtensionSet nonCoreExtensions, @NonNull GLProfile profile, boolean forwardCompatibility, Limits limits) {
         this(version, nonCoreExtensions, profile, forwardCompatibility, limits, true);
@@ -377,7 +379,9 @@ public abstract class OpenGL {
 
         // No OpenGL version
         this.GL_ARB_debug_output = allExtensions.contains(GLExtension.GL_ARB_debug_output);
+        this.GL_ARB_parallel_shader_compile = allExtensions.contains(GLExtension.GL_ARB_parallel_shader_compile);
         this.GL_ARB_sparse_buffer = allExtensions.contains(GLExtension.GL_ARB_sparse_buffer);
+        this.GL_KHR_parallel_shader_compile = allExtensions.contains(GLExtension.GL_KHR_parallel_shader_compile);
     }
 
     //
@@ -2682,6 +2686,18 @@ public abstract class OpenGL {
      */
     @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_sparse_buffer })
     public abstract void glNamedBufferPageCommitmentARB(int buffer, long offset, long size, boolean commit);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_parallel_shader_compile GL_ARB_parallel_shader_compile}
+     */
+    @GLRequires(GLExtension.GL_ARB_parallel_shader_compile)
+    public abstract void glMaxShaderCompilerThreadsARB(int count);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_parallel_shader_compile GL_KHR_parallel_shader_compile}
+     */
+    @GLRequires(GLExtension.GL_KHR_parallel_shader_compile)
+    public abstract void glMaxShaderCompilerThreadsKHR(int count);
 
     /**
      * Stores the upper limits for various features supported by an OpenGL context.

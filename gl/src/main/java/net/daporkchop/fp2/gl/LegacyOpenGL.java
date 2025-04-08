@@ -1975,4 +1975,16 @@ final class LegacyOpenGL extends OpenGL {
         super.checkSupported(direct_state_access_AND_sparse_buffer);
         this.delegate.glNamedBufferPageCommitmentARB(buffer, offset, size, commit);
     }
+
+    @Override
+    public void glMaxShaderCompilerThreadsARB(int count) {
+        super.checkSupported(GLExtension.GL_ARB_parallel_shader_compile);
+        this.delegate.glMaxShaderCompilerThreadsARB(count);
+    }
+
+    @Override
+    public void glMaxShaderCompilerThreadsKHR(int count) {
+        super.checkSupported(GLExtension.GL_KHR_parallel_shader_compile);
+        this.delegate.glMaxShaderCompilerThreadsKHR(count);
+    }
 }

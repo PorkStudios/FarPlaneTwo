@@ -93,6 +93,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     //funny workarounds
     private final long glMultiDrawElements;
+    private final long glMaxShaderCompilerThreadsARB;
+    private final long glMaxShaderCompilerThreadsKHR;
 
     public GLAPILWJGL2() {
         checkState(!this.OpenGL46, "LWJGL2 doesn't support OpenGL 4.6!");
@@ -101,6 +103,8 @@ public final class GLAPILWJGL2 extends OpenGL {
 
         //funny workarounds
         this.glMultiDrawElements = getFunctionAddress("glMultiDrawElements");
+        this.glMaxShaderCompilerThreadsARB = this.GL_ARB_parallel_shader_compile ? getFunctionAddress("glMaxShaderCompilerThreadsARB") : 0L;
+        this.glMaxShaderCompilerThreadsKHR = this.GL_KHR_parallel_shader_compile ? getFunctionAddress("glMaxShaderCompilerThreadsKHR") : 0L;
     }
 
     @Override
@@ -3430,5 +3434,31 @@ public final class GLAPILWJGL2 extends OpenGL {
         } finally {
             this.glBindBuffer(GL_ARRAY_BUFFER, old);
         }
+    }
+
+    //LWJGL2 doesn't expose glMaxShaderCompilerThreadsARB/KHR() at all, but it does have a bunch of other functions with compatible function signatures. I'm going to use GL41.nglBindProgramPipeline() since we already reflect into that
+    // class. We're going to call nglBindProgramPipeline(), but pass it the pointer to glMaxShaderCompilerThreadsARB/KHR() instead!
+    private static final MethodHandle nglBindProgramPipeline;
+
+    static {
+        Method _nglBindProgramPipeline = GL41.class.getDeclaredMethod("nglBindProgramPipeline", int.class, long.class);
+        _nglBindProgramPipeline.setAccessible(true);
+        nglBindProgramPipeline = MethodHandles.publicLookup().unreflect(_nglBindProgramPipeline);
+    }
+
+    @Override
+    public void glMaxShaderCompilerThreadsARB(int count) {
+        super.checkSupported(this.GL_ARB_parallel_shader_compile, GLExtension.GL_ARB_parallel_shader_compile);
+
+        nglBindProgramPipeline.invokeExact(count, this.glMaxShaderCompilerThreadsARB);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glMaxShaderCompilerThreadsKHR(int count) {
+        super.checkSupported(this.GL_KHR_parallel_shader_compile, GLExtension.GL_KHR_parallel_shader_compile);
+
+        nglBindProgramPipeline.invokeExact(count, this.glMaxShaderCompilerThreadsKHR);
+        super.debugCheckError();
     }
 }

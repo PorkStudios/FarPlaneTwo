@@ -35,6 +35,7 @@ import org.lwjgl.opengl.ARBDebugOutput;
 import org.lwjgl.opengl.ARBDrawInstanced;
 import org.lwjgl.opengl.ARBIndirectParameters;
 import org.lwjgl.opengl.ARBInstancedArrays;
+import org.lwjgl.opengl.ARBParallelShaderCompile;
 import org.lwjgl.opengl.ARBSparseBuffer;
 import org.lwjgl.opengl.ARBTextureBufferObject;
 import org.lwjgl.opengl.GL;
@@ -58,6 +59,7 @@ import org.lwjgl.opengl.GL46C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLDebugMessageARBCallback;
 import org.lwjgl.opengl.GLDebugMessageCallback;
+import org.lwjgl.opengl.KHRParallelShaderCompile;
 import org.lwjgl.system.Checks;
 import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
@@ -2793,6 +2795,22 @@ public final class GLAPILWJGL3 extends OpenGL {
         super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_sparse_buffer, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_sparse_buffer);
 
         ARBSparseBuffer.glNamedBufferPageCommitmentARB(buffer, offset, size, commit);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glMaxShaderCompilerThreadsARB(int count) {
+        super.checkSupported(this.GL_ARB_parallel_shader_compile, GLExtension.GL_ARB_parallel_shader_compile);
+
+        ARBParallelShaderCompile.glMaxShaderCompilerThreadsARB(count);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glMaxShaderCompilerThreadsKHR(int count) {
+        super.checkSupported(this.GL_KHR_parallel_shader_compile, GLExtension.GL_KHR_parallel_shader_compile);
+
+        KHRParallelShaderCompile.glMaxShaderCompilerThreadsKHR(count);
         super.debugCheckError();
     }
 }
