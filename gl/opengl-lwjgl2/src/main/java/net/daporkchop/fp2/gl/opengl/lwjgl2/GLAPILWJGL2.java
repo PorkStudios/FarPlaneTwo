@@ -625,6 +625,12 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
+    public void glViewport(int x, int y, int width, int height) {
+        GL11.glViewport(x, y, width, height);
+        super.debugCheckError();
+    }
+
+    @Override
     public void glPushClientAttrib(int mask) {
         super.checkSupported(this.GL_ARB_compatibility, GLExtension.GL_ARB_compatibility);
 

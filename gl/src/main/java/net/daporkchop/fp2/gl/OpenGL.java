@@ -841,6 +841,11 @@ public abstract class OpenGL {
     public abstract void glStencilOp(int sfail, int dpfail, int dppass);
 
     /**
+     * @since OpenGL 1.1
+     */
+    public abstract void glViewport(int x, int y, int width, int height);
+
+    /**
      * @apiNote requires {@link GLExtension#GL_ARB_compatibility GL_ARB_compatibility}
      * @since OpenGL 1.1
      */

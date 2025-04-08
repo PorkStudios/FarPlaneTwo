@@ -275,6 +275,11 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glViewport(int x, int y, int width, int height) {
+        this.delegate.glViewport(x, y, width, height);
+    }
+
+    @Override
     public void glPushClientAttrib(int mask) {
         super.checkSupported(GLExtension.GL_ARB_compatibility);
         this.delegate.glPushClientAttrib(mask);
