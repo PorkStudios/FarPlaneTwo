@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.shader;
 
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -33,6 +34,7 @@ import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.closeable.QuietCloseable;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -56,29 +58,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public abstract class ShaderProgram extends GLObject.Normal {
-    protected ShaderProgram(@NonNull Builder<?, ?> builder) throws ShaderLinkageException {
-        super(builder.gl, builder.gl.glCreateProgram());
-
-        try {
-            //attach shaders and link, then detach shaders again
-            for (Shader shader : builder.shaders) {
-                this.gl.glAttachShader(this.id, shader.id());
-            }
-            builder.configurePreLink(uncheckedCast(this));
-            this.gl.glLinkProgram(this.id);
-            for (Shader shader : builder.shaders) {
-                this.gl.glDetachShader(this.id, shader.id());
-            }
-
-            //check for errors
-            if (this.gl.glGetProgrami(this.id, GL_LINK_STATUS) == GL_FALSE) {
-                throw new ShaderLinkageException(this.gl.glGetProgramInfoLog(this.id));
-            }
-
-            builder.configurePostLink(uncheckedCast(this));
-        } catch (Throwable t) { //clean up if something goes wrong
-            throw PResourceUtil.closeSuppressed(t, this);
-        }
+    protected ShaderProgram(OpenGL gl) {
+        super(gl, gl.glCreateProgram());
     }
 
     @Override
@@ -677,16 +658,22 @@ public abstract class ShaderProgram extends GLObject.Normal {
         }
 
         public final S build() throws ShaderLinkageException {
+            try (val task = this.buildAsync()) {
+                return task.join();
+            }
+        }
+
+        public final LinkTask<S> buildAsync() {
             if (!this.addedShaderTypes.containsAll(this.requiredShaderTypes)) {
                 val missing = this.requiredShaderTypes.clone();
                 missing.removeAll(this.addedShaderTypes);
                 throw new IllegalStateException("missing shaders: " + missing);
             }
 
-            return this.build0();
+            return new LinkTask<>(this.gl, this);
         }
 
-        protected abstract S build0() throws ShaderLinkageException;
+        protected abstract S makeProgram();
 
         protected void configurePreLink(S program) {
             //no-op
@@ -697,6 +684,94 @@ public abstract class ShaderProgram extends GLObject.Normal {
             this.images.configurePostLink(this.gl, program);
             this.SSBOs.configurePostLink(this.gl, program);
             this.UBOs.configurePostLink(this.gl, program);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @AllArgsConstructor(access = AccessLevel.PACKAGE)
+    public static final class LinkTask<S extends ShaderProgram> implements QuietCloseable {
+        final OpenGL gl;
+        final Builder<S, ?> builder;
+        S program;
+
+        LinkTask(@NonNull OpenGL gl, @NonNull Builder<S, ?> builder) {
+            try {
+                this.gl = gl;
+                this.builder = builder;
+                this.program = builder.makeProgram();
+
+                //attach shaders and link
+                for (Shader shader : builder.shaders) {
+                    gl.glAttachShader(this.program.id(), shader.id());
+                }
+                builder.configurePreLink(this.program);
+
+                gl.glLinkProgram(this.program.id());
+            } catch (Throwable t) { //clean up if something goes wrong
+                throw PResourceUtil.closeSuppressed(t, this);
+            }
+        }
+
+        @Override
+        public void close() {
+            PResourceUtil.close(this.program);
+        }
+
+        /**
+         * Checks if this shader program link task has been completed yet.
+         *
+         * @return {@code true} if this shader program has finished linking, {@code false} otherwise
+         * @throws UnsupportedOperationException if neither {@link GLExtension#GL_ARB_parallel_shader_compile GL_ARB_parallel_shader_compile} nor {@link GLExtension#GL_KHR_parallel_shader_compile GL_KHR_parallel_shader_compile} is supported
+         * @apiNote requires either {@link GLExtension#GL_ARB_parallel_shader_compile GL_ARB_parallel_shader_compile} or {@link GLExtension#GL_KHR_parallel_shader_compile GL_KHR_parallel_shader_compile}
+         */
+        public boolean isComplete() {
+            checkState(this.program != null, "already finished!");
+
+            boolean arb = this.gl.supports(GLExtension.GL_ARB_parallel_shader_compile);
+            boolean khr = this.gl.supports(GLExtension.GL_KHR_parallel_shader_compile);
+            if (arb || khr) {
+                int pname = arb ? GL_COMPLETION_STATUS_ARB : GL_COMPLETION_STATUS_KHR;
+                return this.gl.glGetProgrami(this.program.id(), pname) == GL_TRUE;
+            } else {
+                throw new UnsupportedOperationException("neither " + GLExtension.GL_ARB_parallel_shader_compile + " nor " + GLExtension.GL_KHR_parallel_shader_compile + " are supported! " + this.gl);
+            }
+        }
+
+        /**
+         * Waits for the shader program to finish linking and returns the linked shader program.
+         * <p>
+         * When this function returns successfully, ownership of the returned {@link ShaderProgram} instance is transferred to the caller.
+         *
+         * @return the linked {@link ShaderProgram} instance
+         * @throws ShaderLinkageException if the shader program linking failed
+         */
+        public S join() throws ShaderLinkageException {
+            checkState(this.program != null, "already finished!");
+
+            //check for errors!
+            //  this will block if the shader program is being linked asynchronously
+            if (this.gl.glGetProgrami(this.program.id(), GL_LINK_STATUS) == GL_FALSE) {
+                throw new ShaderLinkageException(this.gl.glGetProgramInfoLog(this.program.id()));
+            }
+
+            //move ownership of the ShaderProgram instance to the caller
+            S program = this.program;
+            this.program = null; //make close() a no-op
+
+            try {
+                //detach the shaders again
+                for (Shader shader : this.builder.shaders) {
+                    this.gl.glDetachShader(program.id(), shader.id());
+                }
+
+                //perform post-link configuration
+                this.builder.configurePostLink(program);
+                return program;
+            } catch (Throwable t) {
+                throw PResourceUtil.closeSuppressed(t, program);
+            }
         }
     }
 

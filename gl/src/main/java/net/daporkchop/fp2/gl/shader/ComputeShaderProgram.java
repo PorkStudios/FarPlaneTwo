@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,6 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
-import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
-import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.EnumSet;
 
@@ -44,17 +42,8 @@ public final class ComputeShaderProgram extends ShaderProgram {
         return new Builder(gl);
     }
 
-    private final ComputeWorkGroupSize workGroupSize;
-
-    ComputeShaderProgram(Builder builder) throws ShaderLinkageException {
-        super(builder);
-
-        try {
-            int[] workGroupSize = this.gl.glGetProgramiv(this.id, GL_COMPUTE_WORK_GROUP_SIZE, 3);
-            this.workGroupSize = new ComputeWorkGroupSize(workGroupSize[0], workGroupSize[1], workGroupSize[2]);
-        } catch (Throwable t) {
-            throw PResourceUtil.closeSuppressed(t, this);
-        }
+    ComputeShaderProgram(OpenGL gl) {
+        super(gl);
     }
 
     /**
@@ -81,8 +70,8 @@ public final class ComputeShaderProgram extends ShaderProgram {
         }
 
         @Override
-        protected ComputeShaderProgram build0() throws ShaderLinkageException {
-            return new ComputeShaderProgram(this);
+        protected ComputeShaderProgram makeProgram() {
+            return new ComputeShaderProgram(this.gl);
         }
     }
 }

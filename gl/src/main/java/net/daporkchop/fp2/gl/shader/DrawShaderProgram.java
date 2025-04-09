@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -46,8 +46,8 @@ public final class DrawShaderProgram extends ShaderProgram {
         return new Builder(gl);
     }
 
-    DrawShaderProgram(Builder builder) throws ShaderLinkageException {
-        super(builder);
+    DrawShaderProgram(OpenGL gl) {
+        super(gl);
     }
 
     private String[] getVertexAttributeNames() {
@@ -128,8 +128,8 @@ public final class DrawShaderProgram extends ShaderProgram {
         }
 
         @Override
-        protected DrawShaderProgram build0() throws ShaderLinkageException {
-            return new DrawShaderProgram(this);
+        protected DrawShaderProgram makeProgram() {
+            return new DrawShaderProgram(this.gl);
         }
 
         @Override

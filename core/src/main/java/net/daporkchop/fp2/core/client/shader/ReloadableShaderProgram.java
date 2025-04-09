@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -75,7 +75,8 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
 
         this.registry.register(this.key, this);
 
-        this.program = this.compile(builder.fp2.client().gl(), builder.fp2.client().resourceProvider());
+        //we won't compile the program immediately, as all the shaders will be compiled at once when the registry is reloaded
+        //this.program = this.compile(builder.fp2.client().gl(), builder.fp2.client().resourceProvider());
     }
 
     P compile(OpenGL gl, ResourceProvider resourceProvider) throws ShaderCompilationException, ShaderLinkageException {
@@ -83,7 +84,7 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
         try (val ignored = PResourceUtil.lazyCloseAll(compiledShaders)) {
             //compile each of the referenced shaders
             for (val shader : this.shaders) {
-                compiledShaders.add(new Shader(gl, shader.type,
+                compiledShaders.add(Shader.compile(gl, shader.type,
                         new IncludePreprocessor(resourceProvider)
                                 .addVersionHeader(gl)
                                 .define(this.macros.defines())
@@ -105,7 +106,11 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
      * @return the actual {@link ShaderProgram} referred to by this program
      */
     public P get() {
-        return this.program;
+        P program = this.program;
+        if (program == null) {
+            throw new IllegalStateException("shader program hasn't been loaded!");
+        }
+        return program;
     }
 
     /**

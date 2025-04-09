@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -91,7 +91,7 @@ public class TestOpenGL {
                 .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, 7)
                 .build();
 
-        try (val shader = new Shader(gl, ShaderType.COMPUTE, resourceProvider, Identifier.from("new_test.comp"));
+        try (val shader = Shader.compile(gl, ShaderType.COMPUTE, resourceProvider, Identifier.from("new_test.comp"));
              val compute = ComputeShaderProgram.builder(gl).computeShader(shader).build()) {
             System.out.println(compute.workGroupSize());
         }
@@ -142,8 +142,8 @@ public class TestOpenGL {
                 .elementBuffer(quadsIndexBuffer)
                 .build();
 
-        val vsh = new Shader(gl, ShaderType.VERTEX, resourceProvider, Identifier.from("new_test.vert"));
-        val fsh = new Shader(gl, ShaderType.FRAGMENT, resourceProvider, Identifier.from("new_test.frag"));
+        val vsh = Shader.compile(gl, ShaderType.VERTEX, resourceProvider, Identifier.from("new_test.vert"));
+        val fsh = Shader.compile(gl, ShaderType.FRAGMENT, resourceProvider, Identifier.from("new_test.frag"));
         val shader = DrawShaderProgram.builder(gl)
                 .vertexShader(vsh).fragmentShader(fsh)
                 .addUBO(7, "Uniforms")

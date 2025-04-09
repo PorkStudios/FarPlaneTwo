@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -152,6 +152,7 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
         OpenGL gl = this.fp2.client().gl();
         ResourceProvider resourceProvider = ResourceProvider.caching(this.fp2.client().resourceProvider());
 
+        //TODO: take advantage of asynchronous compilation
         List<ReloadableShaderProgram<?>> reloadablePrograms = new ArrayList<>(this.programs.values());
         List<ShaderProgram> reloadedPrograms = new ArrayList<>(programCount);
         try (val ignored = PResourceUtil.lazyCloseAll(reloadedPrograms)) {
