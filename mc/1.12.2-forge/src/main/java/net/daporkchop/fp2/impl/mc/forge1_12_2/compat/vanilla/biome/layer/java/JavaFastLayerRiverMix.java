@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRiverMix;
 
@@ -31,23 +31,23 @@ import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeH
  * @author DaPorkchop_
  * @see GenLayerRiverMix
  */
-public class JavaFastLayerRiverMix extends AbstractFastLayerWithRiverSource {
-    public JavaFastLayerRiverMix(long seed) {
-        super(seed);
+public class JavaFastLayerRiverMix extends AbstractFastLayer.WithRiverParent {
+    public JavaFastLayerRiverMix(long seed, @NonNull IFastLayer parent, @NonNull IFastLayer riverParent) {
+        super(seed, parent, riverParent);
     }
 
     @Override
     public int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
-        return this.mix0(this.child.getSingle(alloc, x, z), this.childRiver.getSingle(alloc, x, z));
+        return this.mix0(this.parent.getSingle(alloc, x, z), this.riverParent.getSingle(alloc, x, z));
     }
 
     @Override
     public void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        this.child.getGrid(alloc, x, z, sizeX, sizeZ, out);
+        this.parent.getGrid(alloc, x, z, sizeX, sizeZ, out);
 
         int[] river = alloc.atLeast(sizeX * sizeZ);
         try {
-            this.childRiver.getGrid(alloc, x, z, sizeX, sizeZ, river);
+            this.riverParent.getGrid(alloc, x, z, sizeX, sizeZ, river);
 
             this.mix0(sizeX * sizeZ, out, river);
         } finally {
@@ -57,11 +57,11 @@ public class JavaFastLayerRiverMix extends AbstractFastLayerWithRiverSource {
 
     @Override
     public void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        this.child.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
+        this.parent.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
 
         int[] river = alloc.atLeast(count * count * size * size);
         try {
-            this.childRiver.multiGetGrids(alloc, x, z, size, dist, depth, count, river);
+            this.riverParent.multiGetGrids(alloc, x, z, size, dist, depth, count, river);
 
             this.mix0(count * count * size * size, out, river);
         } finally {

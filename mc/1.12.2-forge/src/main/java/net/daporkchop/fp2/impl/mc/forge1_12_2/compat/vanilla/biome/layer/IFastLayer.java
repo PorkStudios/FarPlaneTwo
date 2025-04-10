@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,13 +20,15 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
+import net.daporkchop.lib.common.annotation.ThreadSafe;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayer;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static net.daporkchop.fp2.core.FP2Core.fp2;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.mulAddShift;
 
 /**
@@ -36,22 +38,21 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.mulAddShift;
  *
  * @author DaPorkchop_
  */
+@ThreadSafe
 public interface IFastLayer {
     Set<Class<? extends IFastLayer>> __HAS_LOGGED_GRID_WARNING = ConcurrentHashMap.newKeySet();
     Set<Class<? extends IFastLayer>> __HAS_LOGGED_MULTIGRID_WARNING = ConcurrentHashMap.newKeySet();
 
     /**
-     * Initializes this layer.
-     *
-     * @param children the child layers that this layer should be initialized with
+     * @return a {@link List} of all the parent layers
      */
-    void init(@NonNull IFastLayer[] children);
+    List<IFastLayer> parents();
 
     /**
      * @return {@code true} if the vanilla {@link net.minecraft.world.gen.layer.IntCache} should be reset after getting value(s) from this layer
      */
     default boolean shouldResetIntCacheAfterGet() {
-        return false;
+        return this.parents().stream().anyMatch(IFastLayer::shouldResetIntCacheAfterGet);
     }
 
     /**
@@ -76,7 +77,7 @@ public interface IFastLayer {
      */
     default void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         if (__HAS_LOGGED_GRID_WARNING.add(this.getClass())) {
-            fp2().log().warn("%s does not override getGrid(), falling back to slow implementation...", this.getClass().getTypeName());
+            fp2().log().warn("%s does not override getGrid(), falling back to slow implementation...", this.getClass());
         }
 
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
@@ -100,7 +101,7 @@ public interface IFastLayer {
      */
     default void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         if (__HAS_LOGGED_MULTIGRID_WARNING.add(this.getClass())) {
-            fp2().log().warn("%s does not override multiGetGrids(), falling back to slow implementation...", this.getClass().getTypeName());
+            fp2().log().warn("%s does not override multiGetGrids(), falling back to slow implementation...", this.getClass());
         }
 
         int[] tmp = alloc.atLeast(size * size);

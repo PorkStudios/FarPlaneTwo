@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.x86.x86FeatureDetector;
 import net.daporkchop.lib.natives.Feature;
@@ -39,17 +38,4 @@ public interface FastLayerProvider extends Feature<FastLayerProvider> {
 
     @SuppressWarnings("deprecation")
     FastLayerProvider JAVA_INSTANCE = INSTANCE.isNative() ? new JavaLayerProvider() : INSTANCE;
-
-    /**
-     * Converts the given {@link GenLayer}s to their {@link IFastLayer} equivalents.
-     * <p>
-     * Note that if you have multiple {@link GenLayer}s to convert, you should convert them all at once with a single invocation of this method, rather than
-     * converting them each individually. Doing so may provide a not insignificant performance boost.
-     * <p>
-     * All of the returned {@link IFastLayer}s are guaranteed to return {@code false} for {@link IFastLayer#shouldResetIntCacheAfterGet()}.
-     *
-     * @param inputs the {@link GenLayer}s
-     * @return the converted {@link IFastLayer}s, in the same order as the inputs were provided in
-     */
-    IFastLayer[] makeFast(@NonNull GenLayer... inputs);
 }

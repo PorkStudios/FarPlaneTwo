@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,10 +23,14 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.biome.ATBiomeProvider1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.GenLayerHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.VanillaTerrainGenConstants1_12.*;
@@ -39,9 +43,9 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
     protected final IFastLayer generationLayer;
 
     public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        IFastLayer[] fastLayers = FastLayerProvider.INSTANCE.makeFast(((ATBiomeProvider1_12) provider).getGenBiomes(), ((ATBiomeProvider1_12) provider).getBiomeIndexLayer());
-        this.biomeLayer = fastLayers[1];
-        this.generationLayer = fastLayers[0];
+        List<IFastLayer> fastLayers = GenLayerHelper.makeFast(FastLayerProvider.INSTANCE, Arrays.asList(((ATBiomeProvider1_12) provider).getGenBiomes(), ((ATBiomeProvider1_12) provider).getBiomeIndexLayer()));
+        this.biomeLayer = fastLayers.get(1);
+        this.generationLayer = fastLayers.get(0);
         assert !this.biomeLayer.shouldResetIntCacheAfterGet() && !this.generationLayer.shouldResetIntCacheAfterGet();
     }
 

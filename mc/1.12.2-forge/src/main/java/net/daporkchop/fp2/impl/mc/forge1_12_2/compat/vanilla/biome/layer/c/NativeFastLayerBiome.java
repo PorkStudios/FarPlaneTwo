@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaFastLayerBiome;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.world.gen.layer.GenLayerBiome;
@@ -36,8 +36,8 @@ public class NativeFastLayerBiome extends JavaFastLayerBiome implements INativeT
 
     protected final long state;
 
-    public NativeFastLayerBiome(@NonNull GenLayerBiome vanilla) {
-        super(vanilla);
+    public NativeFastLayerBiome(@NonNull GenLayerBiome vanilla, @NonNull IFastLayer parent) {
+        super(vanilla, parent);
 
         //create off-heap state
         this.state = createState0(this.types);

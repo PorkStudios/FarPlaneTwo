@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 
@@ -31,9 +31,9 @@ import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeH
  * @author DaPorkchop_
  * @see GenLayerZoom
  */
-public class JavaFastLayerZoom extends AbstractFastLayer implements IJavaZoomingLayer {
-    public JavaFastLayerZoom(long seed) {
-        super(seed);
+public class JavaFastLayerZoom extends AbstractFastLayer.SingleParent implements IJavaZoomingLayer {
+    public JavaFastLayerZoom(long seed, @NonNull IFastLayer parent) {
+        super(seed, parent);
     }
 
     @Override
@@ -43,16 +43,16 @@ public class JavaFastLayerZoom extends AbstractFastLayer implements IJavaZooming
 
         if ((x & 1) == 0) {
             if ((z & 1) == 0) {
-                return this.child.getSingle(alloc, lowX, lowZ);
+                return this.parent.getSingle(alloc, lowX, lowZ);
             } else {
                 long state = start(this.seed, lowX << 1, lowZ << 1);
-                return this.child.getSingle(alloc, lowX, lowZ + nextInt(state, 2));
+                return this.parent.getSingle(alloc, lowX, lowZ + nextInt(state, 2));
             }
         } else {
             if ((z & 1) == 0) {
                 long state = start(this.seed, lowX << 1, lowZ << 1);
                 state = update(state, this.seed);
-                return this.child.getSingle(alloc, lowX + nextInt(state, 2), lowZ);
+                return this.parent.getSingle(alloc, lowX + nextInt(state, 2), lowZ);
             } else {
                 return this.sampleXZLast(alloc, lowX, lowZ);
             }
@@ -64,7 +64,7 @@ public class JavaFastLayerZoom extends AbstractFastLayer implements IJavaZooming
 
         int[] arr = alloc.atLeast(2 * 2);
         try {
-            this.child.getGrid(alloc, lowX, lowZ, 2, 2, arr);
+            this.parent.getGrid(alloc, lowX, lowZ, 2, 2, arr);
             xz = arr[0];
             xZ = arr[1];
             Xz = arr[2];

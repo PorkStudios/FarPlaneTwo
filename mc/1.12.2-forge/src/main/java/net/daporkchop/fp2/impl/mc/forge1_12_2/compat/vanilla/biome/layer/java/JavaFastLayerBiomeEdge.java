@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
 
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelperCached.*;
@@ -30,8 +30,8 @@ import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeH
  * @author DaPorkchop_
  * @see GenLayerBiomeEdge
  */
-public class JavaFastLayerBiomeEdge extends AbstractFastLayer implements IJavaPaddedLayer {
-    public static int replaceBiomeEdgeIfNecessary(int center, int v0, int v1, int v2, int v3, int replace, int with) {
+public class JavaFastLayerBiomeEdge extends AbstractFastLayer.SingleParent implements IJavaPaddedLayer {
+    private static int replaceBiomeEdgeIfNecessary(int center, int v0, int v1, int v2, int v3, int replace, int with) {
         if (!biomesEqualOrMesaPlateau(center, replace)) {
             return -1;
         }
@@ -41,7 +41,7 @@ public class JavaFastLayerBiomeEdge extends AbstractFastLayer implements IJavaPa
                 : with;
     }
 
-    public static int replaceBiomeEdge(int center, int v0, int v1, int v2, int v3, int replace, int with) {
+    private static int replaceBiomeEdge(int center, int v0, int v1, int v2, int v3, int replace, int with) {
         if (center != replace) {
             return -1;
         }
@@ -51,12 +51,12 @@ public class JavaFastLayerBiomeEdge extends AbstractFastLayer implements IJavaPa
                 : with;
     }
 
-    public static boolean areNoneEqual(int v0, int v1, int v2, int v3, int check) {
+    private static boolean areNoneEqual(int v0, int v1, int v2, int v3, int check) {
         return v0 != check && v1 != check && v2 != check && v3 != check;
     }
 
-    public JavaFastLayerBiomeEdge(long seed) {
-        super(seed);
+    public JavaFastLayerBiomeEdge(long seed, @NonNull IFastLayer parent) {
+        super(seed, parent);
     }
 
     @Override

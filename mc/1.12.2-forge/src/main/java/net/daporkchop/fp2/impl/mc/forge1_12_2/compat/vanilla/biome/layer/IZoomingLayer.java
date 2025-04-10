@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer;
@@ -47,7 +46,7 @@ public interface IZoomingLayer extends IFastLayer {
     /**
      * @return the next layer in the generation chain
      */
-    IFastLayer child();
+    IFastLayer parent();
 
     @Override
     default void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
@@ -58,7 +57,7 @@ public interface IZoomingLayer extends IFastLayer {
 
         int[] in = alloc.atLeast(lowSizeX * lowSizeZ);
         try {
-            this.child().getGrid(alloc, x >> shift, z >> shift, lowSizeX, lowSizeZ, in);
+            this.parent().getGrid(alloc, x >> shift, z >> shift, lowSizeX, lowSizeZ, in);
 
             this.getGrid0(alloc, x, z, sizeX, sizeZ, out, in);
         } finally {
@@ -84,7 +83,7 @@ public interface IZoomingLayer extends IFastLayer {
         int lowSize = ((((dist >> depth) + 1) * count) >> shift) + 2;
         int[] in = alloc.atLeast(lowSize * lowSize);
         try {
-            this.child().getGrid(alloc, x >> (depth + shift), z >> (depth + shift), lowSize, lowSize, in);
+            this.parent().getGrid(alloc, x >> (depth + shift), z >> (depth + shift), lowSize, lowSize, in);
 
             this.multiGetGridsCombined0(alloc, x, z, size, dist, depth, count, out, in);
         } finally {
@@ -100,7 +99,7 @@ public interface IZoomingLayer extends IFastLayer {
 
         int[] in = alloc.atLeast(count * count * lowSize * lowSize);
         try {
-            this.child().multiGetGrids(alloc, x, z, lowSize, dist, depth + shift, count, in);
+            this.parent().multiGetGrids(alloc, x, z, lowSize, dist, depth + shift, count, in);
 
             this.multiGetGridsIndividual0(alloc, x, z, size, dist, depth, count, out, in);
         } finally {

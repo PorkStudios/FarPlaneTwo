@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerHills;
@@ -34,12 +34,12 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
  * @author DaPorkchop_
  * @see GenLayerHills
  */
-public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource implements IPaddedLayer {
+public class JavaFastLayerHills extends AbstractFastLayer.WithRiverParent implements IPaddedLayer {
     //this class contains a weird hybrid implementation of IJavaPaddedLayer and IJavaTranslationLayer all mixed together.
     // i decided not to bother abstracting it away since this is the only layer that merges two different source layers while being weird about it
 
-    public JavaFastLayerHills(long seed) {
-        super(seed);
+    public JavaFastLayerHills(long seed, @NonNull IFastLayer parent, @NonNull IFastLayer riverParent) {
+        super(seed, parent, riverParent);
     }
 
     protected int eval0(int x, int z, int center, @NonNull int[] v, int river) {
@@ -135,7 +135,7 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
         int[] in = alloc.atLeast(inSizeX * inSizeZ);
         int[] v = alloc.atLeast(4);
         try {
-            this.child().getGrid(alloc, x - 1, z - 1, inSizeX, inSizeZ, in);
+            this.parent().getGrid(alloc, x - 1, z - 1, inSizeX, inSizeZ, in);
 
             int[] offsets = IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
             final int inIdx = 1 * inSizeZ + 1;
@@ -143,7 +143,7 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
                 v[i] = in[offsets[i] + inIdx];
             }
 
-            return this.eval0(x, z, in[inIdx], v, this.childRiver.getSingle(alloc, x, z));
+            return this.eval0(x, z, in[inIdx], v, this.riverParent.getSingle(alloc, x, z));
         } finally {
             alloc.release(v);
             alloc.release(in);
@@ -152,7 +152,7 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
 
     @Override
     public void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        this.childRiver.getGrid(alloc, x, z, sizeX, sizeZ, out);
+        this.riverParent.getGrid(alloc, x, z, sizeX, sizeZ, out);
 
         IPaddedLayer.super.getGrid(alloc, x, z, sizeX, sizeZ, out);
     }
@@ -179,7 +179,7 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
 
     @Override
     public void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        this.childRiver.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
+        this.riverParent.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
 
         IPaddedLayer.super.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
     }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.minecraft.world.gen.layer.GenLayerShore;
 
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelperCached.*;
@@ -30,12 +30,12 @@ import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeH
  * @author DaPorkchop_
  * @see GenLayerShore
  */
-public class JavaFastLayerShore extends AbstractFastLayer implements IJavaPaddedLayer {
+public class JavaFastLayerShore extends AbstractFastLayer.SingleParent implements IJavaPaddedLayer {
     //AAAAAAAAAAAAA dear god i hate vanilla why is none of this consistent
     //that said, i can't actually *change* anything for fear of causing some super obscure compatibility bug...
 
-    public JavaFastLayerShore(long seed) {
-        super(seed);
+    public JavaFastLayerShore(long seed, @NonNull IFastLayer parent) {
+        super(seed, parent);
     }
 
     @Override

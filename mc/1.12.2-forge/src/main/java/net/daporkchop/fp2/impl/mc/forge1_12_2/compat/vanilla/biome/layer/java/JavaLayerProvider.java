@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,16 +19,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.AutoIntCacheResettingFastLayer;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.ICompatLayer;
-import net.minecraft.world.gen.layer.GenLayer;
-
-import java.util.*;
-import java.util.function.Function;
 
 /**
  * Implementation of {@link FastLayerProvider} in Java.
@@ -36,59 +27,12 @@ import java.util.function.Function;
  * @author DaPorkchop_
  */
 public class JavaLayerProvider implements FastLayerProvider {
-    private static void addAllLayers(Map<GenLayer, GenLayer[]> childrenMap, List<GenLayer> dependencyOrder, GenLayer layer) {
-        if (childrenMap.containsKey(layer)) {
-            return; //don't re-add the same layer twice
-        }
-
-        GenLayer[] parents = BiomeHelper.getParents(layer);
-        childrenMap.put(layer, parents);
-
-        //add parents recursively
-        for (GenLayer child : parents) {
-            addAllLayers(childrenMap, dependencyOrder, child);
-        }
-
-        dependencyOrder.add(layer);
-    }
-
-    protected final Map<Class<? extends GenLayer>, Function<GenLayer, IFastLayer>> fastMapperOverrides = new IdentityHashMap<>();
-
     /**
      * @see FastLayerProvider#INSTANCE
      * @deprecated internal API, do not touch!
      */
     @Deprecated
     public JavaLayerProvider() {
-    }
-
-    protected IFastLayer convertLayer(@NonNull GenLayer layer) {
-        return this.fastMapperOverrides.getOrDefault(layer.getClass(), BiomeHelper::convertLayer).apply(layer);
-    }
-
-    @Override
-    public IFastLayer[] makeFast(@NonNull GenLayer... inputs) {
-        //initial add all layers and find their children
-        Map<GenLayer, GenLayer[]> children = new IdentityHashMap<>();
-        List<GenLayer> dependencyOrder = new ArrayList<>();
-        for (GenLayer layer : inputs) {
-            addAllLayers(children, dependencyOrder, layer);
-        }
-
-        //map vanilla layers to fast layers
-        Map<GenLayer, IFastLayer> fastLayers = new IdentityHashMap<>(dependencyOrder.size());
-        for (GenLayer layer : dependencyOrder) {
-            IFastLayer fastLayer = this.convertLayer(layer);
-            fastLayers.put(layer, fastLayer);
-
-            IFastLayer[] fastChildren = Arrays.stream(children.get(layer)).map(fastLayers::get).peek(Objects::requireNonNull).toArray(IFastLayer[]::new);
-            fastLayer.init(fastChildren);
-        }
-
-        return Arrays.stream(inputs)
-                .map(fastLayers::get)
-                .map(layer -> layer.shouldResetIntCacheAfterGet() ? new AutoIntCacheResettingFastLayer(layer) : layer)
-                .toArray(IFastLayer[]::new);
     }
 
     @Override

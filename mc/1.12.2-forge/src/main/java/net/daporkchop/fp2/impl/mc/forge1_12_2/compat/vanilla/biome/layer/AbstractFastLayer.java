@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,13 +19,14 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Base implementation of {@link IFastLayer}.
@@ -35,24 +36,57 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 @Getter
 public abstract class AbstractFastLayer implements IFastLayer {
-    public static final long CHILD_OFFSET = PUnsafe.pork_getOffset(AbstractFastLayer.class, "child");
-
     protected final long seed;
-    protected final IFastLayer child = null;
 
-    @Getter(AccessLevel.NONE)
-    protected Boolean shouldResetIntCacheAfterGet; //using Boolean so that it throws an exception if accessed while not yet initialized
-
-    @Override
-    public void init(@NonNull IFastLayer[] children) {
-        if (children.length != 0) {
-            PUnsafe.putObject(this, CHILD_OFFSET, children[0]);
+    /**
+     * @author DaPorkchop_
+     */
+    public static abstract class NoParents extends AbstractFastLayer {
+        public NoParents(long seed) {
+            super(seed);
         }
-        this.shouldResetIntCacheAfterGet = Arrays.stream(children).anyMatch(IFastLayer::shouldResetIntCacheAfterGet);
+
+        @Override
+        public final List<IFastLayer> parents() {
+            return Collections.emptyList();
+        }
     }
 
-    @Override
-    public boolean shouldResetIntCacheAfterGet() {
-        return this.shouldResetIntCacheAfterGet;
+    /**
+     * @author DaPorkchop_
+     */
+    @Getter
+    public static abstract class SingleParent extends AbstractFastLayer {
+        protected final IFastLayer parent;
+
+        public SingleParent(long seed, @NonNull IFastLayer parent) {
+            super(seed);
+            this.parent = parent;
+        }
+
+        @Override
+        public final List<IFastLayer> parents() {
+            return Collections.singletonList(this.parent);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Getter
+    public static abstract class WithRiverParent extends AbstractFastLayer {
+        protected final IFastLayer parent;
+        protected final IFastLayer riverParent;
+
+        public WithRiverParent(long seed, @NonNull IFastLayer parent, @NonNull IFastLayer riverParent) {
+            super(seed);
+            this.parent = parent;
+            this.riverParent = riverParent;
+        }
+
+        @Override
+        public final List<IFastLayer> parents() {
+            return Arrays.asList(this.parent, this.riverParent);
+        }
     }
 }

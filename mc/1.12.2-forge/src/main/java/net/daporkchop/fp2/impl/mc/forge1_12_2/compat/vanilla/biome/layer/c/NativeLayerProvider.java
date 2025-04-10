@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,37 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerBiome1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelperCached;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaFastLayerFixedBiome;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaLayerProvider;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
-import net.minecraft.world.gen.layer.GenLayerAddIsland;
-import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
-import net.minecraft.world.gen.layer.GenLayerAddSnow;
-import net.minecraft.world.gen.layer.GenLayerBiome;
-import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
-import net.minecraft.world.gen.layer.GenLayerDeepOcean;
-import net.minecraft.world.gen.layer.GenLayerEdge;
-import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
-import net.minecraft.world.gen.layer.GenLayerHills;
-import net.minecraft.world.gen.layer.GenLayerIsland;
-import net.minecraft.world.gen.layer.GenLayerRareBiome;
-import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
-import net.minecraft.world.gen.layer.GenLayerRiver;
-import net.minecraft.world.gen.layer.GenLayerRiverInit;
-import net.minecraft.world.gen.layer.GenLayerRiverMix;
-import net.minecraft.world.gen.layer.GenLayerShore;
-import net.minecraft.world.gen.layer.GenLayerSmooth;
-import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
-import net.minecraft.world.gen.layer.GenLayerZoom;
 
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelperCached.*;
@@ -58,32 +34,6 @@ import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeH
 public class NativeLayerProvider extends JavaLayerProvider implements BiomeHelperCached.ReloadListener {
     @Deprecated
     public NativeLayerProvider() {
-        //vanilla layers
-        this.fastMapperOverrides.put(GenLayerAddIsland.class, layer -> new NativeFastLayerAddIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerAddMushroomIsland.class, layer -> new NativeFastLayerAddMushroomIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerAddSnow.class, layer -> new NativeFastLayerAddSnow(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerBiome.class, layer -> NativeFastLayerBiome.isConstant((GenLayerBiome) layer)
-                ? new JavaFastLayerFixedBiome(((ATGenLayerBiome1_12) layer).getSettings().fixedBiome)
-                : new NativeFastLayerBiome((GenLayerBiome) layer));
-        this.fastMapperOverrides.put(GenLayerBiomeEdge.class, layer -> new NativeFastLayerBiomeEdge(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerDeepOcean.class, layer -> new NativeFastLayerDeepOcean(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerEdge.class, layer -> NativeFastLayerEdge.makeFast((GenLayerEdge) layer));
-        this.fastMapperOverrides.put(GenLayerFuzzyZoom.class, layer -> new NativeFastLayerFuzzyZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerHills.class, layer -> new NativeFastLayerHills(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerRareBiome.class, layer -> new NativeFastLayerRareBiome(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerRemoveTooMuchOcean.class, layer -> new NativeFastLayerRemoveTooMuchOcean(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerRiver.class, layer -> new NativeFastLayerRiver(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerRiverInit.class, layer -> new NativeFastLayerRiverInit(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerRiverMix.class, layer -> new NativeFastLayerRiverMix(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerShore.class, layer -> new NativeFastLayerShore(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerSmooth.class, layer -> new NativeFastLayerSmooth(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerVoronoiZoom.class, layer -> new NativeFastLayerVoronoiZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
-        this.fastMapperOverrides.put(GenLayerZoom.class, layer -> new NativeFastLayerZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
-
-        //custom layers
-        this.fastMapperOverrides.put(GenLayerRandomValues.class, layer -> new NativeFastLayerRandomValues(((ATGenLayer1_12) layer).getWorldGenSeed(), ((GenLayerRandomValues) layer).limit()));
-
         //register self as a BiomeHelperCached reload listener
         BiomeHelperCached.addReloadListener(this);
     }

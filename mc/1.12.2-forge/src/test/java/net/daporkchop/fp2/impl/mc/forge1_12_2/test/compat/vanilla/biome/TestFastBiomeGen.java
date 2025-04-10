@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.GenLayerHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IZoomingLayer;
@@ -71,6 +71,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
@@ -243,8 +244,8 @@ public class TestFastBiomeGen {
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());
-        IFastLayer nativeFast = FastLayerProvider.INSTANCE.makeFast(vanilla)[0];
-        IFastLayer javaFast = FastLayerProvider.JAVA_INSTANCE.makeFast(vanilla)[0];
+        IFastLayer nativeFast = GenLayerHelper.makeFast(FastLayerProvider.INSTANCE, Collections.singletonList(vanilla)).get(0);
+        IFastLayer javaFast = GenLayerHelper.makeFast(FastLayerProvider.JAVA_INSTANCE, Collections.singletonList(vanilla)).get(0);
 
         NamedLayer[] layers = {
                 new NamedLayer(javaFast, "java"),
@@ -282,7 +283,7 @@ public class TestFastBiomeGen {
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        if (!(javaFast instanceof CompatPaddedLayerWrapper) && javaFast instanceof IPaddedLayer && BiomeHelper.getParents(vanilla).length == 1) {
+        if (!(javaFast instanceof CompatPaddedLayerWrapper) && javaFast instanceof IPaddedLayer && GenLayerHelper.getParents(vanilla).length == 1) {
             this.testLayers(makeUncloneable(vanilla), testSingle);
         }
     }
@@ -290,7 +291,7 @@ public class TestFastBiomeGen {
     private CompletableFuture<Void> testLayers(int x, int z, int sizeX, int sizeZ, boolean testSingle, GenLayer vanilla, @NonNull NamedLayer... layers) {
         //vanilla reference values
         CompletableFuture<int[]> futureReference = CompletableFuture.supplyAsync(() -> {
-            int[] reference = BiomeHelper.cloneLayer(vanilla).getInts(x, z, sizeX, sizeZ);
+            int[] reference = GenLayerHelper.cloneLayerTree(Collections.singletonList(vanilla)).get(0).getInts(x, z, sizeX, sizeZ);
             IntCache.resetIntCache();
 
             int[] swapped = new int[sizeX * sizeZ];
@@ -363,7 +364,7 @@ public class TestFastBiomeGen {
         //vanilla reference values
         CompletableFuture<int[]> futureReference = CompletableFuture.supplyAsync(() -> {
             int[] out = new int[count * count * size * size];
-            GenLayer vanillaCloned = BiomeHelper.cloneLayer(vanilla);
+            GenLayer vanillaCloned = GenLayerHelper.cloneLayerTree(Collections.singletonList(vanilla)).get(0);
             for (int i = 0, tileX = 0; tileX < count; tileX++) {
                 for (int tileZ = 0; tileZ < count; tileZ++) {
                     int[] reference = vanillaCloned.getInts(x + tileX * dist, z + tileZ * dist, size, size);

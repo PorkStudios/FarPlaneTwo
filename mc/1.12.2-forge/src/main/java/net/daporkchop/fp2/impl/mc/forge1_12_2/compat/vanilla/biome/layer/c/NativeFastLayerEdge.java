@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.c;
@@ -33,16 +32,16 @@ import net.minecraft.world.gen.layer.GenLayerEdge;
  */
 @UtilityClass
 public class NativeFastLayerEdge {
-    public static IFastLayer makeFast(@NonNull GenLayerEdge vanilla) {
+    public static IFastLayer makeFast(@NonNull GenLayerEdge vanilla, @NonNull IFastLayer parent) {
         switch (((ATGenLayerEdge1_12) vanilla).getMode()) {
             case COOL_WARM:
-                return new CoolWarm(((ATGenLayer1_12) vanilla).getWorldGenSeed());
+                return new CoolWarm(((ATGenLayer1_12) vanilla).getWorldGenSeed(), parent);
             case HEAT_ICE:
-                return new HeatIce(((ATGenLayer1_12) vanilla).getWorldGenSeed());
+                return new HeatIce(((ATGenLayer1_12) vanilla).getWorldGenSeed(), parent);
             case SPECIAL:
-                return new Special(((ATGenLayer1_12) vanilla).getWorldGenSeed());
+                return new Special(((ATGenLayer1_12) vanilla).getWorldGenSeed(), parent);
             default:
-                return JavaFastLayerEdge.makeFast(vanilla);
+                return JavaFastLayerEdge.makeFast(vanilla, parent);
         }
     }
 
@@ -51,8 +50,8 @@ public class NativeFastLayerEdge {
      * @see GenLayerEdge.Mode#COOL_WARM
      */
     public static class CoolWarm extends JavaFastLayerEdge.CoolWarm implements INativePaddedLayer {
-        public CoolWarm(long seed) {
-            super(seed);
+        public CoolWarm(long seed, @NonNull IFastLayer parent) {
+            super(seed, parent);
         }
 
         @Override
@@ -70,8 +69,8 @@ public class NativeFastLayerEdge {
      * @see GenLayerEdge.Mode#HEAT_ICE
      */
     public static class HeatIce extends JavaFastLayerEdge.HeatIce implements INativePaddedLayer {
-        public HeatIce(long seed) {
-            super(seed);
+        public HeatIce(long seed, @NonNull IFastLayer parent) {
+            super(seed, parent);
         }
 
         @Override
@@ -89,8 +88,8 @@ public class NativeFastLayerEdge {
      * @see GenLayerEdge.Mode#SPECIAL
      */
     public static class Special extends JavaFastLayerEdge.Special implements INativeTranslationLayer {
-        public Special(long seed) {
-            super(seed);
+        public Special(long seed, @NonNull IFastLayer parent) {
+            super(seed, parent);
         }
 
         @Override

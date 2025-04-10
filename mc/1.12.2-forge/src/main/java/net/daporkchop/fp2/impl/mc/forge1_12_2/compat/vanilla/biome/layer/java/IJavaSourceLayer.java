@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
@@ -40,7 +39,7 @@ public interface IJavaSourceLayer extends ISourceLayer {
     }
 
     @Override
-    default void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    default void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++, i++) {
                 out[i] = this.get0(x + dx, z + dz);
@@ -49,7 +48,7 @@ public interface IJavaSourceLayer extends ISourceLayer {
     }
 
     @Override
-    default void multiGetGrids0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         for (int i = 0, gridX = 0; gridX < count; gridX++) {
             for (int gridZ = 0; gridZ < count; gridZ++) {
                 for (int dx = 0; dx < size; dx++) {

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,8 +21,8 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat
 
 import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.GenLayerHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
@@ -31,8 +31,8 @@ import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.world.gen.layer.GenLayer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.function.BiFunction;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.mulAddShift;
 import static net.daporkchop.lib.common.util.PValidation.checkArg;
@@ -41,11 +41,11 @@ import static net.daporkchop.lib.common.util.PValidation.checkState;
 /**
  * @author DaPorkchop_
  */
-public class CompatPaddedLayerWrapper extends AbstractFastLayer implements IPaddedLayer, ICompatLayer {
+public class CompatPaddedLayerWrapper extends AbstractFastLayer.SingleParent implements IPaddedLayer, ICompatLayer {
     protected final Cached<EmulatedParent> wrappedGenLayerCache;
 
-    public CompatPaddedLayerWrapper(@NonNull GenLayer wrappedLayer) {
-        super(((ATGenLayer1_12) wrappedLayer).getWorldGenSeed());
+    public CompatPaddedLayerWrapper(@NonNull GenLayer wrappedLayer, @NonNull IFastLayer parent) {
+        super(((ATGenLayer1_12) wrappedLayer).getWorldGenSeed(), parent);
         this.wrappedGenLayerCache = Cached.threadLocal(() -> new EmulatedParent(wrappedLayer), ReferenceStrength.SOFT);
     }
 
@@ -58,7 +58,7 @@ public class CompatPaddedLayerWrapper extends AbstractFastLayer implements IPadd
     public int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         try (EmulatedParent emulatedParent = this.wrappedGenLayerCache.get().begin(alloc)) {
             int[] buffer = emulatedParent.atLeast(3 * 3);
-            this.child().getGrid(alloc, x - 1, z - 1, 3, 3, buffer);
+            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, buffer);
 
             emulatedParent.setBuffer(x - 1, z - 1, 3, 3, buffer, 0);
             return emulatedParent.invokeWrappedLevel(x, z, 1, 1, x - 1, z - 1, 3, 3)[0];
@@ -158,7 +158,7 @@ public class CompatPaddedLayerWrapper extends AbstractFastLayer implements IPadd
             super(-1L);
             ((ATGenLayer1_12) this).setWorldGenSeed(((ATGenLayer1_12) ((ATGenLayer1_12) wrappedLayer).getParent()).getWorldGenSeed());
 
-            this.wrappedLayer = BiomeHelper.cloneLayer(wrappedLayer, new GenLayer[]{this});
+            this.wrappedLayer = GenLayerHelper.cloneSingleLayer(wrappedLayer, Collections.singletonList(this));
         }
 
         public EmulatedParent begin(@NonNull ArrayAllocator<int[]> alloc) {

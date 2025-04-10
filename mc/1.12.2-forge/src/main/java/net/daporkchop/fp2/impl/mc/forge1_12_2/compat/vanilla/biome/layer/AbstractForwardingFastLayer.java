@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,16 +23,19 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 public abstract class AbstractForwardingFastLayer implements IFastLayer {
-    protected final IFastLayer delegate;
+    protected final @NonNull IFastLayer delegate;
 
     @Override
-    public void init(@NonNull IFastLayer[] children) {
-        this.delegate.init(children);
+    public List<IFastLayer> parents() {
+        return this.delegate.parents();
     }
 
     @Override

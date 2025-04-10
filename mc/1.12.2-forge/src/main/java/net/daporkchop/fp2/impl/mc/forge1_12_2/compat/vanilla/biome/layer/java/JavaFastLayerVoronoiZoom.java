@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 
@@ -32,11 +32,11 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
  * @author DaPorkchop_
  * @see GenLayerVoronoiZoom
  */
-public class JavaFastLayerVoronoiZoom extends AbstractFastLayer implements IJavaZoomingLayer {
+public class JavaFastLayerVoronoiZoom extends AbstractFastLayer.SingleParent implements IJavaZoomingLayer {
     protected static final float DIV_1024 = 1.0f / 1024.0f;
 
-    public JavaFastLayerVoronoiZoom(long seed) {
-        super(seed);
+    public JavaFastLayerVoronoiZoom(long seed, @NonNull IFastLayer parent) {
+        super(seed, parent);
     }
 
     @Override
@@ -72,13 +72,13 @@ public class JavaFastLayerVoronoiZoom extends AbstractFastLayer implements IJava
         float dXZ = sq(ddz - rXZ1) + sq(ddx - rXZ0);
 
         if (dxz < dXz && dxz < dxZ && dxz < dXZ) {
-            return this.child.getSingle(alloc, (x >> 2), (z >> 2));
+            return this.parent.getSingle(alloc, (x >> 2), (z >> 2));
         } else if (dXz < dxz && dXz < dxZ && dXz < dXZ) {
-            return this.child.getSingle(alloc, (x >> 2) + 1, (z >> 2));
+            return this.parent.getSingle(alloc, (x >> 2) + 1, (z >> 2));
         } else if (dxZ < dxz && dxZ < dXz && dxZ < dXZ) {
-            return this.child.getSingle(alloc, (x >> 2), (z >> 2) + 1);
+            return this.parent.getSingle(alloc, (x >> 2), (z >> 2) + 1);
         } else {
-            return this.child.getSingle(alloc, (x >> 2) + 1, (z >> 2) + 1);
+            return this.parent.getSingle(alloc, (x >> 2) + 1, (z >> 2) + 1);
         }
     }
 

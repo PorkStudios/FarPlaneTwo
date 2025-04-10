@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,7 +30,7 @@ import static net.daporkchop.lib.common.util.PValidation.positive;
  * @author DaPorkchop_
  * @see GenLayerRandomValues
  */
-public class JavaFastLayerRandomValues extends AbstractFastLayer implements IJavaSourceLayer {
+public class JavaFastLayerRandomValues extends AbstractFastLayer.NoParents implements IJavaSourceLayer {
     protected final int limit;
 
     public JavaFastLayerRandomValues(long seed, int limit) {

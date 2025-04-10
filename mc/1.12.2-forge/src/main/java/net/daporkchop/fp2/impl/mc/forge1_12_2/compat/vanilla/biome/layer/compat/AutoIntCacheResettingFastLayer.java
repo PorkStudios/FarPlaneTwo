@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,12 +28,24 @@ import net.minecraft.world.gen.layer.IntCache;
 /**
  * Implementation of {@link IFastLayer} which automatically resets the {@link IntCache} after every access.
  * <p>
- * This must only be used at the very top of the layer tree, using this as the child of another layer could yield unexpected or incorrect results.
+ * This must only be used at the very top of the layer tree, using this as the parent of another layer could yield unexpected or incorrect results.
  *
  * @author DaPorkchop_
  */
 public class AutoIntCacheResettingFastLayer extends AbstractForwardingFastLayer {
-    public AutoIntCacheResettingFastLayer(IFastLayer delegate) {
+    /**
+     * If the given {@link IFastLayer} requires the {@link IntCache} to be reset, wraps it in a {@link AutoIntCacheResettingFastLayer}.
+     *
+     * @param layer the {@link IFastLayer}
+     * @return an {@link IFastLayer} which will automatically reset the {@link IntCache} if necessary
+     */
+    public static IFastLayer adapt(@NonNull IFastLayer layer) {
+        return layer.shouldResetIntCacheAfterGet()
+                ? new AutoIntCacheResettingFastLayer(layer)
+                : layer;
+    }
+
+    public AutoIntCacheResettingFastLayer(@NonNull IFastLayer delegate) {
         super(delegate);
     }
 

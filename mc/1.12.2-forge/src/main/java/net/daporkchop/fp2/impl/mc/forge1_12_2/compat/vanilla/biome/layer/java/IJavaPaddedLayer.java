@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
@@ -74,7 +73,7 @@ public interface IJavaPaddedLayer extends IPaddedLayer {
         int[] in = alloc.atLeast(inSizeX * inSizeZ);
         int[] v = alloc.atLeast(4);
         try {
-            this.child().getGrid(alloc, x - 1, z - 1, inSizeX, inSizeZ, in);
+            this.parent().getGrid(alloc, x - 1, z - 1, inSizeX, inSizeZ, in);
 
             int[] offsets = this.offsets(inSizeX, inSizeZ);
             final int inIdx = 1 * inSizeZ + 1;
