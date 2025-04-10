@@ -123,27 +123,7 @@ public class GenLayerHelper {
             }
 
             //fall back to CompatHelper
-            //TODO: make CompatHelper generate this directly...
-            Function<GenLayer, GenLayer[]> getLayerParents = CompatLayerHelper.getLayerParents(layerClass);
-            BiFunction<GenLayer, GenLayer[], GenLayer> cloneLayer = CompatLayerHelper.cloneLayerFunc(layerClass);
-            return new GenLayerFunctions() {
-                @Override
-                public GenLayer[] getParents(@NonNull GenLayer layer) {
-                    return getLayerParents.apply(layer);
-                }
-
-                @Override
-                public GenLayer cloneLayer(@NonNull GenLayer layer, GenLayer @NonNull [] parents) {
-                    return cloneLayer.apply(layer, parents);
-                }
-
-                @Override
-                public IFastLayer makeFast(@NonNull FastLayerProvider provider, @NonNull GenLayer layer, IFastLayer @NonNull [] parents) {
-                    //TODO: auto-detect which kind of layer it is and use an appropriate wrapper class
-                    checkArg(parents.length == 1, "%s has %s parents???", layer.getClass(), parents.length);
-                    return new CompatPaddedLayerWrapper(layer, parents[0]);
-                }
-            };
+            return CompatLayerHelper.getDefaultGenLayerFunctions(layerClass);
         }
     };
 

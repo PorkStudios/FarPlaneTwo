@@ -19,13 +19,14 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.gson.GsonBuilder;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.asm.FieldIdentifier;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.GenLayerFunctions;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.gen.layer.GenLayer;
 
@@ -38,8 +39,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -66,6 +67,12 @@ public final class CompatLayerHelper {
             public boolean seed;
             public Integer parent;
         }
+
+        public CompatLayerType type = CompatLayerType.PADDED;
+    }
+
+    private enum CompatLayerType {
+        PADDED,
     }
 
     @RequiredArgsConstructor
@@ -74,70 +81,86 @@ public final class CompatLayerHelper {
 
         public final MethodHandle constructor;
         public final List<BiFunction<GenLayer, GenLayer[], Object>> constructorParameters;
+
+        public final CompatLayerType type;
     }
 
-    private static final LoadingCache<Class<? extends GenLayer>, Optional<CompatInfo>> KNOWN_COMPAT_INFO_CACHE = CacheBuilder.newBuilder()
-            .weakKeys().weakValues()
-            .build(CacheLoader.<Class<? extends GenLayer>, Optional<CompatInfo>>from(layerClass -> {
-                JsonCompatInfo jsonInfo;
-                try (InputStream in = CompatLayerHelper.class.getResourceAsStream(layerClass.getName() + ".json")) {
-                    if (in == null) {
-                        return Optional.empty();
-                    }
+    private static CompatInfo loadCompatInfo(Class<? extends GenLayer> layerClass) {
+        JsonCompatInfo jsonInfo;
+        try (InputStream in = CompatLayerHelper.class.getResourceAsStream(layerClass.getName() + ".json")) {
+            if (in == null) {
+                return null;
+            }
 
-                    jsonInfo = new GsonBuilder().setLenient().create().fromJson(new InputStreamReader(in, StandardCharsets.UTF_8), JsonCompatInfo.class);
-                }
-
-                List<Function<GenLayer, GenLayer>> parentFields = new ArrayList<>();
-                for (JsonCompatInfo.Parent parentInfo : jsonInfo.parents) {
-                    if (parentInfo.vanillaParent) {
-                        parentFields.add(layer -> ((ATGenLayer1_12) layer).getParent());
-                    } else if (parentInfo.field != null) {
-                        Class<?> ownerClass = Class.forName(parentInfo.field.owner.replace('/', '.'), false, layerClass.getClassLoader());
-                        Field field = ownerClass.getDeclaredField(parentInfo.field.name);
-                        field.setAccessible(true);
-                        parentFields.add(uncheckedCast((Function<GenLayer, Object>) field::get));
-                    } else {
-                        throw new IllegalArgumentException(layerClass.getName());
-                    }
-                }
-
-                MethodHandle cloneConstructor = MethodHandles.lookup().findConstructor(
-                        layerClass,
-                        MethodType.fromMethodDescriptorString(jsonInfo.constructorSignature, layerClass.getClassLoader()));
-
-                List<BiFunction<GenLayer, GenLayer[], Object>> cloneConstructorParameters = new ArrayList<>();
-                for (JsonCompatInfo.ConstructorParameter parameterInfo : jsonInfo.constructorParameters) {
-                    if (parameterInfo.seed) {
-                        cloneConstructorParameters.add((layer, parents) -> ((ATGenLayer1_12) layer).getWorldGenSeed());
-                    } else if (parameterInfo.parent != null) {
-                        int parentIndex = parameterInfo.parent;
-                        cloneConstructorParameters.add((layer, parents) -> parents[parentIndex]);
-                    } else {
-                        throw new IllegalArgumentException(layerClass.getName());
-                    }
-                }
-
-                return Optional.of(new CompatInfo(parentFields, cloneConstructor, cloneConstructorParameters));
-            }));
-
-    private static final LoadingCache<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_LAYER_PARENTS_CACHE = CacheBuilder.newBuilder()
-            .weakKeys().weakValues()
-            .build(CacheLoader.from(CompatLayerHelper::getLayerParents0));
-
-    public static Function<GenLayer, GenLayer[]> getLayerParents(Class<? extends GenLayer> layerClass) {
-        return GET_LAYER_PARENTS_CACHE.getUnchecked(layerClass);
-    }
-
-    private static Function<GenLayer, GenLayer[]> getLayerParents0(Class<? extends GenLayer> layerClass) {
-        CompatInfo compatInfo = KNOWN_COMPAT_INFO_CACHE.get(layerClass).orElse(null);
-        if (compatInfo != null) {
-            return sourceLayer -> compatInfo.parents.stream()
-                    .map(parent -> parent.apply(sourceLayer))
-                    .collect(Collectors.toList())
-                    .toArray(new GenLayer[0]);
+            jsonInfo = new GsonBuilder().setLenient().create().fromJson(new InputStreamReader(in, StandardCharsets.UTF_8), JsonCompatInfo.class);
         }
 
+        List<Function<GenLayer, GenLayer>> parentFields = new ArrayList<>();
+        for (JsonCompatInfo.Parent parentInfo : jsonInfo.parents) {
+            if (parentInfo.vanillaParent) {
+                parentFields.add(layer -> ((ATGenLayer1_12) layer).getParent());
+            } else if (parentInfo.field != null) {
+                Class<?> ownerClass = Class.forName(parentInfo.field.owner.replace('/', '.'), false, layerClass.getClassLoader());
+                Field field = ownerClass.getDeclaredField(parentInfo.field.name);
+                field.setAccessible(true);
+                parentFields.add(uncheckedCast((Function<GenLayer, Object>) field::get));
+            } else {
+                throw new IllegalArgumentException(layerClass.getName());
+            }
+        }
+
+        MethodHandle cloneConstructor = MethodHandles.lookup().findConstructor(
+                layerClass,
+                MethodType.fromMethodDescriptorString(jsonInfo.constructorSignature, layerClass.getClassLoader()));
+
+        List<BiFunction<GenLayer, GenLayer[], Object>> cloneConstructorParameters = new ArrayList<>();
+        for (JsonCompatInfo.ConstructorParameter parameterInfo : jsonInfo.constructorParameters) {
+            if (parameterInfo.seed) {
+                cloneConstructorParameters.add((layer, parents) -> ((ATGenLayer1_12) layer).getWorldGenSeed());
+            } else if (parameterInfo.parent != null) {
+                int parentIndex = parameterInfo.parent;
+                cloneConstructorParameters.add((layer, parents) -> parents[parentIndex]);
+            } else {
+                throw new IllegalArgumentException(layerClass.getName());
+            }
+        }
+
+        return new CompatInfo(parentFields, cloneConstructor, cloneConstructorParameters, jsonInfo.type);
+    }
+
+    public static GenLayerFunctions getDefaultGenLayerFunctions(Class<? extends GenLayer> layerClass) {
+        CompatInfo compatInfo = loadCompatInfo(layerClass);
+        if (compatInfo != null) {
+            //we have known compatibility information for this class, use it!
+            //  this is clearly not optimal code, but i don't really care
+            return new GenLayerFunctions() {
+                @Override
+                public GenLayer[] getParents(@NonNull GenLayer layer) {
+                    return compatInfo.parents.stream()
+                            .map(parent -> parent.apply(layer))
+                            .collect(Collectors.toList())
+                            .toArray(new GenLayer[0]);
+                }
+
+                @Override
+                public GenLayer cloneLayer(@NonNull GenLayer layer, GenLayer @NonNull [] parents) {
+                    return (GenLayer) compatInfo.constructor.invokeWithArguments(compatInfo.constructorParameters.stream()
+                            .map(parameter -> parameter.apply(layer, parents))
+                            .toArray());
+                }
+
+                @Override
+                public IFastLayer makeFast(@NonNull FastLayerProvider provider, @NonNull GenLayer layer, IFastLayer @NonNull [] parents) {
+                    assert compatInfo.type == CompatLayerType.PADDED;
+                    checkArg(parents.length == 1, "expected exactly one parent: %s", Arrays.asList(parents));
+                    return new CompatPaddedLayerWrapper(layer, parents[0]);
+                }
+            };
+        }
+
+        //fall back to creating a default implementation as best we can
+
+        //ensure that the GenLayer only has one parent
         for (Class<?> clazz = layerClass; clazz != GenLayer.class; clazz = clazz.getSuperclass()) {
             for (Field field : clazz.getDeclaredFields()) {
                 if ((field.getModifiers() & Modifier.STATIC) != 0) {
@@ -147,27 +170,9 @@ public final class CompatLayerHelper {
                 checkState(!GenLayer.class.isAssignableFrom(field.getType()), "can't get parent GenLayer(s) of %s (contains additional candidate parent field %s)", layerClass, field);
             }
         }
-        return sourceLayer -> new GenLayer[]{ ((ATGenLayer1_12) sourceLayer).getParent() };
-    }
 
-    private static final LoadingCache<Class<? extends GenLayer>, BiFunction<GenLayer, GenLayer[], GenLayer>> CLONE_LAYER_FUNC_CACHE = CacheBuilder.newBuilder()
-            .weakKeys().weakValues()
-            .build(CacheLoader.from(CompatLayerHelper::cloneLayerFunc0));
-
-    public static BiFunction<GenLayer, GenLayer[], GenLayer> cloneLayerFunc(Class<? extends GenLayer> layerClass) {
-        return CLONE_LAYER_FUNC_CACHE.getUnchecked(layerClass);
-    }
-
-    private static BiFunction<GenLayer, GenLayer[], GenLayer> cloneLayerFunc0(Class<? extends GenLayer> layerClass) {
-        CompatInfo compatInfo = KNOWN_COMPAT_INFO_CACHE.get(layerClass).orElse(null);
-        if (compatInfo != null) {
-            return (sourceLayer, parents) -> (GenLayer) compatInfo.constructor.invokeWithArguments(compatInfo.constructorParameters.stream()
-                    .map(parameter -> parameter.apply(sourceLayer, parents))
-                    .toArray());
-        }
-
+        //find the fields we need to clone
         List<Field> fields = new ArrayList<>();
-
         for (Class<?> clazz = layerClass; clazz != GenLayer.class; clazz = clazz.getSuperclass()) {
             for (Field field : clazz.getDeclaredFields()) {
                 if ((field.getModifiers() & Modifier.STATIC) != 0) {
@@ -181,19 +186,28 @@ public final class CompatLayerHelper {
             }
         }
 
-        return (sourceLayer, parents) -> {
-            GenLayer clonedLayer = PUnsafe.allocateInstance(layerClass);
-            try {
-                for (Field field : fields) {
-                    field.set(clonedLayer, field.get(sourceLayer));
+        return new GenLayerFunctions.SingleParentVanilla() {
+            @Override
+            public GenLayer cloneLayer(@NonNull GenLayer layer, @NonNull GenLayer parent) {
+                GenLayer clonedLayer = PUnsafe.allocateInstance(layerClass);
+                try {
+                    for (Field field : fields) {
+                        field.set(clonedLayer, field.get(layer));
+                    }
+                } catch (ReflectiveOperationException e) {
+                    throw new RuntimeException("failed to clone GenLayer", e);
                 }
-            } catch (ReflectiveOperationException e) {
-                throw new RuntimeException("failed to clone GenLayer", e);
+
+                ((ATGenLayer1_12) clonedLayer).setParent(parent);
+
+                return clonedLayer;
             }
 
-            ((ATGenLayer1_12) clonedLayer).setParent(parents[0]);
-
-            return clonedLayer;
+            @Override
+            public IFastLayer makeFast(@NonNull FastLayerProvider provider, @NonNull GenLayer layer, @NonNull IFastLayer parent) {
+                //TODO: auto-detect which kind of layer it is and use an appropriate wrapper class
+                return new CompatPaddedLayerWrapper(layer, parent);
+            }
         };
     }
 }
