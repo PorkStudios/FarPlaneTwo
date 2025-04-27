@@ -22,24 +22,32 @@ package net.daporkchop.fp2.core.client.shader;
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.val;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
+import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.Shader;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -54,6 +62,8 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
     @NonNull
     private final FP2Core fp2;
     private final Map<Object, ReloadableShaderProgram<?>> programs = Collections.synchronizedMap(new HashMap<>());
+
+    private transient Map<Identifier, byte[]> lastResourceHashes;
 
     /**
      * Gets a builder for a reloadable compute shader program which will be managed by this registry.
@@ -87,12 +97,14 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
      */
     void register(@NonNull Object key, @NonNull ReloadableShaderProgram<?> program) {
         checkState(this.programs.putIfAbsent(key, program) == null, "this registry already contains a program with the key: %s", key);
+
+        this.lastResourceHashes = null; //invalidate reload() resource cache
     }
 
     /**
      * Removes an existing shader program from this registry.
      *
-     * @param key     the unique key which identifies the program in the registry
+     * @param key the unique key which identifies the program in the registry
      */
     public void unregister(@NonNull Object key) {
         val program = this.programs.remove(key);
@@ -100,6 +112,8 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
 
         PResourceUtil.close(program.program);
         program.program = null;
+
+        this.lastResourceHashes = null; //invalidate reload() resource cache
     }
 
     /**
@@ -150,45 +164,140 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
         int programCount = this.programs.size();
 
         OpenGL gl = this.fp2.client().gl();
-        ResourceProvider resourceProvider = ResourceProvider.caching(this.fp2.client().resourceProvider());
 
-        //TODO: take advantage of asynchronous compilation
-        List<ReloadableShaderProgram<?>> reloadablePrograms = new ArrayList<>(this.programs.values());
-        List<ShaderProgram> reloadedPrograms = new ArrayList<>(programCount);
-        try (val ignored = PResourceUtil.lazyCloseAll(reloadedPrograms)) {
-            ShaderReloadFailedException cause = null;
-            int failCount = 0;
-            for (val reloadableProgram : reloadablePrograms) {
-                ShaderProgram newProgram;
-                try {
-                    newProgram = reloadableProgram.compile(gl, resourceProvider);
-                } catch (ShaderCompilationException | ShaderLinkageException e) {
-                    if (cause == null) {
-                        cause = new ShaderReloadFailedException();
+        ResourceProvider cachingResourceProvider = ResourceProvider.caching(this.fp2.client().resourceProvider());
+        ResourceProvider.AccessTracker trackingResourceProvider = new ResourceProvider.AccessTracker(cachingResourceProvider);
+
+        if (this.lastResourceHashes != null && //cache is up-to-date
+                this.lastResourceHashes.entrySet().parallelStream().allMatch(entry -> {
+                    Identifier id = entry.getKey();
+                    byte[] previousHash = entry.getValue();
+
+                    try {
+                        byte[] newHash = hashResource(cachingResourceProvider, id);
+                        return Arrays.equals(previousHash, newHash);
+                    } catch (ResourceNotFoundException ignored) {
+                        //the resource has been removed since the last reload, we need to reload the shaders!
+                        return false;
                     }
-                    cause.addSuppressed(e);
-                    failCount++;
-                    continue;
-                }
+                })) {
 
-                reloadedPrograms.add(newProgram);
+            //all resources are unchanged, exit early
+            this.fp2.client().chat().success("§aNot reloading %d shader(s) (already up-to-date)", programCount);
+            return;
+        }
+
+        //the state for a single shader program as its being reloaded
+        @RequiredArgsConstructor
+        final class ReloadState implements AutoCloseable {
+            final ReloadableShaderProgram<?> reloadableProgram;
+
+            List<Shader.CompileTask> compileTasks;
+            List<Shader> compiledShaders;
+            ShaderProgram.LinkTask<?> linkTask;
+            ShaderProgram linkedProgram;
+            ShaderProgram oldProgram;
+
+            Throwable failureCause;
+
+            @Override
+            public void close() {
+                PResourceUtil.closeAll(
+                        PResourceUtil.lazyCloseAll(this.compileTasks),
+                        PResourceUtil.lazyCloseAll(this.compiledShaders),
+                        this.linkTask,
+                        this.linkedProgram,
+                        this.oldProgram);
+            }
+        }
+
+        List<ReloadState> reloadStates = new ArrayList<>(programCount);
+        try (val ignored = PResourceUtil.lazyCloseAll(reloadStates)) {
+            for (ReloadableShaderProgram<?> reloadableProgram : this.programs.values()) {
+                reloadStates.add(new ReloadState(reloadableProgram));
             }
 
-            if (cause == null) {
+            long startTime = System.nanoTime();
+            int failCount = 0;
+
+            //begin compiling all the shaders
+            for (ReloadState reloadState : reloadStates) {
+                try {
+                    reloadState.compileTasks = reloadState.reloadableProgram.compileAsync(gl, trackingResourceProvider);
+                } catch (Exception e) { //save exception for later and continue
+                    reloadState.failureCause = e;
+                    failCount++;
+                }
+            }
+
+            //finish compiling and begin linking all the programs
+            for (ReloadState reloadState : reloadStates) {
+                if (reloadState.failureCause == null) {
+                    try {
+                        //wait for all the shaders to finish compiling
+                        reloadState.compiledShaders = new ArrayList<>(reloadState.compileTasks.size());
+                        for (Shader.CompileTask compileTask : reloadState.compileTasks) {
+                            reloadState.compiledShaders.add(compileTask.join());
+                        }
+
+                        //begin linking the program
+                        reloadState.linkTask = reloadState.reloadableProgram.linkAsync(gl, reloadState.compiledShaders);
+                    } catch (Exception e) { //save exception for later and continue
+                        reloadState.failureCause = e;
+                        failCount++;
+                    }
+                }
+            }
+
+            //wait for all the programs to finish linking
+            for (ReloadState reloadState : reloadStates) {
+                if (reloadState.failureCause == null) {
+                    try {
+                        reloadState.linkedProgram = reloadState.linkTask.join();
+                    } catch (Exception e) { //save exception for later and continue
+                        reloadState.failureCause = e;
+                        failCount++;
+                    }
+                }
+            }
+
+            if (failCount == 0) {
                 //all shaders were compiled successfully, replace them with the new ones
-                for (int i = 0; i < reloadablePrograms.size(); i++) {
-                    ReloadableShaderProgram<?> reloadableProgram = reloadablePrograms.get(i);
-                    //replace the element in reloadedPrograms with the old program so that it gets closed in the finally block
-                    reloadableProgram.program = uncheckedCast(reloadedPrograms.set(i, reloadableProgram.program));
+                for (ReloadState reloadState : reloadStates) {
+                    reloadState.oldProgram = reloadState.reloadableProgram.program; //store the old program in the reload state so it gets closed
+                    reloadState.reloadableProgram.program = uncheckedCast(reloadState.linkedProgram);
+                    reloadState.linkedProgram = null; //set the linked program in the reload state to null since the ownership has been transferred to the ReloadableShaderProgram instance
                 }
 
-                this.fp2.client().chat().success("§areloaded %d shader(s)", programCount);
+                this.fp2.client().chat().success("§areloaded %d shader(s) in %.3fs", programCount, (System.nanoTime() - startTime) / (1000.0d * 1000.0d * 1000.0d));
+
+                //hash all the files that were accessed so we can detect if anything changed on a subsequent reload
+                this.lastResourceHashes = trackingResourceProvider.accessedResourceIdentifiers().parallelStream()
+                        .collect(Collectors.toConcurrentMap(
+                                Function.identity(),
+                                id -> hashResource(cachingResourceProvider, id)));
             } else {
+                //collect all the exceptions
+                ShaderReloadFailedException cause = new ShaderReloadFailedException();
+                for (ReloadState reloadState : reloadStates) {
+                    if (reloadState.failureCause != null) {
+                        cause.addSuppressed(reloadState.failureCause);
+                    }
+                }
+
                 this.fp2.log().error("shader reload failed", cause);
                 this.fp2.client().chat().error("§c%d/%d shaders failed to reload (check log for info)", failCount, programCount);
                 throw cause;
             }
         }
+    }
+
+    @SneakyThrows(NoSuchAlgorithmException.class)
+    private static byte[] hashResource(ResourceProvider resourceProvider, Identifier id) throws IOException, ResourceNotFoundException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256"); //should be available by default
+
+        digest.update(resourceProvider.provideResourceAsBytes(id));
+        return digest.digest();
     }
 
     /**

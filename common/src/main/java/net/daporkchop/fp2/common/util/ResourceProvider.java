@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,9 +20,15 @@
 package net.daporkchop.fp2.common.util;
 
 import com.google.common.collect.ImmutableList;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
+import net.daporkchop.lib.common.annotation.ThreadSafe;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -31,13 +37,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.charset.Charset;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -46,12 +51,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author DaPorkchop_
  */
 @FunctionalInterface
+@ThreadSafe
 public interface ResourceProvider {
     static ResourceProvider selectingByNamespace(@NonNull String namespace, @NonNull ResourceProvider matches, @NonNull ResourceProvider notMatches) {
         return new ResourceProvider() {
             @Override
             public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
                 return namespace.equals(id.namespace()) ? matches.provideResourceAsStream(id) : notMatches.provideResourceAsStream(id);
+            }
+
+            @Override
+            public ByteBuffer provideResourceAsBytes(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+                return namespace.equals(id.namespace()) ? matches.provideResourceAsBytes(id) : notMatches.provideResourceAsBytes(id);
             }
 
             @Override
@@ -81,23 +92,35 @@ public interface ResourceProvider {
             final Map<Identifier, byte[]> byteCache = new ConcurrentHashMap<>();
             final Map<Identifier, List<String>> linesCache = new ConcurrentHashMap<>();
 
-            @Override
-            public InputStream provideResourceAsStream(@NonNull Identifier _id) throws IOException, ResourceNotFoundException {
-                return new ByteArrayInputStream(this.byteCache.computeIfAbsent(_id, id -> {
+            private byte[] cachedResourceAsBytes(@NonNull Identifier _id) throws IOException, ResourceNotFoundException {
+                return this.byteCache.computeIfAbsent(_id, id -> {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     try (InputStream in = delegate.provideResourceAsStream(id)) {
-                        byte[] buf = new byte[4096];
+                        byte[] buf = PUnsafe.allocateUninitializedByteArray(PorkUtil.bufferSize());
                         for (int i; (i = in.read(buf)) >= 0; ) {
                             baos.write(buf, 0, i);
                         }
                     }
                     return baos.toByteArray();
-                }));
+                });
+            }
+
+            @Override
+            public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+                return new ByteArrayInputStream(this.cachedResourceAsBytes(id));
+            }
+
+            @Override
+            public ByteBuffer provideResourceAsBytes(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+                return ByteBuffer.wrap(this.cachedResourceAsBytes(id)).asReadOnlyBuffer();
             }
 
             @Override
             public List<String> provideResourceAsLines(@NonNull Identifier _id) throws IOException, ResourceNotFoundException {
-                return this.linesCache.computeIfAbsent(_id, id -> ImmutableList.copyOf(delegate.provideResourceAsLines(id)));
+                return this.linesCache.computeIfAbsent(_id, id -> {
+                    //delegate to ResourceProvider.super.provideResourceAsLines() instead of delegate.provideResourceAsLines() so that we also hit the byte cache
+                    return ImmutableList.copyOf(ResourceProvider.super.provideResourceAsLines(id));
+                });
             }
         };
     }
@@ -110,6 +133,24 @@ public interface ResourceProvider {
      * @throws ResourceNotFoundException if no resource with the given id could be found
      */
     InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException, ResourceNotFoundException;
+
+    /**
+     * Gets the resource with the provided {@link Identifier} as an {@link InputStream}.
+     *
+     * @param id the resource id
+     * @return a read-only {@link ByteBuffer} containing the resource data
+     * @throws ResourceNotFoundException if no resource with the given id could be found
+     */
+    default ByteBuffer provideResourceAsBytes(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (InputStream in = this.provideResourceAsStream(id)) {
+            byte[] buf = PUnsafe.allocateUninitializedByteArray(PorkUtil.bufferSize());
+            for (int i; (i = in.read(buf)) >= 0; ) {
+                baos.write(buf, 0, i);
+            }
+        }
+        return ByteBuffer.wrap(baos.toByteArray()).asReadOnlyBuffer();
+    }
 
     /**
      * Gets the resource with the provided {@link Identifier} as a {@link Reader} using the {@code UTF-8} charset.
@@ -125,7 +166,7 @@ public interface ResourceProvider {
     /**
      * Gets the resource with the provided {@link Identifier} as a {@link List} of {@link String}s using the {@code UTF-8} charset.
      *
-     * @param id      the resource id
+     * @param id the resource id
      * @return a {@link List} of {@link String}s containing the source lines
      * @throws ResourceNotFoundException if no resource with the given id could be found
      */
@@ -137,5 +178,43 @@ public interface ResourceProvider {
             }
         }
         return result;
+    }
+
+    /**
+     * A {@link ResourceProvider} which keeps track of the resource identifiers which have been accessed.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    @ThreadSafe
+    final class AccessTracker implements ResourceProvider {
+        private final @NonNull ResourceProvider delegate;
+
+        @Getter
+        private final Set<Identifier> accessedResourceIdentifiers = ConcurrentHashMap.newKeySet();
+
+        @Override
+        public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+            this.accessedResourceIdentifiers.add(id);
+            return this.delegate.provideResourceAsStream(id);
+        }
+
+        @Override
+        public ByteBuffer provideResourceAsBytes(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+            this.accessedResourceIdentifiers.add(id);
+            return this.delegate.provideResourceAsBytes(id);
+        }
+
+        @Override
+        public Reader provideResourceAsReader(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+            this.accessedResourceIdentifiers.add(id);
+            return this.delegate.provideResourceAsReader(id);
+        }
+
+        @Override
+        public List<String> provideResourceAsLines(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+            this.accessedResourceIdentifiers.add(id);
+            return this.delegate.provideResourceAsLines(id);
+        }
     }
 }

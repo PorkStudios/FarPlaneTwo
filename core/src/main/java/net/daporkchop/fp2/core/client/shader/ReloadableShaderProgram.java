@@ -79,6 +79,35 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
         //this.program = this.compile(builder.fp2.client().gl(), builder.fp2.client().resourceProvider());
     }
 
+    List<Shader.CompileTask> compileAsync(OpenGL gl, ResourceProvider resourceProvider) {
+        List<Shader.CompileTask> compileTasks = new ArrayList<>(this.shaders.size());
+        try {
+            //compile each of the referenced shaders
+            for (val shader : this.shaders) {
+                compileTasks.add(Shader.compileAsync(gl, shader.type,
+                        new IncludePreprocessor(resourceProvider)
+                                .addVersionHeader(gl)
+                                .define(this.macros.defines())
+                                .include(shader.identifier)));
+            }
+
+            return compileTasks;
+        } catch (Throwable t) {
+            throw PResourceUtil.closeAllSuppressed(t, compileTasks);
+        }
+    }
+
+    ShaderProgram.LinkTask<P> linkAsync(OpenGL gl, List<Shader> shaders) {
+        val builder = this.builderFactory.apply(gl);
+        if (this.setupFunction != null) {
+            this.setupFunction.setup(uncheckedCast(builder));
+        }
+        for (val shader : shaders) { //add all the compiled shaders to the program for linking
+            builder.addShader(shader);
+        }
+        return builder.buildAsync();
+    }
+
     P compile(OpenGL gl, ResourceProvider resourceProvider) throws ShaderCompilationException, ShaderLinkageException {
         List<Shader> compiledShaders = new ArrayList<>(this.shaders.size());
         try (val ignored = PResourceUtil.lazyCloseAll(compiledShaders)) {
