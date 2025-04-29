@@ -29,6 +29,7 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -165,6 +167,10 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
 
         OpenGL gl = this.fp2.client().gl();
 
+        boolean parallelCompileEnabled = this.fp2.globalConfig().performance().parallelShaderCompile();
+        boolean GL_ARB_parallel_shader_compile = gl.supports(GLExtension.GL_ARB_parallel_shader_compile);
+        boolean GL_KHR_parallel_shader_compile = gl.supports(GLExtension.GL_KHR_parallel_shader_compile);
+
         ResourceProvider cachingResourceProvider = ResourceProvider.caching(this.fp2.client().resourceProvider());
         ResourceProvider.AccessTracker trackingResourceProvider = new ResourceProvider.AccessTracker(cachingResourceProvider);
 
@@ -195,7 +201,7 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
             List<Shader.CompileTask> compileTasks;
             List<Shader> compiledShaders;
             ShaderProgram.LinkTask<?> linkTask;
-            ShaderProgram linkedProgram;
+            ShaderProgram newProgram;
             ShaderProgram oldProgram;
 
             Throwable failureCause;
@@ -206,10 +212,12 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
                         PResourceUtil.lazyCloseAll(this.compileTasks),
                         PResourceUtil.lazyCloseAll(this.compiledShaders),
                         this.linkTask,
-                        this.linkedProgram,
+                        this.newProgram,
                         this.oldProgram);
             }
         }
+
+        long startTime = System.nanoTime();
 
         List<ReloadState> reloadStates = new ArrayList<>(programCount);
         try (val ignored = PResourceUtil.lazyCloseAll(reloadStates)) {
@@ -217,31 +225,69 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
                 reloadStates.add(new ReloadState(reloadableProgram));
             }
 
-            long startTime = System.nanoTime();
             int failCount = 0;
 
-            //begin compiling all the shaders
-            for (ReloadState reloadState : reloadStates) {
-                try {
-                    reloadState.compileTasks = reloadState.reloadableProgram.compileAsync(gl, trackingResourceProvider);
-                } catch (Exception e) { //save exception for later and continue
-                    reloadState.failureCause = e;
-                    failCount++;
-                }
+            //save the previous compile thread count and set the new one
+            int oldCompileThreadsCount = 0;
+            int newCompileThreadsCount = parallelCompileEnabled ? -1 : 0;
+            if (GL_ARB_parallel_shader_compile) {
+                oldCompileThreadsCount = gl.glGetInteger(GL_MAX_SHADER_COMPILER_THREADS_ARB);
+                gl.glMaxShaderCompilerThreadsARB(newCompileThreadsCount);
+            } else if (GL_KHR_parallel_shader_compile) {
+                oldCompileThreadsCount = gl.glGetInteger(GL_MAX_SHADER_COMPILER_THREADS_KHR);
+                gl.glMaxShaderCompilerThreadsKHR(newCompileThreadsCount);
             }
 
-            //finish compiling and begin linking all the programs
-            for (ReloadState reloadState : reloadStates) {
-                if (reloadState.failureCause == null) {
+            if (parallelCompileEnabled) {
+                //parallel compilation is enabled! we will run each step for every registered program before advancing, so that capable drivers can compile/link shaders in parallel. for drivers
+                //  which don't support that, this will be slightly slower and use a bit more memory than the serial approach, but the added overhead should be pretty insignificant compared to the
+                //  time it takes for the actual compilation and linking.
+
+                //begin compiling all the shaders
+                for (ReloadState reloadState : reloadStates) {
                     try {
-                        //wait for all the shaders to finish compiling
-                        reloadState.compiledShaders = new ArrayList<>(reloadState.compileTasks.size());
-                        for (Shader.CompileTask compileTask : reloadState.compileTasks) {
-                            reloadState.compiledShaders.add(compileTask.join());
+                        reloadState.compileTasks = reloadState.reloadableProgram.compileAsync(gl, trackingResourceProvider);
+                    } catch (Exception e) { //save exception for later and continue
+                        reloadState.failureCause = e;
+                        failCount++;
+                    }
+                }
+
+                //finish compiling and begin linking all the programs
+                for (ReloadState reloadState : reloadStates) {
+                    if (reloadState.failureCause == null) {
+                        try {
+                            //wait for all the shaders to finish compiling
+                            reloadState.compiledShaders = new ArrayList<>(reloadState.compileTasks.size());
+                            for (Shader.CompileTask compileTask : reloadState.compileTasks) {
+                                reloadState.compiledShaders.add(compileTask.join());
+                            }
+
+                            //begin linking the program
+                            reloadState.linkTask = reloadState.reloadableProgram.linkAsync(gl, reloadState.compiledShaders);
+                        } catch (Exception e) { //save exception for later and continue
+                            reloadState.failureCause = e;
+                            failCount++;
                         }
+                    }
+                }
 
-                        //begin linking the program
-                        reloadState.linkTask = reloadState.reloadableProgram.linkAsync(gl, reloadState.compiledShaders);
+                //wait for all the programs to finish linking
+                for (ReloadState reloadState : reloadStates) {
+                    if (reloadState.failureCause == null) {
+                        try {
+                            reloadState.newProgram = reloadState.linkTask.join();
+                        } catch (Exception e) { //save exception for later and continue
+                            reloadState.failureCause = e;
+                            failCount++;
+                        }
+                    }
+                }
+            } else {
+                //parallel compilation is explicitly disabled, compile the shaders serially
+                for (ReloadState reloadState : reloadStates) {
+                    try {
+                        reloadState.newProgram = reloadState.reloadableProgram.compileSync(gl, trackingResourceProvider);
                     } catch (Exception e) { //save exception for later and continue
                         reloadState.failureCause = e;
                         failCount++;
@@ -249,24 +295,19 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
                 }
             }
 
-            //wait for all the programs to finish linking
-            for (ReloadState reloadState : reloadStates) {
-                if (reloadState.failureCause == null) {
-                    try {
-                        reloadState.linkedProgram = reloadState.linkTask.join();
-                    } catch (Exception e) { //save exception for later and continue
-                        reloadState.failureCause = e;
-                        failCount++;
-                    }
-                }
+            //restore old compile thread count
+            if (GL_ARB_parallel_shader_compile) {
+                gl.glMaxShaderCompilerThreadsARB(oldCompileThreadsCount);
+            } else if (GL_KHR_parallel_shader_compile) {
+                gl.glMaxShaderCompilerThreadsKHR(oldCompileThreadsCount);
             }
 
             if (failCount == 0) {
                 //all shaders were compiled successfully, replace them with the new ones
                 for (ReloadState reloadState : reloadStates) {
                     reloadState.oldProgram = reloadState.reloadableProgram.program; //store the old program in the reload state so it gets closed
-                    reloadState.reloadableProgram.program = uncheckedCast(reloadState.linkedProgram);
-                    reloadState.linkedProgram = null; //set the linked program in the reload state to null since the ownership has been transferred to the ReloadableShaderProgram instance
+                    reloadState.reloadableProgram.program = uncheckedCast(reloadState.newProgram);
+                    reloadState.newProgram = null; //set the linked program in the reload state to null since the ownership has been transferred to the ReloadableShaderProgram instance
                 }
 
                 this.fp2.client().chat().success("§areloaded %d shader(s) in %.3fs", programCount, (System.nanoTime() - startTime) / (1000.0d * 1000.0d * 1000.0d));

@@ -108,7 +108,7 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
         return builder.buildAsync();
     }
 
-    P compile(OpenGL gl, ResourceProvider resourceProvider) throws ShaderCompilationException, ShaderLinkageException {
+    P compileSync(OpenGL gl, ResourceProvider resourceProvider) throws ShaderCompilationException, ShaderLinkageException {
         List<Shader> compiledShaders = new ArrayList<>(this.shaders.size());
         try (val ignored = PResourceUtil.lazyCloseAll(compiledShaders)) {
             //compile each of the referenced shaders

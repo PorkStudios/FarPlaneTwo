@@ -100,6 +100,8 @@ fp2.config.menu.performance.gpuFrustumCulling=GPU Frustum Culling
 fp2.config.menu.performance.gpuFrustumCulling.tooltip=Allows frustum culling to be done on the GPU instead of the CPU.\nThis can significantly increase FPS, especially on high-end GPUs.
 fp2.config.menu.performance.maxBakesProcessedPerFrame=Max. Bakes/Frame
 fp2.config.menu.performance.maxBakesProcessedPerFrame.tooltip=Limits the maximum number of baked tiles for the client to process per frame.\nIncreasing this value will increase the rate at which the client can process terrain data from the server, at the cost of more stutters when loading terrain. Lowering this value will reduce or eliminate stutters, but may cause higher tile update latency and client memory usage.
+fp2.config.menu.performance.parallelShaderCompile=Parallel Shader Compilation
+fp2.config.menu.performance.parallelShaderCompile.tooltip=If supported by the graphics driver, use multiple threads for shader compilation.\nThis can slightly reduce load times when starting the game and switching resource packs, at the cost of temporarily increasing RAM usage during compilation. Disable this if you have limited RAM available.
 fp2.config.menu.performance.renderQuads=Render Quads
 fp2.config.menu.performance.renderQuads.tooltip=If supported, draw terrain using quads instead of triangles.\nEnabling this will slightly reduce VRAM usage, and may slightly increase FPS. However, some GPU hardware may perform worse with this option enabled.
 

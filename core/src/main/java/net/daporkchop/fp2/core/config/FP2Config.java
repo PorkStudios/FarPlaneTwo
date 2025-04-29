@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -247,6 +247,9 @@ public final class FP2Config implements Cloneable<FP2Config> {
         @Config.GuiCategory(CATEGORY_CLIENT)
         private final int maxBakesProcessedPerFrame;
 
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final boolean parallelShaderCompile;
+
         @Config.RestartRequired(Config.Requirement.WORLD)
         @Config.GuiCategory(CATEGORY_CLIENT)
         private final boolean renderQuads;
@@ -272,6 +275,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
         Performance() {
             this.gpuFrustumCulling = true;
             this.maxBakesProcessedPerFrame = 256;
+            this.parallelShaderCompile = true;
             this.renderQuads = true;
 
             this.trackingThreads = Math.max(PorkUtil.CPU_COUNT >> 2, 1);
