@@ -79,8 +79,8 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
             //compile each of the referenced shaders
             for (val shader : this.shaders) {
                 compileTasks.add(Shader.compileAsync(gl, shader.type,
-                        new IncludePreprocessor(resourceProvider)
-                                .addVersionHeader(gl)
+                        new IncludePreprocessor(gl, resourceProvider)
+                                .addVersionHeader()
                                 .define(this.macros.defines())
                                 .include(shader.identifier)));
             }
@@ -108,8 +108,8 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
             //compile each of the referenced shaders
             for (val shader : this.shaders) {
                 compiledShaders.add(Shader.compile(gl, shader.type,
-                        new IncludePreprocessor(resourceProvider)
-                                .addVersionHeader(gl)
+                        new IncludePreprocessor(gl, resourceProvider)
+                                .addVersionHeader()
                                 .define(this.macros.defines())
                                 .include(shader.identifier)));
             }

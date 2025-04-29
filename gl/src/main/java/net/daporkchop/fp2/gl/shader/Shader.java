@@ -28,7 +28,6 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.source.IncludePreprocessor;
-import net.daporkchop.fp2.gl.shader.source.SourceLocation;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.closeable.QuietCloseable;
@@ -48,7 +47,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public final class Shader extends GLObject.Normal {
     public static Shader compile(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull ResourceProvider resourceProvider, @NonNull Identifier path) throws ShaderCompilationException {
-        return compile(gl, type, new IncludePreprocessor(resourceProvider).addVersionHeader(gl).include(path));
+        return compile(gl, type, new IncludePreprocessor(gl, resourceProvider).addVersionHeader().include(path));
     }
 
     public static Shader compile(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull IncludePreprocessor source) throws ShaderCompilationException {
@@ -59,14 +58,14 @@ public final class Shader extends GLObject.Normal {
         return compile(gl, type, source, null);
     }
 
-    private static Shader compile(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<SourceLocation> sourceLocations) throws ShaderCompilationException {
+    private static Shader compile(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<Identifier> sourceLocations) throws ShaderCompilationException {
         try (CompileTask task = new CompileTask(gl, type, source, sourceLocations)) {
             return task.join();
         }
     }
 
     public static CompileTask compileAsync(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull ResourceProvider resourceProvider, @NonNull Identifier path) {
-        return compileAsync(gl, type, new IncludePreprocessor(resourceProvider).addVersionHeader(gl).include(path));
+        return compileAsync(gl, type, new IncludePreprocessor(gl, resourceProvider).addVersionHeader().include(path));
     }
 
     public static CompileTask compileAsync(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull IncludePreprocessor source) {
@@ -77,7 +76,7 @@ public final class Shader extends GLObject.Normal {
         return compileAsync(gl, type, source, null);
     }
 
-    private static CompileTask compileAsync(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<SourceLocation> sourceLocations) {
+    private static CompileTask compileAsync(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<Identifier> sourceLocations) {
         return new CompileTask(gl, type, source, sourceLocations);
     }
 
@@ -98,7 +97,7 @@ public final class Shader extends GLObject.Normal {
         return GL_SHADER;
     }
 
-    static String formatInfoLog(@NonNull String text, List<SourceLocation> sourceLocations) {
+    static String formatInfoLog(@NonNull String text, List<Identifier> sourceLocations) {
         if (sourceLocations == null) {
             return text;
         }
@@ -112,8 +111,9 @@ public final class Shader extends GLObject.Normal {
                 if (matcher.find()) {
                     StringBuffer buffer = new StringBuffer();
                     do {
-                        SourceLocation location = sourceLocations.get(Integer.parseInt(matcher.group("line")) - 1);
-                        matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + location.location() + ':' + location.lineNumber() + ')' + matcher.group("text")));
+                        int fileNumber = Integer.parseInt(matcher.group("file"));
+                        int lineNumber = Integer.parseInt(matcher.group("line"));
+                        matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + sourceLocations.get(fileNumber) + ':' + lineNumber + ')' + matcher.group("text")));
                     } while (matcher.find());
                     matcher.appendTail(buffer);
 
@@ -133,10 +133,10 @@ public final class Shader extends GLObject.Normal {
     @AllArgsConstructor(access = AccessLevel.PACKAGE)
     public static final class CompileTask implements QuietCloseable {
         final OpenGL gl;
-        final List<SourceLocation> sourceLocations;
+        final List<Identifier> sourceLocations;
         Shader shader;
 
-        CompileTask(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<SourceLocation> sourceLocations) {
+        CompileTask(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<Identifier> sourceLocations) {
             try {
                 this.gl = gl;
                 this.sourceLocations = sourceLocations;

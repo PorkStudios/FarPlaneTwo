@@ -145,6 +145,9 @@ public abstract class OpenGL {
     @Getter
     private final Limits limits;
 
+    @Getter
+    private final String glslHeader;
+
     //
     //
     // EXTENSION AND VERSION CAPABILITY FIELDS
@@ -382,6 +385,16 @@ public abstract class OpenGL {
         this.GL_ARB_parallel_shader_compile = allExtensions.contains(GLExtension.GL_ARB_parallel_shader_compile);
         this.GL_ARB_sparse_buffer = allExtensions.contains(GLExtension.GL_ARB_sparse_buffer);
         this.GL_KHR_parallel_shader_compile = allExtensions.contains(GLExtension.GL_KHR_parallel_shader_compile);
+
+        //generate the GLSL version header string
+        StringBuilder headerBuilder = new StringBuilder();
+        headerBuilder.append("#version ").append(version.glsl()).append('\n');
+        for (GLExtension extension : nonCoreExtensions) {
+            if (extension.glsl()) {
+                headerBuilder.append("#extension ").append(extension.name()).append(" : require\n");
+            }
+        }
+        this.glslHeader = headerBuilder.toString();
     }
 
     //
