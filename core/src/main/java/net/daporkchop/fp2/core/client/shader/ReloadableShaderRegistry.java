@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.core.client.shader;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -43,10 +44,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -59,64 +60,20 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class ReloadableShaderRegistry implements AutoCloseable {
-    @NonNull
-    private final FP2Core fp2;
-    private final Map<Object, ReloadableShaderProgram<?>> programs = Collections.synchronizedMap(new HashMap<>());
+    /**
+     * @return a new {@link Builder} instance
+     */
+    public static ReloadableShaderRegistry.Builder builder(@NonNull FP2Core fp2, @NonNull OpenGL gl) {
+        return new Builder(fp2, gl);
+    }
+
+    private final @NonNull FP2Core fp2;
+    private final @NonNull OpenGL gl;
+    private final @NonNull ImmutableMap<Object, ReloadableShaderProgram<?>> programs;
 
     private transient Map<Identifier, byte[]> lastResourceHashes;
-
-    /**
-     * Gets a builder for a reloadable compute shader program which will be managed by this registry.
-     *
-     * @param key           a unique key to identify the program in this registry
-     * @param macros        the macros defined in the shader
-     * @param setupFunction a function for configuring additional settings necessary when linking the shader
-     * @return a builder for the shader
-     */
-    public ReloadableShaderProgram.ComputeBuilder createCompute(@NonNull Object key, @NonNull ShaderMacros macros, ReloadableShaderProgram.SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
-        return new ReloadableShaderProgram.ComputeBuilder(this, this.fp2, key, macros, setupFunction);
-    }
-
-    /**
-     * Gets a builder for a reloadable draw shader program which will be managed by this registry.
-     *
-     * @param key           a unique key to identify the program in this registry
-     * @param macros        the macros defined in the shader
-     * @param setupFunction a function for configuring additional settings necessary when linking the shader
-     * @return a builder for the shader
-     */
-    public ReloadableShaderProgram.DrawBuilder createDraw(@NonNull Object key, @NonNull ShaderMacros macros, ReloadableShaderProgram.SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
-        return new ReloadableShaderProgram.DrawBuilder(this, this.fp2, key, macros, setupFunction);
-    }
-
-    /**
-     * Adds a new shader program to this registry.
-     *
-     * @param key     the unique key which identifies the program in the registry
-     * @param program the shader program
-     */
-    void register(@NonNull Object key, @NonNull ReloadableShaderProgram<?> program) {
-        checkState(this.programs.putIfAbsent(key, program) == null, "this registry already contains a program with the key: %s", key);
-
-        this.lastResourceHashes = null; //invalidate reload() resource cache
-    }
-
-    /**
-     * Removes an existing shader program from this registry.
-     *
-     * @param key the unique key which identifies the program in the registry
-     */
-    public void unregister(@NonNull Object key) {
-        val program = this.programs.remove(key);
-        checkArg(program != null, "no registered program with key: %s", key);
-
-        PResourceUtil.close(program.program);
-        program.program = null;
-
-        this.lastResourceHashes = null; //invalidate reload() resource cache
-    }
 
     /**
      * Gets the registered shader program with the given key.
@@ -345,5 +302,76 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
      * @author DaPorkchop_
      */
     public static class ShaderReloadFailedException extends Exception {
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+    public static final class Builder {
+        final @NonNull FP2Core fp2;
+        final @NonNull OpenGL gl;
+
+        final Set<Object> programKeys = new HashSet<>();
+        final List<ReloadableShaderProgram.Builder<?, ?, ?>> programBuilders = new ArrayList<>();
+
+        private void registerProgram(@NonNull Object key, @NonNull ReloadableShaderProgram.Builder<?, ?, ?> programBuilder) {
+            if (!this.programKeys.add(key)) {
+                throw new IllegalStateException("this registry already contains a program with the key: " + key);
+            }
+            this.programBuilders.add(programBuilder);
+        }
+
+        /**
+         * Gets a builder for a reloadable compute shader program which will be managed by this registry.
+         *
+         * @param key           a unique key to identify the program in this registry
+         * @param macros        the macros defined in the shader
+         * @param setupFunction a function for configuring additional settings necessary when linking the shader
+         * @return a builder for the shader
+         */
+        public ReloadableShaderProgram.ComputeBuilder registerCompute(@NonNull Object key, @NonNull ShaderMacros macros, ReloadableShaderProgram.SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
+            val programBuilder = new ReloadableShaderProgram.ComputeBuilder(key, macros, setupFunction);
+            this.registerProgram(key, programBuilder);
+            return programBuilder;
+        }
+
+        /**
+         * Gets a builder for a reloadable draw shader program which will be managed by this registry.
+         *
+         * @param key           a unique key to identify the program in this registry
+         * @param macros        the macros defined in the shader
+         * @param setupFunction a function for configuring additional settings necessary when linking the shader
+         * @return a builder for the shader
+         */
+        public ReloadableShaderProgram.DrawBuilder registerDraw(@NonNull Object key, @NonNull ShaderMacros macros, ReloadableShaderProgram.SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
+            val programBuilder = new ReloadableShaderProgram.DrawBuilder(key, macros, setupFunction);
+            this.registerProgram(key, programBuilder);
+            return programBuilder;
+        }
+
+        /**
+         * Finishes building this registry and performs the initial compilation of all shaders.
+         *
+         * @return the constructed {@link ReloadableShaderRegistry}
+         * @throws ShaderReloadFailedException if at least one of the shaders couldn't be loaded
+         */
+        public ReloadableShaderRegistry build() throws ShaderReloadFailedException {
+            //build all the ReloadableShaderProgram instances.
+            //  we don't need to worry about cleaning up resources here if an exception is closed, as none of the ReloadableShaderProgram instances actually contain a program instance yet
+            ImmutableMap.Builder<Object, ReloadableShaderProgram<?>> programsBuilder = ImmutableMap.builder();
+            for (val programBuilder : this.programBuilders) {
+                programsBuilder.put(programBuilder.key, programBuilder.build());
+            }
+
+            //actually construct the registry instance and load the shaders
+            ReloadableShaderRegistry result = new ReloadableShaderRegistry(this.fp2, this.gl, programsBuilder.build());
+            try {
+                result.reload();
+                return result;
+            } catch (Throwable t) {
+                throw PResourceUtil.closeSuppressed(t, result);
+            }
+        }
     }
 }

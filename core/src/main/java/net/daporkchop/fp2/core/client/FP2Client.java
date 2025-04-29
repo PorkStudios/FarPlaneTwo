@@ -35,7 +35,6 @@ import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.RenderManager;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.util.listener.ListenerList;
@@ -68,8 +67,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public abstract class FP2Client {
-    private ReloadableShaderRegistry reloadableShaderRegistry;
-
     private final ListenerList<TextureUVs.ReloadListener> textureUVsReloadListeners = ListenerList.create(TextureUVs.ReloadListener.class);
     private final ListenerList<FramebufferResizeListener> framebufferResizeListeners = ListenerList.create(FramebufferResizeListener.class);
 
@@ -93,8 +90,6 @@ public abstract class FP2Client {
     public void init(@NonNull FutureExecutor clientThreadExecutor) {
         checkState(this.fp2() != null, "fp2() must be set!");
         checkState(this.chat() != null, "chat() must be set!");
-
-        this.reloadableShaderRegistry = new ReloadableShaderRegistry(this.fp2());
 
         //require at least OpenGL 4.5
         clientThreadExecutor.run(() -> {

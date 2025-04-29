@@ -84,8 +84,6 @@ public final class GlobalRenderer {
             this.client = fp2.client();
             this.gl = gl;
 
-            this.shaderRegistry = new ReloadableShaderRegistry(fp2);
-
             this.cameraStateUniformsFormat = AttributeFormat.get(gl, CameraStateUniforms.class, AttributeTarget.UBO);
             this.drawStateUniformsFormat = AttributeFormat.get(gl, DrawStateUniforms.class, AttributeTarget.UBO);
             this.frustumClippingPlanesUBOFormat = AttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
@@ -148,18 +146,18 @@ public final class GlobalRenderer {
 
             this.shaderMacros = shaderMacrosBuilder.build();
 
+            ReloadableShaderRegistry.Builder shaderRegistryBuilder = ReloadableShaderRegistry.builder(fp2, gl);
             val log = fp2.log();
             for (val shaderRegistration : ShaderRegistration.getTypes(fp2)) {
                 val requiredExtensions = shaderRegistration.requiredExtensions();
                 if (gl.supports(requiredExtensions)) {
                     log.debug("Registering shaders from %s", shaderRegistration);
-                    shaderRegistration.registerShaders(this, this.shaderRegistry, this.shaderMacros, this.client, gl);
+                    shaderRegistration.registerShaders(this, shaderRegistryBuilder, this.shaderMacros, this.client, gl);
                 } else {
                     log.debug("Not registering shaders from %s: %s", shaderRegistration, gl.unsupportedMsg(requiredExtensions));
                 }
             }
-
-            this.shaderRegistry.reload();
+            this.shaderRegistry = shaderRegistryBuilder.build();
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this::close);
         }

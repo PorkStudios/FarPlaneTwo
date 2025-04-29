@@ -115,14 +115,13 @@ public final class ComputeTextureCopier extends AbstractComputeShaderContainer {
         }
 
         @Override
-        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
+        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry.Builder shaderRegistryBuilder, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
             for (val variant : TextureCopyShaderVariant.allVariants()) {
-                shaderRegistry.createCompute(variant, shaderMacros.withDefined(variant.defines()), builder -> builder
+                shaderRegistryBuilder.registerCompute(variant, shaderMacros.withDefined(variant.defines()), builder -> builder
                                 .addSampler(SRC_SAMPLER_BINDING, "u_srcTexture")
                                 .addImage(SRC_IMAGE_BINDING, "u_srcImage")
                                 .addImage(DST_IMAGE_BINDING, "u_dstImage"))
-                        .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/texture_copy.comp"))
-                        .build();
+                        .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/texture_copy.comp"));
             }
         }
     }

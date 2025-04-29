@@ -54,8 +54,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public final class ReloadableShaderProgram<P extends ShaderProgram> {
-    final ReloadableShaderRegistry registry;
-    final Object key;
     final ShaderMacros macros;
 
     final Function<OpenGL, ShaderProgram.Builder<P, ?>> builderFactory; //this is some truly enterprise code
@@ -65,15 +63,11 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
     P program;
 
     ReloadableShaderProgram(Builder<P, ?, ?> builder) {
-        this.registry = builder.registry;
-        this.key = builder.key;
         this.macros = builder.macros;
 
         this.builderFactory = builder.builderFactory;
         this.shaders = builder.shaders.build();
         this.setupFunction = builder.buildSetupFunction();
-
-        this.registry.register(this.key, this);
 
         //we won't compile the program immediately, as all the shaders will be compiled at once when the registry is reloaded
         //this.program = this.compile(builder.fp2.client().gl(), builder.fp2.client().resourceProvider());
@@ -135,11 +129,8 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
      * @return the actual {@link ShaderProgram} referred to by this program
      */
     public P get() {
-        P program = this.program;
-        if (program == null) {
-            throw new IllegalStateException("shader program hasn't been loaded!");
-        }
-        return program;
+        assert this.program != null : "ReloadableShaderProgram instance was accessed before being loaded?!?";
+        return this.program;
     }
 
     /**
@@ -164,8 +155,6 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
      */
     @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
     public static abstract class Builder<P extends ShaderProgram, PB extends ShaderProgram.Builder<P, PB>, B extends Builder<P, PB, B>> {
-        final ReloadableShaderRegistry registry;
-        final FP2Core fp2;
         final Object key;
         final ShaderMacros macros;
         final Function<OpenGL, ShaderProgram.Builder<P, ?>> builderFactory; //this is some truly enterprise code
@@ -241,8 +230,8 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
      * @author DaPorkchop_
      */
     public static final class ComputeBuilder extends Builder<ComputeShaderProgram, ComputeShaderProgram.Builder, ComputeBuilder> {
-        ComputeBuilder(ReloadableShaderRegistry registry, FP2Core fp2, Object key, ShaderMacros macros, SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
-            super(registry, fp2, key, macros, ComputeShaderProgram::builder, setupFunction);
+        ComputeBuilder(Object key, ShaderMacros macros, SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
+            super(key, macros, ComputeShaderProgram::builder, setupFunction);
         }
     }
 
@@ -250,8 +239,8 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
      * @author DaPorkchop_
      */
     public static final class DrawBuilder extends Builder<DrawShaderProgram, DrawShaderProgram.Builder, DrawBuilder> {
-        DrawBuilder(ReloadableShaderRegistry registry, FP2Core fp2, Object key, ShaderMacros macros, SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
-            super(registry, fp2, key, macros, DrawShaderProgram::builder, setupFunction);
+        DrawBuilder(Object key, ShaderMacros macros, SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
+            super(key, macros, DrawShaderProgram::builder, setupFunction);
         }
     }
 }

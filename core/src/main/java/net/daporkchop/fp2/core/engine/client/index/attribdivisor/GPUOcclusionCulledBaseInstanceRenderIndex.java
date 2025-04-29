@@ -143,26 +143,24 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
         }
 
         @Override
-        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
-            shaderRegistry.createDraw(OCCLUSION_CULLED_CUBE_KEY, shaderMacros, null)
+        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry.Builder shaderRegistryBuilder, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
+            shaderRegistryBuilder.registerDraw(OCCLUSION_CULLED_CUBE_KEY, shaderMacros, null)
                     .addShader(ShaderType.VERTEX, Identifier.from(FP2.MODID, "shaders/vert/occlusion_culled_cube.vert"))
                     .addShader(ShaderType.FRAGMENT, Identifier.from(FP2.MODID, "shaders/frag/occlusion_culled_cube.frag"))
                     .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
                     .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
-                    .addSSBO(DST_SELECTED_TILES_SSBO_BINDING, DST_SELECTED_TILES_SSBO_NAME)
-                    .build();
+                    .addSSBO(DST_SELECTED_TILES_SSBO_BINDING, DST_SELECTED_TILES_SSBO_NAME);
 
-            shaderRegistry.createCompute(TILE_VISIBILITY_TEST_KEY, shaderMacros, null)
+            shaderRegistryBuilder.registerCompute(TILE_VISIBILITY_TEST_KEY, shaderMacros, null)
                     .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/tile_visibility_test.comp"))
                     .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
                     .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
                     .addSSBO(DST_SELECTED_TILES_SSBO_BINDING, DST_SELECTED_TILES_SSBO_NAME)
                     .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
-                    .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
-                    .build();
+                    .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME);
 
             for (val variant : TileOcclusionTestVariant.allVariants(gl)) {
-                shaderRegistry.createCompute(variant, shaderMacros.withDefined(variant.defines()), null)
+                shaderRegistryBuilder.registerCompute(variant, shaderMacros.withDefined(variant.defines()), null)
                         .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/tile_occlusion_test.comp"))
                         .addSampler(DEPTH_TEXTURE_SAMPLER2D_BINDING, DEPTH_TEXTURE_SAMPLER2D_NAME)
                         .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
@@ -170,8 +168,7 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
                         .addSSBO(SRC_VISIBLE_TILES_SSBO_BINDING, SRC_VISIBLE_TILES_SSBO_NAME)
                         .addSSBO(DST_SELECTED_TILES_SSBO_BINDING, DST_SELECTED_TILES_SSBO_NAME)
                         .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
-                        .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
-                        .build();
+                        .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME);
             }
         }
     }

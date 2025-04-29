@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -55,12 +55,12 @@ public abstract class ShaderRegistration {
     /**
      * Registers the shaders defined by this {@link ShaderRegistration} instance.
      *
-     * @param globalRenderer the {@link GlobalRenderer} instance
-     * @param shaderRegistry the {@link ReloadableShaderRegistry} to register the shaders to
-     * @param shaderMacros   the base {@link ShaderMacros} which will probably be inherited by all shaders
-     * @param client         the {@link FP2Core} instance
-     * @param gl             the {@link OpenGL} context
+     * @param globalRenderer        the {@link GlobalRenderer} instance
+     * @param shaderRegistryBuilder the {@link ReloadableShaderRegistry.Builder} to register the shaders to
+     * @param shaderMacros          the base {@link ShaderMacros} which will probably be inherited by all shaders
+     * @param client                the {@link FP2Core} instance
+     * @param gl                    the {@link OpenGL} context
      * @throws UnsupportedOperationException if this {@link ShaderRegistration} isn't supported
      */
-    public abstract void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl);
+    public abstract void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry.Builder shaderRegistryBuilder, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl);
 }

@@ -134,17 +134,16 @@ public final class GPUCulledBaseInstanceRenderIndex<VertexType extends Attribute
         }
 
         @Override
-        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
+        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry.Builder shaderRegistryBuilder, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
             for (CullingShaderVariant variant : CullingShaderVariant.allVariants(gl)) {
-                shaderRegistry.createCompute(variant, shaderMacros.withDefined(variant.defines()), null)
+                shaderRegistryBuilder.registerCompute(variant, shaderMacros.withDefined(variant.defines()), null)
                         .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
                         .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
                         .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
                         .addSSBO(RAW_DRAW_LISTS_SSBO_BINDING, RAW_DRAW_LISTS_SSBO_NAME)
                         .addSSBO(CULLED_DRAW_LISTS_SSBO_BINDING, CULLED_DRAW_LISTS_SSBO_NAME)
                         .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
-                        .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
-                        .build();
+                        .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME);
             }
         }
     }

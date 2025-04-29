@@ -118,14 +118,13 @@ public final class ComputeIndirectDrawCommandsCompressor extends AbstractCompute
         }
 
         @Override
-        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
+        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry.Builder shaderRegistryBuilder, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
             for (val variant : CompressIndirectDrawCommandsVariant.allVariants()) {
-                shaderRegistry.createCompute(variant, shaderMacros.withDefined(variant.defines()), null)
+                shaderRegistryBuilder.registerCompute(variant, shaderMacros.withDefined(variant.defines()), null)
                         .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/compress_indirect_draw_commands.comp"))
                         .addSSBO(SELECTED_FLAGS_SSBO_BINDING, SELECTED_FLAGS_SSBO_NAME)
                         .addSSBO(SRC_COMMANDS_SSBO_BINDING, SRC_COMMANDS_SSBO_NAME)
-                        .addSSBO(DST_COMMANDS_SSBO_BINDING, DST_COMMANDS_SSBO_NAME)
-                        .build();
+                        .addSSBO(DST_COMMANDS_SSBO_BINDING, DST_COMMANDS_SSBO_NAME);
             }
         }
     }

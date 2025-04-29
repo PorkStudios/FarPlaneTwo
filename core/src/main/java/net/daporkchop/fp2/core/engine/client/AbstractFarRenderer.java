@@ -187,14 +187,13 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         }
 
         @Override
-        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
+        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry.Builder shaderRegistryBuilder, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
             for (DrawShaderVariant variant : DrawShaderVariant.allVariants(gl)) {
-                val builder = shaderRegistry.createDraw(variant, shaderMacros.withDefined(variant.defines()), variant.setupFunction(client, globalRenderer));
+                val builder = shaderRegistryBuilder.registerDraw(variant, shaderMacros.withDefined(variant.defines()), variant.setupFunction(client, globalRenderer));
                 builder.addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"));
                 if (!variant.stencil) {
                     builder.addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"));
                 }
-                builder.build();
             }
         }
     }

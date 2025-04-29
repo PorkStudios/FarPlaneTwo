@@ -121,9 +121,9 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         }
 
         @Override
-        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
+        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry.Builder shaderRegistryBuilder, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
             for (val variant : MipmapGeneratorShaderVariant.allVariants()) {
-                shaderRegistry.createCompute(variant, shaderMacros.withDefined(variant.defines()), builder -> builder
+                shaderRegistryBuilder.registerCompute(variant, shaderMacros.withDefined(variant.defines()), builder -> builder
                                 .addSampler(SRC_SAMPLER_BINDING, "u_srcTexture")
                                 .addImage(SRC_IMAGE_BINDING, "u_srcImage")
                                 .addImage(DST_IMAGE_BINDING, "u_dstImage"))
