@@ -36,11 +36,13 @@ import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
+import net.daporkchop.fp2.gl.state.MultiBindHelper;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.texture.GLTexture2D;
 import net.daporkchop.fp2.gl.texture.PixelComponentType;
 import net.daporkchop.fp2.gl.texture.PixelKind;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
+import net.daporkchop.fp2.gl.texture.TextureTarget;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.math.PMath;
 
@@ -62,11 +64,11 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
             .add(GLExtension.GL_ARB_shader_image_load_store);
 
     private static final int SHADER_WORK_GROUP_TILE_SIZE = 16; //synced with resources/assets/fp2/shaders/comp/generate_mipmap.comp
-    private static final int MAX_LEVELS_PER_DISPATCH = 1; //synced with resources/assets/fp2/shaders/comp/generate_mipmap.comp
+    private static final int MAX_LEVELS_PER_DISPATCH = 4; //synced with resources/assets/fp2/shaders/comp/generate_mipmap.comp
 
     private static final int SRC_SAMPLER_BINDING = 7; //TODO: improve this
     private static final int SRC_IMAGE_BINDING = 0;
-    private static final int DST_IMAGE_BINDING = SRC_IMAGE_BINDING + 1;
+    private static final int DST_IMAGE_BINDING_BASE = SRC_IMAGE_BINDING + 1;
 
     /**
      * @author DaPorkchop_
@@ -78,11 +80,13 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         final @NonNull MipmapMode mode;
         final @NonNull TextureInternalFormat imageFormat;
         final boolean srcSampler;
+        final boolean copyBase;
 
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
             builder.put("FP2_MIPMAP_MODE", this.mode.ordinal());
             builder.put("FP2_MIPMAP_SRC_SAMPLER", this.srcSampler);
+            builder.put("FP2_MIPMAP_COPY_BASE", this.copyBase);
 
             builder.put("FP2_MIPMAP_FORMAT_IMAGE_LAYOUT", this.imageFormat.name().toLowerCase(Locale.ROOT));
             builder.put("FP2_MIPMAP_FORMAT_IMAGE_TYPE", this.imageFormat.sampledType().glslPrefix() + "image2D");
@@ -94,9 +98,10 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         public static List<MipmapGeneratorShaderVariant> allVariants() {
             TextureInternalFormat[] imageFormats = TextureInternalFormat.colorFormatsFloat();
             MipmapMode[] mipmapModes = MipmapMode.values();
-            val srcSamplers = new boolean[]{false, true};
+            boolean[] srcSamplers = { false, true };
+            boolean[] copyBases = { false };
 
-            List<MipmapGeneratorShaderVariant> result = new ArrayList<>(imageFormats.length * mipmapModes.length * srcSamplers.length);
+            List<MipmapGeneratorShaderVariant> result = new ArrayList<>(imageFormats.length * mipmapModes.length * srcSamplers.length * copyBases.length);
             for (val imageFormat : imageFormats) {
                 if (imageFormat.defaultFormat().components() == 3) { //3-component formats aren't supported by image load/store
                     continue;
@@ -104,7 +109,9 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
 
                 for (val mipmapMode : mipmapModes) {
                     for (val srcSampler : srcSamplers) {
-                        result.add(new MipmapGeneratorShaderVariant(mipmapMode, imageFormat, srcSampler));
+                        for (val copyBase : copyBases) {
+                            result.add(new MipmapGeneratorShaderVariant(mipmapMode, imageFormat, srcSampler, copyBase));
+                        }
                     }
                 }
             }
@@ -125,10 +132,9 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
             for (val variant : MipmapGeneratorShaderVariant.allVariants()) {
                 shaderRegistryBuilder.registerCompute(variant, shaderMacros.withDefined(variant.defines()), builder -> builder
                                 .addSampler(SRC_SAMPLER_BINDING, "u_srcTexture")
-                                .addImage(SRC_IMAGE_BINDING, "u_srcImage")
-                                .addImage(DST_IMAGE_BINDING, "u_dstImage"))
+                                .addImage(SRC_IMAGE_BINDING, "u_srcImage"))
                         .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/generate_mipmap.comp"))
-                        .build();
+                        .addImages(DST_IMAGE_BINDING_BASE, MAX_LEVELS_PER_DISPATCH, "u_dstImages");
             }
         }
     }
@@ -162,6 +168,9 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         checkIndex(srcTexture.levels(), srcLevel);
         checkRangeLen(dstTexture.levels(), dstLevel, levels);
 
+        int srcLevelWidth = Math.max(srcTexture.width() >> srcLevel, 1);
+        int srcLevelHeight = Math.max(srcTexture.height() >> srcLevel, 1);
+
         checkArg(Math.max(srcTexture.width() >> (srcLevel + 1), 1) == Math.max(dstTexture.width() >> dstLevel, 1)
                         && Math.max(srcTexture.height() >> (srcLevel + 1), 1) == Math.max(dstTexture.height() >> dstLevel, 1),
                 "src and dst texture resolutions don't match!");
@@ -173,12 +182,12 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         checkArg(dstFormat.defaultFormat().kind() == PixelKind.COLOR, "cannot write mipmaps to a %s texture", dstFormat.defaultFormat().kind());
 
         //if the source is a depth texture, the first pass needs to read from the source texture using a sampler
-        boolean srcSampler = srcFormat.defaultFormat().kind() != PixelKind.COLOR;
+        boolean samplerSrcForFirstLevel = srcFormat.defaultFormat().kind() != PixelKind.COLOR;
 
         //if the source texture needs to be read by a sampler and the mipmap generation will need more than one shader dispatch,
         //  we'll separate the first dispatch from subsequent ones so that all subsequent shader invocations read from their parent
         //  level using image load/store instead of a sampler
-        if (srcSampler && levels > MAX_LEVELS_PER_DISPATCH) {
+        if (samplerSrcForFirstLevel && levels > MAX_LEVELS_PER_DISPATCH) {
             this.generateMipmaps(
                     srcTexture, srcLevel,
                     dstTexture, dstLevel,
@@ -193,42 +202,81 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
             return;
         }
 
-        val shader = this.shaderRegistry.<ComputeShaderProgram>get(new MipmapGeneratorShaderVariant(mode, dstFormat, srcSampler)).get();
+        val shader = this.shaderRegistry.<ComputeShaderProgram>get(new MipmapGeneratorShaderVariant(mode, dstFormat, samplerSrcForFirstLevel, false)).get();
         val uniformSetter = shader.bindUnsafe();
 
-        for (int level = 0; level < levels; level += MAX_LEVELS_PER_DISPATCH) {
-            int levelsThisDispatch = Math.min(levels - level, MAX_LEVELS_PER_DISPATCH);
+        int u_levelsThisDispatch = shader.uniformLocation("u_levelsThisDispatch");
 
-            int dstWidthThisDispatch = Math.max(dstTexture.width() >> (dstLevel + level), 1);
-            int dstHeightThisDispatch = Math.max(dstTexture.height() >> (dstLevel + level), 1);
+        int currentlyBoundDstImageCount = 0;
 
-            int numGroupsX = PMath.roundUp(dstWidthThisDispatch, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
-            int numGroupsY = PMath.roundUp(dstHeightThisDispatch, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
+        int prevLevelWidth = srcTexture.widthAtLevel(srcLevel);
+        int prevLevelHeight = srcTexture.heightAtLevel(srcLevel);
 
-            if (srcSampler) {
-                uniformSetter.set1i(shader.uniformLocation("u_srcTextureLod"), srcLevel + level);
-                srcTexture.bindToUnitUnsafe(SRC_SAMPLER_BINDING);
+        for (int processedLevels = 0; processedLevels < levels; ) {
+            int remainingLevels = levels - processedLevels;
+
+            int remainingEvenSizedLevels = Math.min(
+                    Integer.numberOfTrailingZeros(prevLevelWidth | prevLevelHeight),
+                    remainingLevels);
+
+            boolean useFastReduction = remainingEvenSizedLevels >= 2;
+
+            int levelsThisDispatch;
+            if (useFastReduction) {
+                levelsThisDispatch = Math.min(remainingEvenSizedLevels, MAX_LEVELS_PER_DISPATCH);
             } else {
-                //TODO: on subsequent dispatches, bind the destination texture instead of the source
-                this.gl.glBindImageTexture(SRC_IMAGE_BINDING, srcTexture.id(), srcLevel + level, false, 0, GL_READ_ONLY, srcTexture.internalFormat().id());
+                levelsThisDispatch = 1;
+            }
+
+            int currLevelWidth = dstTexture.widthAtLevel(dstLevel + processedLevels);
+            int currLevelHeight = dstTexture.heightAtLevel(dstLevel + processedLevels);
+
+            int numGroupsX = PMath.roundUp(currLevelWidth, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
+            int numGroupsY = PMath.roundUp(currLevelHeight, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
+
+            uniformSetter.set1ui(u_levelsThisDispatch, levelsThisDispatch);
+
+            if (samplerSrcForFirstLevel) {
+                uniformSetter.set1i(shader.uniformLocation("u_srcTextureLod"), srcLevel + processedLevels);
+                srcTexture.bindToUnitUnsafe(SRC_SAMPLER_BINDING);
+            } else if (processedLevels == 0) {
+                this.gl.glBindImageTexture(SRC_IMAGE_BINDING, srcTexture.id(), srcLevel + processedLevels, false, 0, GL_READ_ONLY, srcTexture.internalFormat().id());
+            } else {
+                //for subsequent levels, reduce based on the previous mipmap level written to the destination
+                this.gl.glBindImageTexture(SRC_IMAGE_BINDING, dstTexture.id(), dstLevel + processedLevels - 1, false, 0, GL_READ_ONLY, dstTexture.internalFormat().id());
             }
 
             for (int dispatchLevel = 0; dispatchLevel < levelsThisDispatch; dispatchLevel++) {
-                this.gl.glBindImageTexture(DST_IMAGE_BINDING + dispatchLevel, dstTexture.id(), dstLevel + level + dispatchLevel, false, 0, GL_WRITE_ONLY, dstTexture.internalFormat().id());
+                this.gl.glBindImageTexture(DST_IMAGE_BINDING_BASE + dispatchLevel, dstTexture.id(), dstLevel + processedLevels + dispatchLevel, false, 0, GL_WRITE_ONLY, dstTexture.internalFormat().id());
             }
+
+            //if there are more images bound than there were in the previous pass, unbind them
+            if (levelsThisDispatch < currentlyBoundDstImageCount) {
+                MultiBindHelper.unbindImageTextures(this.gl, DST_IMAGE_BINDING_BASE + levelsThisDispatch, currentlyBoundDstImageCount - levelsThisDispatch);
+            }
+            currentlyBoundDstImageCount = levelsThisDispatch;
 
             this.gl.glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
             this.gl.glDispatchCompute(numGroupsX, numGroupsY, 1);
+
+            prevLevelWidth = dstTexture.widthAtLevel(dstLevel + processedLevels + levelsThisDispatch - 1);
+            prevLevelHeight = dstTexture.heightAtLevel(dstLevel + processedLevels + levelsThisDispatch - 1);
+
+            processedLevels += levelsThisDispatch;
         }
 
-        //this.gl.glBindImageTextures(DST_IMAGE_BINDING, Math.min(levels, MAX_LEVELS_PER_DISPATCH));
+        //unbind all the images again
+        //this is necessary to work around a bug in mesa which seems to cause things to break if we leave the images bound
+        MultiBindHelper.unbindImageTextures(this.gl, SRC_IMAGE_BINDING, 1 + currentlyBoundDstImageCount);
     }
 
     @Override
     public void configureModifiedState(@NonNull StatePreserver.Builder builder) {
         builder.activeProgram();
-        //TODO: add image bindings to StatePreserver
+        builder.texture(TextureTarget.TEXTURE_2D, SRC_SAMPLER_BINDING);
+        builder.image(SRC_IMAGE_BINDING);
+        builder.images(DST_IMAGE_BINDING_BASE, MAX_LEVELS_PER_DISPATCH);
     }
 
     /**

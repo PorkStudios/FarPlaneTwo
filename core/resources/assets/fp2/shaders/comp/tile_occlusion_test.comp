@@ -125,6 +125,7 @@ bool projectBox(vec3 bmin, vec3 bmax, out vec3 ndc_bounds_min, out vec3 ndc_boun
 }
 
 bool select(uint tileIndex) {
+    //TODO: re-enable this
     /*if (b_srcVisibleTiles[tileIndex] == 0u) {
         return false;
     }*/
@@ -174,7 +175,7 @@ bool select(uint tileIndex) {
     }
 
     vec2 viewport_size = vec2(textureSize(u_depthTexture, 0));
-    vec2 view_size = (uv_bounds_max - uv_bounds_min) * viewport_size;
+    vec2 view_size = abs(uv_bounds_max - uv_bounds_min) * viewport_size;
 
     float compare_depth;
     if (AUTO_REDUCE) {
@@ -196,16 +197,10 @@ bool select(uint tileIndex) {
     }
 
     if (REVERSEDZ) {
-        if (compare_depth >= tile_depth) {
-            return false;
-        }
+        return tile_depth > compare_depth;
     } else {
-        if (compare_depth <= tile_depth) {
-            return false;
-        }
+        return tile_depth < compare_depth;
     }
-
-    return true;
 }
 
 void main() {

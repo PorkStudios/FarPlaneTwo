@@ -164,6 +164,7 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
         final ImmutableMap.Builder<Integer, String> samplerBindings = ImmutableMap.builder();
         final ImmutableMap.Builder<Integer, String> ssboBindings = ImmutableMap.builder();
         final ImmutableMap.Builder<Integer, String> uboBindings = ImmutableMap.builder();
+        final ImmutableMap.Builder<Integer, String> imageBindings = ImmutableMap.builder();
         final SetupFunction<? super PB> setupFunction;
 
         public final B addShader(@NonNull ShaderType type, @NonNull Identifier identifier) {
@@ -200,7 +201,19 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
             return uncheckedCast(this);
         }
 
-        public final ReloadableShaderProgram<P> build() {
+        public final B addImage(@NotNegative int bindingIndex, @NonNull String name) {
+            this.imageBindings.put(bindingIndex, name);
+            return uncheckedCast(this);
+        }
+
+        public final B addImages(@NotNegative int bindingIndex, @NotNegative int count, @NonNull String name) {
+            for (int i = 0; i < count; i++) {
+                this.addImage(bindingIndex + i, name + '[' + i + ']');
+            }
+            return uncheckedCast(this);
+        }
+
+        final ReloadableShaderProgram<P> build() {
             return new ReloadableShaderProgram<>(this);
         }
 
@@ -208,9 +221,10 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
             val samplerBindings = this.samplerBindings.build();
             val ssboBindings = this.ssboBindings.build();
             val uboBindings = this.uboBindings.build();
+            val imageBindings = this.imageBindings.build();
             SetupFunction<? super PB> setupFunction = this.setupFunction;
 
-            if (samplerBindings.isEmpty() && ssboBindings.isEmpty() && uboBindings.isEmpty()) {
+            if (samplerBindings.isEmpty() && ssboBindings.isEmpty() && uboBindings.isEmpty() && imageBindings.isEmpty()) {
                 // There are no additional configurations, return the user-provided setup function directly
                 return setupFunction;
             }
@@ -222,6 +236,7 @@ public final class ReloadableShaderProgram<P extends ShaderProgram> {
                 samplerBindings.forEach(builder::addSampler);
                 ssboBindings.forEach(builder::addSSBO);
                 uboBindings.forEach(builder::addUBO);
+                imageBindings.forEach(builder::addImage);
             };
         }
     }

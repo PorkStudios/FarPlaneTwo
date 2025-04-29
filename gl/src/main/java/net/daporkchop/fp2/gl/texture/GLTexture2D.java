@@ -88,6 +88,28 @@ public final class GLTexture2D extends GLSampledTexture {
         }
     }
 
+    /**
+     * Gets this texture's width at the given mipmap level.
+     *
+     * @param level the mipmap level
+     * @return this texture's width at the given mipmap level
+     */
+    public int widthAtLevel(@NotNegative int level) {
+        checkIndex(this.levels, level);
+        return Math.max(this.width >> level, 1);
+    }
+
+    /**
+     * Gets this texture's height at the given mipmap level.
+     *
+     * @param level the mipmap level
+     * @return this texture's height at the given mipmap level
+     */
+    public int heightAtLevel(@NotNegative int level) {
+        checkIndex(this.levels, level);
+        return Math.max(this.height >> level, 1);
+    }
+
     private void checkSubrectangle(int level, int xOffset, int yOffset, int width, int height) {
         checkIndex(this.levels, level);
         checkRangeLen(Math.max(this.width >> level, 1), xOffset, width);

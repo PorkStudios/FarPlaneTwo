@@ -69,6 +69,7 @@ import net.daporkchop.fp2.gl.texture.GLTexture2D;
 import net.daporkchop.fp2.gl.texture.TextureMagFilter;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
 import net.daporkchop.fp2.gl.texture.TextureMinFilter;
+import net.daporkchop.fp2.gl.texture.TextureWrapMode;
 import net.daporkchop.fp2.gl.texture.framebuffer.FramebufferAttachment;
 import net.daporkchop.fp2.gl.texture.framebuffer.GLFramebuffer;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
@@ -293,11 +294,7 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
         this.depthTexture_color = GLTexture2D.create(this.gl, TextureInternalFormat.R32F, GLTexture2D.requiredLevels(width, height), width, height);
 
         this.depthTexture_color.filter(TextureMinFilter.NEAREST_MIPMAP_NEAREST, TextureMagFilter.NEAREST);
-        this.depthTexture_color.setParameters(parameterSetter -> {
-            parameterSetter.set(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            parameterSetter.set(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            parameterSetter.set(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        });
+        this.depthTexture_color.wrap(TextureWrapMode.CLAMP_TO_EDGE, TextureWrapMode.CLAMP_TO_EDGE);
 
         //attach the new depth texture to the framebuffer
         this.copyFramebuffer.attachTexture(FramebufferAttachment.DEPTH_ATTACHMENT, this.depthTexture_depth, 0);

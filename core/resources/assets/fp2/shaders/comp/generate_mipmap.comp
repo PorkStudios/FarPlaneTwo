@@ -22,7 +22,9 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 
 //synced with net.daporkchop.fp2.core.client.render.compute.ComputeTextureMipmapGenerator#MAX_LEVELS_PER_DISPATCH
-const uint MAX_LEVELS_PER_DISPATCH = 1u;
+const uint MAX_LEVELS_PER_DISPATCH = 4u;
+
+#include <"fp2:shaders/util/bvec_helper.glsl"> // bvec_and()
 
 //
 //
@@ -37,6 +39,10 @@ const uint MAX_LEVELS_PER_DISPATCH = 1u;
 #ifndef FP2_MIPMAP_SRC_SAMPLER
     #error "FP2_MIPMAP_SRC_SAMPLER must be defined!"
 #endif // FP2_MIPMAP_SRC_SAMPLER
+
+#ifndef FP2_MIPMAP_COPY_BASE
+    #error "FP2_MIPMAP_COPY_BASE must be defined!"
+#endif // FP2_MIPMAP_COPY_BASE
 
 #ifndef FP2_MIPMAP_FORMAT_IMAGE_LAYOUT
     #error "FP2_MIPMAP_FORMAT_IMAGE_LAYOUT must be defined!"
@@ -69,6 +75,7 @@ const uint MAX_LEVELS_PER_DISPATCH = 1u;
 #define texel_t FP2_MIPMAP_FORMAT_RAW_TEXEL_TYPE
 
 shared texel_t s_texelCache[gl_WorkGroupSize.x][gl_WorkGroupSize.y];
+uniform uint u_levelsThisDispatch;
 
 #if FP2_MIPMAP_SRC_SAMPLER
     uniform FP2_MIPMAP_FORMAT_SAMPLER_TYPE u_srcTexture;
@@ -85,46 +92,119 @@ shared texel_t s_texelCache[gl_WorkGroupSize.x][gl_WorkGroupSize.y];
     }
 #endif
 
-uniform layout(FP2_MIPMAP_FORMAT_IMAGE_LAYOUT) restrict writeonly FP2_MIPMAP_FORMAT_IMAGE_TYPE u_dstImage;
+#if FP2_MIPMAP_COPY_BASE
+    uniform layout(FP2_MIPMAP_FORMAT_IMAGE_LAYOUT) restrict writeonly FP2_MIPMAP_FORMAT_IMAGE_TYPE u_dstImageCopy;
+#endif
 
-texel_t loadTexelSafe(uvec2 coord) {
-    //ensure the coordinates are in bounds
-    //  (this will result in the edge pixels being loaded multiple times, but it doesn't matter because the performance
-    //  impact should be zero on modern GPU architectures and it won't affect the subsequent computations)
-    coord = min(coord, srcLevelSize() - 1u);
+uniform layout(FP2_MIPMAP_FORMAT_IMAGE_LAYOUT) restrict writeonly FP2_MIPMAP_FORMAT_IMAGE_TYPE u_dstImages[MAX_LEVELS_PER_DISPATCH];
 
+texel_t loadMemory(in uvec2 coord) {
+    texel_t result;
     #if FP2_MIPMAP_SRC_SAMPLER
-        return texelFetch(u_srcTexture, ivec2(coord), u_srcTextureLod);
+        result = texelFetch(u_srcTexture, ivec2(coord), u_srcTextureLod);
     #else
-        return imageLoad(u_srcImage, ivec2(coord));
+        result = imageLoad(u_srcImage, ivec2(coord));
     #endif
+
+    #if FP2_MIPMAP_COPY_BASE
+        //if FP2_MIPMAP_COPY_BASE is enabled, copy the first mipmap level unchanged
+        imageStore(u_dstImageCopy, ivec2(coord), result);
+    #endif
+
+    return result;
+}
+
+texel_t loadTexelCache(in uvec2 coord) {
+    return s_texelCache[coord.x][coord.y];
+}
+
+texel_t loadReduceMemory2x2(in uvec2 coord) {
+    texel_t src00 = loadMemory(coord + uvec2(0u, 0u));
+    texel_t src01 = loadMemory(coord + uvec2(0u, 1u));
+    texel_t src10 = loadMemory(coord + uvec2(1u, 0u));
+    texel_t src11 = loadMemory(coord + uvec2(1u, 1u));
+    return mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
+}
+
+void loadReduceMemoryEdge(inout texel_t result, in uvec2 coord, in bvec2 edgeSamples) {
+    if (any(edgeSamples)) {
+        if (edgeSamples.x) {
+            result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 0u)));
+            result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 1u)));
+        }
+        if (edgeSamples.y) {
+            result = mipmapReduce(result, loadMemory(coord + uvec2(0u, 2u)));
+            result = mipmapReduce(result, loadMemory(coord + uvec2(1u, 2u)));
+        }
+        if (all(edgeSamples)) {
+            result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 2u)));
+        }
+    }
+}
+
+texel_t loadReduceCache2x2(in uvec2 coord, in uint stride) {
+    texel_t src00 = loadTexelCache(coord + uvec2(0u, 0u) * stride);
+    texel_t src01 = loadTexelCache(coord + uvec2(0u, 1u) * stride);
+    texel_t src10 = loadTexelCache(coord + uvec2(1u, 0u) * stride);
+    texel_t src11 = loadTexelCache(coord + uvec2(1u, 1u) * stride);
+    return mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
 }
 
 void main() {
-    uvec2 dstTexelCoord = gl_WorkGroupID.xy * gl_WorkGroupSize.xy + gl_LocalInvocationID.xy;
+    if (u_levelsThisDispatch <= 1u) {
+        //reduce one mipmap level, store it to the output texture
+        uvec2 dstTexelCoord = gl_GlobalInvocationID.xy;
+        uvec2 localIdx = gl_LocalInvocationID.xy;
 
-    uvec2 srcLevelSize = srcLevelSize();
-    uvec2 firstDstLevelSize = max(srcLevelSize / 2u, 1u);
+        if (all(lessThan(dstTexelCoord, imageSize(u_dstImages[0])))) {
+            uvec2 srcTexelCoord = dstTexelCoord * 2u;
 
-    /*//load texels into the cache
-    uvec2 srcTexelCoord = firstDstTexelCoord * 2u;
-    s_texelCache[srcTexelCoord.x + 0u][srcTexelCoord.y + 0u] = loadTexelSafe(srcTexelCoord + uvec2(0u, 0u));
-    s_texelCache[srcTexelCoord.x + 0u][srcTexelCoord.y + 1u] = loadTexelSafe(srcTexelCoord + uvec2(0u, 1u));
-    s_texelCache[srcTexelCoord.x + 1u][srcTexelCoord.y + 0u] = loadTexelSafe(srcTexelCoord + uvec2(1u, 0u));
-    s_texelCache[srcTexelCoord.x + 1u][srcTexelCoord.y + 1u] = loadTexelSafe(srcTexelCoord + uvec2(1u, 1u));*/
+            texel_t result = loadReduceMemory2x2(srcTexelCoord);
+            loadReduceMemoryEdge(result, srcTexelCoord, bvec_and(
+                    notEqual(srcLevelSize() & 1u, uvec2(0u)),
+                    equal(dstTexelCoord, imageSize(u_dstImages[0]) - 1u)));
 
-    if (any(greaterThanEqual(dstTexelCoord, firstDstLevelSize))) {
-        //this sample is out-of-bounds in the destination level, skip it
-        return;
+            imageStore(u_dstImages[0], ivec2(dstTexelCoord), result);
+        }
+    } else {
+        uvec2 baseTexelCoord = gl_GlobalInvocationID.xy;
+
+        //reduce the first mipmap level, store it to the output texture and cache it
+        if (all(lessThan(baseTexelCoord, imageSize(u_dstImages[0])))) {
+            texel_t result = loadReduceMemory2x2(baseTexelCoord * 2u);
+
+            //store in cache
+            s_texelCache[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = result;
+
+            //store to first output mipmap as well
+            imageStore(u_dstImages[0], ivec2(baseTexelCoord), result);
+        }
+
+        uvec2 dstTexelBase = gl_WorkGroupID.xy * gl_WorkGroupSize.xy;
+        uint dstSize = gl_WorkGroupSize.x;
+
+        for (uint level = 1u; level < min(u_levelsThisDispatch, MAX_LEVELS_PER_DISPATCH); level++) {
+            dstTexelBase /= 2u;
+            dstSize /= 2u;
+            uint cacheStride = 1u << (level - 1u);
+
+            uvec2 dstTexelCoord = dstTexelBase + gl_LocalInvocationID.xy;
+            uvec2 cacheIndex = gl_LocalInvocationID.xy << level;
+
+            //barrier here since this part of the code is dynamically uniform
+            memoryBarrierShared();
+            barrier();
+
+            if (all(lessThan(gl_LocalInvocationID.xy, uvec2(dstSize))) &&
+                all(lessThan(dstTexelCoord, imageSize(u_dstImages[level])))) {
+                texel_t result = loadReduceCache2x2(cacheIndex, cacheStride);
+
+                //store reduced value in cache
+                s_texelCache[cacheIndex.x][cacheIndex.y] = result;
+
+                //write the reduced texel in the destination image
+                imageStore(u_dstImages[level], ivec2(dstTexelCoord), result);
+            }
+        }
     }
-
-    //load texels
-    uvec2 srcTexelCoord = dstTexelCoord * 2u;
-    texel_t src00 = loadTexelSafe(srcTexelCoord + uvec2(0u, 0u));
-    texel_t src01 = loadTexelSafe(srcTexelCoord + uvec2(0u, 1u));
-    texel_t src10 = loadTexelSafe(srcTexelCoord + uvec2(1u, 0u));
-    texel_t src11 = loadTexelSafe(srcTexelCoord + uvec2(1u, 1u));
-
-    texel_t result = mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
-    imageStore(u_dstImage, ivec2(dstTexelCoord), result);
 }
