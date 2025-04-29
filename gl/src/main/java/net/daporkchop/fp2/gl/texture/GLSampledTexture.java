@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLRequires;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
@@ -63,7 +64,7 @@ public abstract class GLSampledTexture extends GLStorageTexture {
      * @param baseLevel the base mipmap level (inclusive)
      * @param maxLevel  the maximum mipmap level (inclusive)
      */
-    public final void mipmapLevels(int baseLevel, int maxLevel) {
+    public final void mipmapLevels(@NotNegative int baseLevel, @NotNegative int maxLevel) {
         this.checkOpen();
         checkArg(baseLevel <= maxLevel, "baseLevel (%s) must be less than or equal to maxLevel (%s)", baseLevel, maxLevel);
 

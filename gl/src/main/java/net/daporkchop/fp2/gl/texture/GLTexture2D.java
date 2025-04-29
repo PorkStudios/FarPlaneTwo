@@ -119,4 +119,19 @@ public final class GLTexture2D extends GLSampledTexture {
             });
         }
     }
+
+    /**
+     * Sets this texture's filtering mode.
+     *
+     * @param wrapS the texture wrap mode along the S axis
+     * @param wrapT the texture wrap mode along the T axis
+     */
+    public void wrap(@NonNull TextureWrapMode wrapS, @NonNull TextureWrapMode wrapT) {
+        this.checkOpen();
+
+        this.setParameters(parameterSetter -> {
+            parameterSetter.set(GL_TEXTURE_WRAP_S, wrapS.id());
+            parameterSetter.set(GL_TEXTURE_WRAP_T, wrapT.id());
+        });
+    }
 }
