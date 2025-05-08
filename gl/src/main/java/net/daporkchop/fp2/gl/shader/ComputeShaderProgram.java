@@ -24,6 +24,7 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
+import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
 
 import java.util.EnumSet;
 
@@ -41,6 +42,8 @@ public final class ComputeShaderProgram extends ShaderProgram {
     public static Builder builder(OpenGL gl) {
         return new Builder(gl);
     }
+
+    ComputeWorkGroupSize workGroupSize;
 
     ComputeShaderProgram(OpenGL gl) {
         super(gl);
@@ -72,6 +75,15 @@ public final class ComputeShaderProgram extends ShaderProgram {
         @Override
         protected ComputeShaderProgram makeProgram() {
             return new ComputeShaderProgram(this.gl);
+        }
+
+        @Override
+        protected void configurePostLink(ComputeShaderProgram program) {
+            super.configurePostLink(program);
+
+            //get the work group size and store it in an object
+            int[] workGroupSize = this.gl.glGetProgramiv(program.id(), GL_COMPUTE_WORK_GROUP_SIZE, 3);
+            program.workGroupSize = new ComputeWorkGroupSize(workGroupSize[0], workGroupSize[1], workGroupSize[2]);
         }
     }
 }
