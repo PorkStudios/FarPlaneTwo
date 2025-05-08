@@ -28,11 +28,11 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.source.IncludePreprocessor;
+import net.daporkchop.fp2.gl.shader.source.SourceLocationMap;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.closeable.QuietCloseable;
 
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,7 +58,7 @@ public final class Shader extends GLObject.Normal {
         return compile(gl, type, source, null);
     }
 
-    private static Shader compile(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<Identifier> sourceLocations) throws ShaderCompilationException {
+    private static Shader compile(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, SourceLocationMap sourceLocations) throws ShaderCompilationException {
         try (CompileTask task = new CompileTask(gl, type, source, sourceLocations)) {
             return task.join();
         }
@@ -76,7 +76,7 @@ public final class Shader extends GLObject.Normal {
         return compileAsync(gl, type, source, null);
     }
 
-    private static CompileTask compileAsync(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<Identifier> sourceLocations) {
+    private static CompileTask compileAsync(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, SourceLocationMap sourceLocations) {
         return new CompileTask(gl, type, source, sourceLocations);
     }
 
@@ -97,7 +97,7 @@ public final class Shader extends GLObject.Normal {
         return GL_SHADER;
     }
 
-    static String formatInfoLog(@NonNull String text, List<Identifier> sourceLocations) {
+    static String formatInfoLog(@NonNull String text, SourceLocationMap sourceLocations) {
         if (sourceLocations == null) {
             return text;
         }
@@ -113,7 +113,7 @@ public final class Shader extends GLObject.Normal {
                     do {
                         int fileNumber = Integer.parseInt(matcher.group("file"));
                         int lineNumber = Integer.parseInt(matcher.group("line"));
-                        matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + sourceLocations.get(fileNumber) + ':' + lineNumber + ')' + matcher.group("text")));
+                        matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + sourceLocations.sourceLocation(fileNumber, lineNumber) + ')' + matcher.group("text")));
                     } while (matcher.find());
                     matcher.appendTail(buffer);
 
@@ -133,10 +133,10 @@ public final class Shader extends GLObject.Normal {
     @AllArgsConstructor(access = AccessLevel.PACKAGE)
     public static final class CompileTask implements QuietCloseable {
         final OpenGL gl;
-        final List<Identifier> sourceLocations;
+        final SourceLocationMap sourceLocations;
         Shader shader;
 
-        CompileTask(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, List<Identifier> sourceLocations) {
+        CompileTask(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull CharSequence source, SourceLocationMap sourceLocations) {
             try {
                 this.gl = gl;
                 this.sourceLocations = sourceLocations;

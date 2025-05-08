@@ -54,35 +54,41 @@ public final class IncludePreprocessor {
 
     private final @NonNull OpenGL gl;
     private final @NonNull ResourceProvider resourceProvider;
-    private final int lineNumberOffset;
 
+    private int nextLineNumber = 1;
     private int macrosLineNumber = 1;
 
     @Getter
     private final StringBuilder buffer = new StringBuilder();
     @Getter
-    private final List<Identifier> locations = new ArrayList<>();
+    private final SourceLocationMap locations = new SourceLocationMap();
 
     private final Set<Identifier> includedFilesWithPragmaOnce = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public IncludePreprocessor(@NonNull OpenGL gl, @NonNull ResourceProvider resourceProvider) {
         this.gl = gl;
         this.resourceProvider = resourceProvider;
-        this.lineNumberOffset = gl.version().glsl() >= 330 ? 0 : -1;
-
-        this.locations.add(HEADER_ID);
-        this.locations.add(MACROS_ID);
     }
 
     private IncludePreprocessor(IncludePreprocessor source) {
         this.gl = source.gl;
         this.resourceProvider = source.resourceProvider;
-        this.lineNumberOffset = source.lineNumberOffset;
+        this.nextLineNumber = source.nextLineNumber;
         this.macrosLineNumber = source.macrosLineNumber;
 
         this.buffer.append(source.buffer);
-        this.locations.addAll(source.locations);
+        this.locations.copyFrom(source.locations);
         this.includedFilesWithPragmaOnce.addAll(source.includedFilesWithPragmaOnce);
+    }
+
+    private static int countLines(@NonNull String str) {
+        int res = 0;
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) == '\n') {
+                res++;
+            }
+        }
+        return res;
     }
 
     /**
@@ -93,24 +99,16 @@ public final class IncludePreprocessor {
         return new IncludePreprocessor(this);
     }
 
-    private void emitFileDirective(int fileNumber, @Positive int lineNumber) {
-        this.buffer.append("#line ").append(lineNumber + this.lineNumberOffset).append(' ').append(fileNumber).append('\n');
-    }
-
-    private int assignFileNumber(Identifier file) {
-        int fileNumber = this.locations.size();
-        this.locations.add(file);
-        return fileNumber;
-    }
-
     /**
      * Adds the version string for the current OpenGL context to the beginning of the shader source code.
      */
     public IncludePreprocessor addVersionHeader() {
         checkState(this.buffer.length() == 0, "version header must be at top of shader source");
 
-        //we don't need to emit a #file directive before this, since #version needs to be at the top
-        this.buffer.append(this.gl.glslHeader());
+        this.locations.switchToLocation(this.nextLineNumber, new SourceLocation(HEADER_ID, 1));
+        String header = this.gl.glslHeader();
+        this.buffer.append(header);
+        this.nextLineNumber += countLines(header);
         return this;
     }
 
@@ -120,9 +118,7 @@ public final class IncludePreprocessor {
      * @param defines the names and values of the preprocessor macros to define
      */
     public IncludePreprocessor define(Map<String, ?> defines) {
-        checkState(!this.locations.isEmpty(), "defines may not be at top of shader source");
-
-        this.emitFileDirective(MACROS_FILE_NUMBER, this.macrosLineNumber);
+        this.locations.switchToLocation(this.nextLineNumber, new SourceLocation(MACROS_ID, this.macrosLineNumber));
         for (Map.Entry<String, ?> entry : defines.entrySet()) {
             Object rawValue = entry.getValue();
             String value;
@@ -133,6 +129,7 @@ public final class IncludePreprocessor {
             }
 
             this.buffer.append("#define ").append(entry.getKey()).append(' ').append(value).append('\n');
+            this.nextLineNumber++;
             this.macrosLineNumber++;
         }
         return this;
@@ -150,8 +147,7 @@ public final class IncludePreprocessor {
             return this;
         }
 
-        int fileNumber = this.assignFileNumber(file);
-        this.emitFileDirective(fileNumber, 1);
+        this.locations.switchToLocation(this.nextLineNumber, new SourceLocation(file, 1));
 
         int lineNo = 0;
         for (String line : this.resourceProvider.provideResourceAsLines(file)) {
@@ -163,12 +159,13 @@ public final class IncludePreprocessor {
                 this.include(Identifier.from(matcher.group(1)));
 
                 //emit another #file directive to switch back to the current file
-                this.emitFileDirective(fileNumber, lineNo + 1);
+                this.locations.switchToLocation(this.nextLineNumber, new SourceLocation(file, lineNo + 1));
             } else if ("#pragma once".equals(line)) {
                 //remember that the file contained a line with "#pragma once" so that we don't end up including it again
                 this.includedFilesWithPragmaOnce.add(file);
             } else {
                 this.buffer.append(line).append('\n');
+                this.nextLineNumber++;
             }
         }
         return this;
