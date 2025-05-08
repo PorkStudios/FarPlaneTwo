@@ -19,10 +19,8 @@
 
 package net.daporkchop.fp2.gl.texture;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLRequires;
@@ -41,7 +39,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class GLSampledTexture extends GLStorageTexture {
+public abstract class GLSampledTexture extends GLStorageTexture implements ISamplingParameters {
     protected final @Positive int levels;
 
     protected GLSampledTexture(@NonNull OpenGL gl, @NonNull TextureTarget target, @NonNull TextureInternalFormat internalFormat, @Positive int levels) {
@@ -75,18 +73,22 @@ public abstract class GLSampledTexture extends GLStorageTexture {
     }
 
     /**
-     * Sets this texture's filtering mode.
+     * Sets the given texture parameter to the given value.
      *
-     * @param minFilter the texture minification filter
-     * @param magFilter the texture magnification filter
+     * @param pname the texture parameter
+     * @param param the parameter value
      */
-    public final void filter(@NonNull TextureMinFilter minFilter, @NonNull TextureMagFilter magFilter) {
+    @Override
+    public final void setParameter(int pname, int param) {
         this.checkOpen();
 
-        this.setParameters(parameterSetter -> {
-            parameterSetter.set(GL_TEXTURE_MIN_FILTER, minFilter.id());
-            parameterSetter.set(GL_TEXTURE_MAG_FILTER, magFilter.id());
-        });
+        if (this.dsa) {
+            this.gl.glTextureParameter(this.id, pname, param);
+        } else {
+            this.bind(target -> {
+                this.gl.glTexParameter(target.id(), pname, param);
+            });
+        }
     }
 
     /**
@@ -95,7 +97,8 @@ public abstract class GLSampledTexture extends GLStorageTexture {
      * @param pname the texture parameter
      * @param param the parameter value
      */
-    public final void setParameter(int pname, int param) {
+    @Override
+    public final void setParameter(int pname, float param) {
         this.checkOpen();
 
         if (this.dsa) {
@@ -112,14 +115,15 @@ public abstract class GLSampledTexture extends GLStorageTexture {
      *
      * @param action a function which will be called with a {@link ParameterSetter} which may be used to set texture parameters
      */
+    @Override
     public final void setParameters(@NonNull Consumer<ParameterSetter> action) {
         this.checkOpen();
 
         if (this.dsa) {
-            action.accept(new DSAParameterSetter(this.gl, this.id));
+            action.accept(new DSATextureParameterSetter(this.gl, this.id));
         } else {
             this.bind(target -> {
-                action.accept(new BoundParameterSetter(this.gl, target));
+                action.accept(new BoundTextureParameterSetter(this.gl, target));
             });
         }
     }
@@ -134,12 +138,12 @@ public abstract class GLSampledTexture extends GLStorageTexture {
     public final void invalidateHint() {
         this.checkOpen();
         if (this.invalidateSubdata) {
-            this.invalidate();
+            this.invalidateLevels(0, this.levels);
         }
     }
 
     /**
-     * Invalidates this texture's contents.
+     * Invalidates this texture's storage.
      * <p>
      * After invalidation, the texture contents become undefined.
      *
@@ -148,25 +152,46 @@ public abstract class GLSampledTexture extends GLStorageTexture {
      */
     @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
     public final void invalidate() {
+        this.invalidateLevels(0, this.levels);
+    }
+
+    /**
+     * Hints that this texture's storage should be invalidated at the given mipmap levels.
+     * <p>
+     * After invalidation, the texture contents at the given mipmap levels become undefined.
+     * <p>
+     * This may do nothing if the OpenGL implementation doesn't support texture invalidation.
+     *
+     * @param first the index of the first mipmap level to invalidate
+     * @param count the number of mipmap levels to invalidate
+     */
+    public final void invalidateLevelsHint(@NotNegative int first, @NotNegative int count) {
         this.checkOpen();
-        for (int level = 0; level < this.levels; level++) {
-            this.gl.glInvalidateTexImage(this.id, level);
+        checkRangeLen(this.levels, first, count);
+
+        if (this.invalidateSubdata) {
+            this.invalidateLevels(first, count);
         }
     }
 
     /**
-     * A handle for setting texture parameter values for this texture.
+     * Invalidates this texture's storage at the given mipmap levels.
+     * <p>
+     * After invalidation, the texture contents at the given mipmap levels become undefined.
      *
-     * @author DaPorkchop_
+     * @param first the index of the first mipmap level to invalidate
+     * @param count the number of mipmap levels to invalidate
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
      */
-    @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-    public static abstract class ParameterSetter {
-        protected final OpenGL gl;
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public final void invalidateLevels(@NotNegative int first, @NotNegative int count) {
+        this.checkOpen();
+        checkRangeLen(this.levels, first, count);
 
-        //@formatter:off
-        public abstract void set(int pname, int param);
-        public abstract void set(int pname, float param);
-        //@formatter:on
+        for (int level = first; level < count; level++) {
+            this.gl.glInvalidateTexImage(this.id, level);
+        }
     }
 
     /**
@@ -174,10 +199,10 @@ public abstract class GLSampledTexture extends GLStorageTexture {
      *
      * @author DaPorkchop_
      */
-    static final class BoundParameterSetter extends ParameterSetter {
+    static final class BoundTextureParameterSetter extends ParameterSetter {
         private final TextureTarget target;
 
-        BoundParameterSetter(OpenGL gl, TextureTarget target) {
+        BoundTextureParameterSetter(OpenGL gl, TextureTarget target) {
             super(gl);
             this.target = target;
         }
@@ -198,10 +223,10 @@ public abstract class GLSampledTexture extends GLStorageTexture {
      *
      * @author DaPorkchop_
      */
-    static final class DSAParameterSetter extends ParameterSetter {
+    static final class DSATextureParameterSetter extends ParameterSetter {
         private final int id;
 
-        DSAParameterSetter(OpenGL gl, int id) {
+        DSATextureParameterSetter(OpenGL gl, int id) {
             super(gl);
             this.id = id;
         }

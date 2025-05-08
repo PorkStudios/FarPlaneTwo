@@ -3167,6 +3167,15 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
+    public int glCreateSampler() {
+        super.checkSupported(this.GL_ARB_direct_state_access & this.GL_ARB_sampler_objects, GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_sampler_objects);
+
+        val res = GL45.glCreateSamplers();
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
     public int glCreateTexture(int target) {
         super.checkSupported(this.GL_ARB_direct_state_access, GLExtension.GL_ARB_direct_state_access);
 

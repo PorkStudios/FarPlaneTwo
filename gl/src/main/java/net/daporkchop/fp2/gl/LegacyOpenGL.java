@@ -1765,6 +1765,16 @@ final class LegacyOpenGL extends OpenGL {
         this.delegate.glVertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
     }
 
+    private static final GLExtensionSet direct_state_access_AND_sampler_objects = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_direct_state_access)
+            .add(GLExtension.GL_ARB_sampler_objects);
+
+    @Override
+    public int glCreateSampler() {
+        super.checkSupported(direct_state_access_AND_sampler_objects);
+        return this.delegate.glCreateSampler();
+    }
+
     @Override
     public int glCreateTexture(int target) {
         super.checkSupported(GLExtension.GL_ARB_direct_state_access);

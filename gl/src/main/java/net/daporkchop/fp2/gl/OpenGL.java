@@ -63,6 +63,7 @@ public abstract class OpenGL {
     public static final boolean PRESERVE_FRAMEBUFFER_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveFramebufferBindings", "true"));
     public static final boolean PRESERVE_RENDERBUFFER_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveRenderbufferBindings", "true"));
     public static final boolean PRESERVE_TEXTURE_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveTextureBindings", "true"));
+    public static final boolean PRESERVE_SAMPLER_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveSamplerBindings", "true"));
     public static final boolean PRESERVE_VAO_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveVaoBindings", "true"));
     public static final boolean PRESERVE_PROGRAM_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveProgramBindings", "true"));
 
@@ -2471,6 +2472,13 @@ public abstract class OpenGL {
      */
     @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_multi_bind })
     public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_sampler_objects GL_ARB_sampler_objects}
+     * @since OpenGL 4.5
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_sampler_objects })
+    public abstract int glCreateSampler();
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
