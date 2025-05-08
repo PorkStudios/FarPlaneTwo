@@ -40,9 +40,9 @@ const uint MAX_LEVELS_PER_DISPATCH = 4u;
     #error "FP2_MIPMAP_SRC_SAMPLER must be defined!"
 #endif // FP2_MIPMAP_SRC_SAMPLER
 
-#ifndef FP2_MIPMAP_COPY_BASE
-    #error "FP2_MIPMAP_COPY_BASE must be defined!"
-#endif // FP2_MIPMAP_COPY_BASE
+#ifndef FP2_MIPMAP_FAST_REDUCTION
+    #error "FP2_MIPMAP_FAST_REDUCTION must be defined!"
+#endif // FP2_MIPMAP_FAST_REDUCTION
 
 #ifndef FP2_MIPMAP_FORMAT_IMAGE_LAYOUT
     #error "FP2_MIPMAP_FORMAT_IMAGE_LAYOUT must be defined!"
@@ -92,11 +92,13 @@ uniform uint u_levelsThisDispatch;
     }
 #endif
 
-#if FP2_MIPMAP_COPY_BASE
-    uniform layout(FP2_MIPMAP_FORMAT_IMAGE_LAYOUT) restrict writeonly FP2_MIPMAP_FORMAT_IMAGE_TYPE u_dstImageCopy;
-#endif
-
 uniform layout(FP2_MIPMAP_FORMAT_IMAGE_LAYOUT) restrict writeonly FP2_MIPMAP_FORMAT_IMAGE_TYPE u_dstImages[MAX_LEVELS_PER_DISPATCH];
+
+bvec2 isEdgeTexel(in uvec2 prevLevelSize, in uvec2 dstLevelSize, in uvec2 dstTexelCoord) {
+    return bvec_and(
+            notEqual(prevLevelSize & 1u, uvec2(0u)),
+            equal(dstTexelCoord, dstLevelSize - 1u));
+}
 
 texel_t loadMemory(in uvec2 coord) {
     texel_t result;
@@ -104,11 +106,6 @@ texel_t loadMemory(in uvec2 coord) {
         result = texelFetch(u_srcTexture, ivec2(coord), u_srcTextureLod);
     #else
         result = imageLoad(u_srcImage, ivec2(coord));
-    #endif
-
-    #if FP2_MIPMAP_COPY_BASE
-        //if FP2_MIPMAP_COPY_BASE is enabled, copy the first mipmap level unchanged
-        imageStore(u_dstImageCopy, ivec2(coord), result);
     #endif
 
     return result;
@@ -126,20 +123,22 @@ texel_t loadReduceMemory2x2(in uvec2 coord) {
     return mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
 }
 
-void loadReduceMemoryEdge(inout texel_t result, in uvec2 coord, in bvec2 edgeSamples) {
-    if (any(edgeSamples)) {
-        if (edgeSamples.x) {
+texel_t loadReduceMemoryMaybeEdge(in uvec2 coord, in bvec2 isEdge) {
+    texel_t result = loadReduceMemory2x2(coord);
+    if (any(isEdge)) {
+        if (isEdge.x) {
             result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 0u)));
             result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 1u)));
         }
-        if (edgeSamples.y) {
+        if (isEdge.y) {
             result = mipmapReduce(result, loadMemory(coord + uvec2(0u, 2u)));
             result = mipmapReduce(result, loadMemory(coord + uvec2(1u, 2u)));
         }
-        if (all(edgeSamples)) {
+        if (all(isEdge)) {
             result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 2u)));
         }
     }
+    return result;
 }
 
 texel_t loadReduceCache2x2(in uvec2 coord, in uint stride) {
@@ -150,23 +149,30 @@ texel_t loadReduceCache2x2(in uvec2 coord, in uint stride) {
     return mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
 }
 
-void main() {
-    if (u_levelsThisDispatch <= 1u) {
-        //reduce one mipmap level, store it to the output texture
-        uvec2 dstTexelCoord = gl_GlobalInvocationID.xy;
-        uvec2 localIdx = gl_LocalInvocationID.xy;
-
-        if (all(lessThan(dstTexelCoord, imageSize(u_dstImages[0])))) {
-            uvec2 srcTexelCoord = dstTexelCoord * 2u;
-
-            texel_t result = loadReduceMemory2x2(srcTexelCoord);
-            loadReduceMemoryEdge(result, srcTexelCoord, bvec_and(
-                    notEqual(srcLevelSize() & 1u, uvec2(0u)),
-                    equal(dstTexelCoord, imageSize(u_dstImages[0]) - 1u)));
-
-            imageStore(u_dstImages[0], ivec2(dstTexelCoord), result);
+texel_t loadReduceCacheMaybeEdge(in uvec2 coord, in uint stride, in bvec2 isEdge) {
+    texel_t result = loadReduceCache2x2(coord, stride);
+    if (any(isEdge)) {
+        if (isEdge.x) {
+            result = mipmapReduce(result, loadTexelCache(coord + uvec2(2u, 0u) * stride));
+            result = mipmapReduce(result, loadTexelCache(coord + uvec2(2u, 1u) * stride));
         }
-    } else {
+        if (isEdge.y) {
+            result = mipmapReduce(result, loadTexelCache(coord + uvec2(0u, 2u) * stride));
+            result = mipmapReduce(result, loadTexelCache(coord + uvec2(1u, 2u) * stride));
+        }
+        if (all(isEdge)) {
+            result = mipmapReduce(result, loadTexelCache(coord + uvec2(2u, 2u) * stride));
+        }
+    }
+    return result;
+}
+
+void main() {
+    #if FP2_MIPMAP_FAST_REDUCTION
+        //we are in fast reduction mode! we can assume that all input and output levels are evenly sized, and so we can
+        //  simply do a standard GPU parallel reduction by reading four samples from shared memory and writing back the
+        //  result.
+
         uvec2 baseTexelCoord = gl_GlobalInvocationID.xy;
 
         //reduce the first mipmap level, store it to the output texture and cache it
@@ -206,5 +212,16 @@ void main() {
                 imageStore(u_dstImages[level], ivec2(dstTexelCoord), result);
             }
         }
-    }
+    #else //FP2_MIPMAP_FAST_REDUCTION
+        //handling a single level, simply reduce and write back
+        uvec2 dstTexelCoord = gl_GlobalInvocationID.xy;
+        if (all(lessThan(dstTexelCoord, imageSize(u_dstImages[0])))) {
+            uvec2 srcTexelCoord = dstTexelCoord * 2u;
+
+            texel_t result = loadReduceMemoryMaybeEdge(srcTexelCoord,
+                    isEdgeTexel(srcLevelSize(), imageSize(u_dstImages[0]), dstTexelCoord));
+
+            imageStore(u_dstImages[0], ivec2(dstTexelCoord), result);
+        }
+    #endif //FP2_MIPMAP_FAST_REDUCTION
 }

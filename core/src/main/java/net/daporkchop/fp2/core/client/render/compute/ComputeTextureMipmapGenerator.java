@@ -35,6 +35,7 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.MultiBindHelper;
 import net.daporkchop.fp2.gl.state.StatePreserver;
@@ -80,13 +81,13 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         final @NonNull MipmapMode mode;
         final @NonNull TextureInternalFormat imageFormat;
         final boolean srcSampler;
-        final boolean copyBase;
+        final boolean fastReduction;
 
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
             builder.put("FP2_MIPMAP_MODE", this.mode.ordinal());
             builder.put("FP2_MIPMAP_SRC_SAMPLER", this.srcSampler);
-            builder.put("FP2_MIPMAP_COPY_BASE", this.copyBase);
+            builder.put("FP2_MIPMAP_FAST_REDUCTION", this.fastReduction);
 
             builder.put("FP2_MIPMAP_FORMAT_IMAGE_LAYOUT", this.imageFormat.name().toLowerCase(Locale.ROOT));
             builder.put("FP2_MIPMAP_FORMAT_IMAGE_TYPE", this.imageFormat.sampledType().glslPrefix() + "image2D");
@@ -99,9 +100,9 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
             TextureInternalFormat[] imageFormats = TextureInternalFormat.colorFormatsFloat();
             MipmapMode[] mipmapModes = MipmapMode.values();
             boolean[] srcSamplers = { false, true };
-            boolean[] copyBases = { false };
+            boolean[] fastReductions = { false, true };
 
-            List<MipmapGeneratorShaderVariant> result = new ArrayList<>(imageFormats.length * mipmapModes.length * srcSamplers.length * copyBases.length);
+            List<MipmapGeneratorShaderVariant> result = new ArrayList<>(imageFormats.length * mipmapModes.length * srcSamplers.length * fastReductions.length);
             for (val imageFormat : imageFormats) {
                 if (imageFormat.defaultFormat().components() == 3) { //3-component formats aren't supported by image load/store
                     continue;
@@ -109,8 +110,8 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
 
                 for (val mipmapMode : mipmapModes) {
                     for (val srcSampler : srcSamplers) {
-                        for (val copyBase : copyBases) {
-                            result.add(new MipmapGeneratorShaderVariant(mipmapMode, imageFormat, srcSampler, copyBase));
+                        for (val fastReduction : fastReductions) {
+                            result.add(new MipmapGeneratorShaderVariant(mipmapMode, imageFormat, srcSampler, fastReduction));
                         }
                     }
                 }
@@ -168,11 +169,8 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         checkIndex(srcTexture.levels(), srcLevel);
         checkRangeLen(dstTexture.levels(), dstLevel, levels);
 
-        int srcLevelWidth = Math.max(srcTexture.width() >> srcLevel, 1);
-        int srcLevelHeight = Math.max(srcTexture.height() >> srcLevel, 1);
-
-        checkArg(Math.max(srcTexture.width() >> (srcLevel + 1), 1) == Math.max(dstTexture.width() >> dstLevel, 1)
-                        && Math.max(srcTexture.height() >> (srcLevel + 1), 1) == Math.max(dstTexture.height() >> dstLevel, 1),
+        checkArg(srcTexture.widthAtLevel(srcLevel + 1) == dstTexture.widthAtLevel(dstLevel)
+                        && srcTexture.heightAtLevel(srcLevel + 1) == dstTexture.heightAtLevel(dstLevel),
                 "src and dst texture resolutions don't match!");
 
         TextureInternalFormat srcFormat = srcTexture.internalFormat();
@@ -181,42 +179,20 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         checkArg(sampledType == dstFormat.sampledType(), "src: %s, dst: %s", sampledType, dstFormat.sampledType());
         checkArg(dstFormat.defaultFormat().kind() == PixelKind.COLOR, "cannot write mipmaps to a %s texture", dstFormat.defaultFormat().kind());
 
-        //if the source is a depth texture, the first pass needs to read from the source texture using a sampler
-        boolean samplerSrcForFirstLevel = srcFormat.defaultFormat().kind() != PixelKind.COLOR;
-
-        //if the source texture needs to be read by a sampler and the mipmap generation will need more than one shader dispatch,
-        //  we'll separate the first dispatch from subsequent ones so that all subsequent shader invocations read from their parent
-        //  level using image load/store instead of a sampler
-        if (samplerSrcForFirstLevel && levels > MAX_LEVELS_PER_DISPATCH) {
-            this.generateMipmaps(
-                    srcTexture, srcLevel,
-                    dstTexture, dstLevel,
-                    MAX_LEVELS_PER_DISPATCH,
-                    mode);
-
-            this.generateMipmaps(
-                    dstTexture, dstLevel + (MAX_LEVELS_PER_DISPATCH - 1),
-                    dstTexture, dstLevel + MAX_LEVELS_PER_DISPATCH,
-                    levels - MAX_LEVELS_PER_DISPATCH,
-                    mode);
-            return;
-        }
-
-        val shader = this.shaderRegistry.<ComputeShaderProgram>get(new MipmapGeneratorShaderVariant(mode, dstFormat, samplerSrcForFirstLevel, false)).get();
-        val uniformSetter = shader.bindUnsafe();
-
-        int u_levelsThisDispatch = shader.uniformLocation("u_levelsThisDispatch");
+        ComputeShaderProgram shader = null;
+        ShaderProgram.UniformSetter uniformSetter = null;
+        int u_levelsThisDispatch = -1;
 
         int currentlyBoundDstImageCount = 0;
 
-        int prevLevelWidth = srcTexture.widthAtLevel(srcLevel);
-        int prevLevelHeight = srcTexture.heightAtLevel(srcLevel);
+        GLTexture2D prevTexture = srcTexture;
+        int prevLevel = srcLevel;
 
         for (int processedLevels = 0; processedLevels < levels; ) {
             int remainingLevels = levels - processedLevels;
 
             int remainingEvenSizedLevels = Math.min(
-                    Integer.numberOfTrailingZeros(prevLevelWidth | prevLevelHeight),
+                    Integer.numberOfTrailingZeros(prevTexture.widthAtLevel(prevLevel) | prevTexture.heightAtLevel(prevLevel)),
                     remainingLevels);
 
             boolean useFastReduction = remainingEvenSizedLevels >= 2;
@@ -225,7 +201,20 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
             if (useFastReduction) {
                 levelsThisDispatch = Math.min(remainingEvenSizedLevels, MAX_LEVELS_PER_DISPATCH);
             } else {
+                //TODO: we could theoretically process up to two mipmaps at a time here, like https://github.com/nvpro-samples/vk_compute_mipmaps
                 levelsThisDispatch = 1;
+            }
+
+            //if the source is a depth texture, the first pass needs to read from the source texture using a sampler
+            boolean useSamplerSrc = prevTexture.internalFormat().defaultFormat().kind() != PixelKind.COLOR;
+
+            //switch to the necessary shader for the current configuration
+            ComputeShaderProgram nextShader = this.shaderRegistry.<ComputeShaderProgram>get(new MipmapGeneratorShaderVariant(mode, dstFormat, useSamplerSrc, useFastReduction)).get();
+            if (nextShader != shader) {
+                shader = nextShader;
+                uniformSetter = nextShader.bindUnsafe();
+
+                u_levelsThisDispatch = shader.uniformLocation("u_levelsThisDispatch");
             }
 
             int currLevelWidth = dstTexture.widthAtLevel(dstLevel + processedLevels);
@@ -236,14 +225,12 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
 
             uniformSetter.set1ui(u_levelsThisDispatch, levelsThisDispatch);
 
-            if (samplerSrcForFirstLevel) {
-                uniformSetter.set1i(shader.uniformLocation("u_srcTextureLod"), srcLevel + processedLevels);
-                srcTexture.bindToUnitUnsafe(SRC_SAMPLER_BINDING);
-            } else if (processedLevels == 0) {
-                this.gl.glBindImageTexture(SRC_IMAGE_BINDING, srcTexture.id(), srcLevel + processedLevels, false, 0, GL_READ_ONLY, srcTexture.internalFormat().id());
+            if (useSamplerSrc) {
+                uniformSetter.set1i(shader.uniformLocation("u_srcTextureLod"), prevLevel);
+                prevTexture.bindToUnitUnsafe(SRC_SAMPLER_BINDING);
             } else {
                 //for subsequent levels, reduce based on the previous mipmap level written to the destination
-                this.gl.glBindImageTexture(SRC_IMAGE_BINDING, dstTexture.id(), dstLevel + processedLevels - 1, false, 0, GL_READ_ONLY, dstTexture.internalFormat().id());
+                this.gl.glBindImageTexture(SRC_IMAGE_BINDING, prevTexture.id(), prevLevel, false, 0, GL_READ_ONLY, prevTexture.internalFormat().id());
             }
 
             for (int dispatchLevel = 0; dispatchLevel < levelsThisDispatch; dispatchLevel++) {
@@ -260,8 +247,8 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
 
             this.gl.glDispatchCompute(numGroupsX, numGroupsY, 1);
 
-            prevLevelWidth = dstTexture.widthAtLevel(dstLevel + processedLevels + levelsThisDispatch - 1);
-            prevLevelHeight = dstTexture.heightAtLevel(dstLevel + processedLevels + levelsThisDispatch - 1);
+            prevTexture = dstTexture;
+            prevLevel = dstLevel + processedLevels + levelsThisDispatch - 1;
 
             processedLevels += levelsThisDispatch;
         }
