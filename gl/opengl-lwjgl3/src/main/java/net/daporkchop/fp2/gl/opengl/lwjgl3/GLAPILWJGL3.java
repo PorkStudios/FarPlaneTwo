@@ -1807,6 +1807,14 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public void glCopyImageSubData(int srcName, int srcTarget, int srcLevel, int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth) {
+        super.checkSupported(this.GL_ARB_copy_image, GLExtension.GL_ARB_copy_image);
+
+        GL43C.glCopyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
+        super.debugCheckError();
+    }
+
+    @Override
     public void glInvalidateBufferData(int buffer) {
         super.checkSupported(this.GL_ARB_invalidate_subdata, GLExtension.GL_ARB_invalidate_subdata);
 
@@ -2105,6 +2113,22 @@ public final class GLAPILWJGL3 extends OpenGL {
         } else {
             throw new IllegalArgumentException(String.valueOf(memory));
         }
+    }
+
+    @Override
+    public void glClearTexImage(int texture, int level, int format, int type, ByteBuffer data) {
+        super.checkSupported(this.GL_ARB_clear_texture, GLExtension.GL_ARB_clear_texture);
+
+        GL44C.glClearTexImage(texture, level, format, type, data);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glClearTexSubImage(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, ByteBuffer data) {
+        super.checkSupported(this.GL_ARB_clear_texture, GLExtension.GL_ARB_clear_texture);
+
+        GL44C.glClearTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+        super.debugCheckError();
     }
 
     @Override

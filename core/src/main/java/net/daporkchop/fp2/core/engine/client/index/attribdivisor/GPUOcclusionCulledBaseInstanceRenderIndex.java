@@ -293,8 +293,8 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
         this.depthTexture_depth = GLTexture2D.create(this.gl, TextureInternalFormat.DEPTH_COMPONENT_32F, 1, width, height);
         this.depthTexture_color = GLTexture2D.create(this.gl, TextureInternalFormat.R32F, GLTexture2D.requiredLevels(width, height), width, height);
 
-        this.depthTexture_color.filter(TextureMinFilter.NEAREST_MIPMAP_NEAREST, TextureMagFilter.NEAREST);
-        this.depthTexture_color.wrap(TextureWrapMode.CLAMP_TO_EDGE, TextureWrapMode.CLAMP_TO_EDGE);
+        this.depthTexture_color.setFilterMode(TextureMinFilter.NEAREST_MIPMAP_NEAREST, TextureMagFilter.NEAREST);
+        this.depthTexture_color.setWrapMode(TextureWrapMode.CLAMP_TO_EDGE, TextureWrapMode.CLAMP_TO_EDGE, TextureWrapMode.REPEAT);
 
         //attach the new depth texture to the framebuffer
         this.copyFramebuffer.attachTexture(FramebufferAttachment.DEPTH_ATTACHMENT, this.depthTexture_depth, 0);

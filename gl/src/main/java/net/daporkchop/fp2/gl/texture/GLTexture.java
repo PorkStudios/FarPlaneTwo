@@ -33,6 +33,7 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 public abstract class GLTexture extends GLObject.Normal {
+    protected final boolean clearTexture;
     protected final boolean immutableStorage;
     protected final boolean invalidateSubdata;
 
@@ -42,6 +43,7 @@ public abstract class GLTexture extends GLObject.Normal {
         super(gl, gl.supports(GLExtension.GL_ARB_direct_state_access) ? gl.glCreateTexture(target.id()) : gl.glGenTexture());
 
         try {
+            this.clearTexture = gl.supports(GLExtension.GL_ARB_clear_texture);
             this.immutableStorage = gl.supports(GLExtension.GL_ARB_texture_storage);
             this.invalidateSubdata = gl.supports(GLExtension.GL_ARB_invalidate_subdata);
 

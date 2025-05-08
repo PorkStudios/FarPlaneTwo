@@ -1290,6 +1290,12 @@ final class LegacyOpenGL extends OpenGL {
     }
 
     @Override
+    public void glCopyImageSubData(int srcName, int srcTarget, int srcLevel, int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth) {
+        super.checkSupported(GLExtension.GL_ARB_copy_image);
+        this.delegate.glCopyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
+    }
+
+    @Override
     public void glInvalidateBufferData(int buffer) {
         super.checkSupported(GLExtension.GL_ARB_invalidate_subdata);
         this.delegate.glInvalidateBufferData(buffer);
@@ -1491,6 +1497,18 @@ final class LegacyOpenGL extends OpenGL {
     public void glBufferStorage(int target, @NonNull AnyMemoryRegion data, int flags) {
         super.checkSupported(GLExtension.GL_ARB_buffer_storage);
         this.delegate.glBufferStorage(target, data, flags);
+    }
+
+    @Override
+    public void glClearTexImage(int texture, int level, int format, int type, ByteBuffer data) {
+        super.checkSupported(GLExtension.GL_ARB_clear_texture);
+        this.delegate.glClearTexImage(texture, level, format, type, data);
+    }
+
+    @Override
+    public void glClearTexSubImage(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, ByteBuffer data) {
+        super.checkSupported(GLExtension.GL_ARB_clear_texture);
+        this.delegate.glClearTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
     }
 
     @Override

@@ -40,10 +40,25 @@ public interface ISamplingParameters {
      * @param minFilter the texture minification filter
      * @param magFilter the texture magnification filter
      */
-    default void filter(@NonNull TextureMinFilter minFilter, @NonNull TextureMagFilter magFilter) {
+    default void setFilterMode(@NonNull TextureMinFilter minFilter, @NonNull TextureMagFilter magFilter) {
         this.setParameters(parameterSetter -> {
             parameterSetter.set(GL_TEXTURE_MIN_FILTER, minFilter.id());
             parameterSetter.set(GL_TEXTURE_MAG_FILTER, magFilter.id());
+        });
+    }
+
+    /**
+     * Sets the texture filtering mode.
+     *
+     * @param wrapS the texture wrap mode along the S axis
+     * @param wrapT the texture wrap mode along the T axis
+     * @param wrapR the texture wrap mode along the R axis
+     */
+    default void setWrapMode(@NonNull TextureWrapMode wrapS, @NonNull TextureWrapMode wrapT, @NonNull TextureWrapMode wrapR) {
+        this.setParameters(parameterSetter -> {
+            parameterSetter.set(GL_TEXTURE_WRAP_S, wrapS.id());
+            parameterSetter.set(GL_TEXTURE_WRAP_T, wrapT.id());
+            parameterSetter.set(GL_TEXTURE_WRAP_R, wrapR.id());
         });
     }
 

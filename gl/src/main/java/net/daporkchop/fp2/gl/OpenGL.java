@@ -195,6 +195,7 @@ public abstract class OpenGL {
     protected final boolean OpenGL43;
     protected final boolean GL_ARB_clear_buffer_object;
     protected final boolean GL_ARB_compute_shader;
+    protected final boolean GL_ARB_copy_image;
     protected final boolean GL_ARB_invalidate_subdata;
     protected final boolean GL_ARB_multi_draw_indirect;
     protected final boolean GL_ARB_program_interface_query;
@@ -205,6 +206,7 @@ public abstract class OpenGL {
     // OpenGL 4.4
     protected final boolean OpenGL44;
     protected final boolean GL_ARB_buffer_storage;
+    protected final boolean GL_ARB_clear_texture;
     protected final boolean GL_ARB_multi_bind;
 
     // OpenGL 4.5
@@ -360,6 +362,7 @@ public abstract class OpenGL {
         this.OpenGL43 = version.compareTo(GLVersion.OpenGL43) >= 0;
         this.GL_ARB_clear_buffer_object = allExtensions.contains(GLExtension.GL_ARB_clear_buffer_object);
         this.GL_ARB_compute_shader = allExtensions.contains(GLExtension.GL_ARB_compute_shader);
+        this.GL_ARB_copy_image = allExtensions.contains(GLExtension.GL_ARB_copy_image);
         this.GL_ARB_invalidate_subdata = allExtensions.contains(GLExtension.GL_ARB_invalidate_subdata);
         this.GL_ARB_multi_draw_indirect = allExtensions.contains(GLExtension.GL_ARB_multi_draw_indirect);
         this.GL_ARB_program_interface_query = allExtensions.contains(GLExtension.GL_ARB_program_interface_query);
@@ -370,6 +373,7 @@ public abstract class OpenGL {
         // OpenGL 4.4
         this.OpenGL44 = version.compareTo(GLVersion.OpenGL44) >= 0;
         this.GL_ARB_buffer_storage = allExtensions.contains(GLExtension.GL_ARB_buffer_storage);
+        this.GL_ARB_clear_texture = allExtensions.contains(GLExtension.GL_ARB_clear_texture);
         this.GL_ARB_multi_bind = allExtensions.contains(GLExtension.GL_ARB_multi_bind);
 
         // OpenGL 4.5
@@ -1944,6 +1948,13 @@ public abstract class OpenGL {
     public abstract void glDispatchCompute(int num_groups_x, int num_groups_y, int num_groups_z);
 
     /**
+     * @apiNote requires {@link GLExtension#GL_ARB_copy_image GL_ARB_copy_image}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_copy_image)
+    public abstract void glCopyImageSubData(int srcName, int srcTarget, int srcLevel, int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth);
+
+    /**
      * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
      * @since OpenGL 4.3
      */
@@ -2179,6 +2190,20 @@ public abstract class OpenGL {
      */
     @GLRequires(GLExtension.GL_ARB_buffer_storage)
     public abstract void glBufferStorage(int target, @NonNull AnyMemoryRegion data, int flags);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_clear_texture GL_ARB_clear_texture}
+     * @since OpenGL 4.4
+     */
+    @GLRequires(GLExtension.GL_ARB_clear_texture)
+    public abstract void glClearTexImage(int texture, int level, int format, int type, ByteBuffer data);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_clear_texture GL_ARB_clear_texture}
+     * @since OpenGL 4.4
+     */
+    @GLRequires(GLExtension.GL_ARB_clear_texture)
+    public abstract void glClearTexSubImage(int texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, ByteBuffer data);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_multi_bind GL_ARB_multi_bind}

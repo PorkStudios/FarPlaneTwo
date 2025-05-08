@@ -21,11 +21,12 @@ package net.daporkchop.fp2.gl.texture;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
-import net.daporkchop.lib.common.math.BinMath;
 
 import java.nio.ByteBuffer;
 
@@ -143,17 +144,52 @@ public final class GLTexture2D extends GLSampledTexture {
     }
 
     /**
-     * Sets this texture's filtering mode.
+     * Clears the texture contents to all zero pixels.
      *
-     * @param wrapS the texture wrap mode along the S axis
-     * @param wrapT the texture wrap mode along the T axis
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_clear_texture GL_ARB_clear_texture} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_clear_texture GL_ARB_clear_texture}
      */
-    public void wrap(@NonNull TextureWrapMode wrapS, @NonNull TextureWrapMode wrapT) {
+    @GLRequires(GLExtension.GL_ARB_clear_texture)
+    public void clearTextureDataZero() throws UnsupportedOperationException {
         this.checkOpen();
 
-        this.setParameters(parameterSetter -> {
-            parameterSetter.set(GL_TEXTURE_WRAP_S, wrapS.id());
-            parameterSetter.set(GL_TEXTURE_WRAP_T, wrapT.id());
-        });
+        for (int level = 0; level < this.levels; level++) {
+            this.gl.glClearTexImage(this.id, level,
+                    this.internalFormat().defaultFormat().id(), GL_UNSIGNED_BYTE, null);
+        }
+    }
+
+    /**
+     * Clears the texture contents at the given mipmap level to all zero pixels.
+     *
+     * @param level the mipmap level
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_clear_texture GL_ARB_clear_texture} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_clear_texture GL_ARB_clear_texture}
+     */
+    @GLRequires(GLExtension.GL_ARB_clear_texture)
+    public void clearTextureDataZero(@NotNegative int level) throws UnsupportedOperationException {
+        this.checkOpen();
+        checkIndex(this.levels, level);
+
+        this.gl.glClearTexImage(this.id, level,
+                this.internalFormat().defaultFormat().id(), GL_UNSIGNED_BYTE, null);
+    }
+
+    /**
+     * Clears the texture contents at the given mipmap level to all zero pixels.
+     *
+     * @param level the mipmap level
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_clear_texture GL_ARB_clear_texture} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_clear_texture GL_ARB_clear_texture}
+     */
+    @GLRequires(GLExtension.GL_ARB_clear_texture)
+    public void clearTextureSubDataZero(@NotNegative int level, @NotNegative int xOffset, @NotNegative int yOffset, @NotNegative int width, @NotNegative int height) throws UnsupportedOperationException {
+        this.checkOpen();
+        checkIndex(this.levels, level);
+        checkRangeLen(this.widthAtLevel(level), xOffset, width);
+        checkRangeLen(this.heightAtLevel(level), yOffset, height);
+
+        this.gl.glClearTexSubImage(this.id, level, xOffset, yOffset, 0, width, height, 1,
+                this.internalFormat().defaultFormat().id(), GL_UNSIGNED_BYTE, null);
     }
 }

@@ -92,7 +92,7 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
                 listsList.appendZero(capacity - listsList.size());
 
                 newListsTexture = GLTexture2D.create(this.gl, TextureInternalFormat.RG32UI, 1, width, height);
-                newListsTexture.filter(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
+                newListsTexture.setFilterMode(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
                 newListsTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RG_INTEGER, PixelType.UNSIGNED_INT, listsList.byteBufferView());
             }
 
@@ -112,11 +112,11 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
                 quadsTintList.appendZero(capacity - quadsTintList.size());
 
                 newQuadsCoordTexture = GLTexture2D.create(this.gl, TextureInternalFormat.RGBA32F, 1, width, height);
-                newQuadsCoordTexture.filter(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
+                newQuadsCoordTexture.setFilterMode(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
                 newQuadsCoordTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RGBA, PixelType.FLOAT, quadsCoordList.byteBufferView());
 
                 newQuadsTintTexture = GLTexture2D.create(this.gl, TextureInternalFormat.R32F, 1, width, height);
-                newQuadsTintTexture.filter(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
+                newQuadsTintTexture.setFilterMode(TextureMinFilter.NEAREST, TextureMagFilter.NEAREST);
                 newQuadsTintTexture.texSubImage(0, 0, 0, width, height, PixelFormat.RED, PixelType.FLOAT, quadsTintList.byteBufferView());
             }
         } catch (Throwable t) {

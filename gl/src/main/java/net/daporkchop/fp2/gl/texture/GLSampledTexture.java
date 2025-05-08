@@ -50,7 +50,7 @@ public abstract class GLSampledTexture extends GLStorageTexture implements ISamp
 
             //configure the base and maximum mipmap levels
             // (i don't think this is actually necessary)
-            this.mipmapLevels(0, levels - 1);
+            this.setMipmapLevels(0, levels - 1);
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -62,7 +62,7 @@ public abstract class GLSampledTexture extends GLStorageTexture implements ISamp
      * @param baseLevel the base mipmap level (inclusive)
      * @param maxLevel  the maximum mipmap level (inclusive)
      */
-    public final void mipmapLevels(@NotNegative int baseLevel, @NotNegative int maxLevel) {
+    public final void setMipmapLevels(@NotNegative int baseLevel, @NotNegative int maxLevel) {
         this.checkOpen();
         checkArg(baseLevel <= maxLevel, "baseLevel (%s) must be less than or equal to maxLevel (%s)", baseLevel, maxLevel);
 
