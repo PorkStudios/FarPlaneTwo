@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,12 +19,17 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.debug.client.renderer;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ChunkRenderContainer;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.util.BlockRenderLayer;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 
@@ -33,6 +38,8 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  */
 @Mixin(RenderGlobal.class)
 public abstract class MixinRenderGlobal1_12 {
+    @Shadow @Final private Minecraft mc;
+
     @Redirect(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V"),
@@ -41,5 +48,19 @@ public abstract class MixinRenderGlobal1_12 {
         if (fp2().globalConfig().debug().vanillaTerrainRendering()) {
             container.renderChunkLayer(layer);
         }
+    }
+
+    @Inject(method = "renderEntityOutlineFramebuffer()V",
+            at = @At("HEAD"),
+            require = 1, allow = 1)
+    private void fp2_debug_renderEntityOutlineFramebuffer_addProfilingBegin(CallbackInfo ci) {
+        this.mc.profiler.startSection("entity_outline_framebuffer");
+    }
+
+    @Inject(method = "renderEntityOutlineFramebuffer()V",
+            at = @At("RETURN"),
+            require = 1, allow = 1)
+    private void fp2_debug_renderEntityOutlineFramebuffer_addProfilingEnd(CallbackInfo ci) {
+        this.mc.profiler.endSection();
     }
 }

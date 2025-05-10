@@ -7,7 +7,8 @@
   "client": [
     "client.gui.MixinGuiOverlayDebug1_12",
     "client.renderer.MixinRenderGlobal1_12",
-    "client.MixinMinecraft1_12"
+    "client.MixinMinecraft1_12",
+    "profiler.MixinProfiler1_12"
   ],
   "mixins": [
   ]

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,9 +22,11 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.debug.client;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
 import net.daporkchop.fp2.gl.util.debug.GLDebugOutputUtil;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.profiler.IDebugMixinProfiler1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.debug.resources.DebugResourcePack1_12;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IResourcePack;
+import net.minecraft.profiler.Profiler;
 import net.minecraftforge.fml.relauncher.FMLLaunchHandler;
 import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.ContextAttribs;
@@ -36,6 +38,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
@@ -48,6 +51,10 @@ public abstract class MixinMinecraft1_12 {
     @Shadow
     @Final
     private List<IResourcePack> defaultResourcePacks;
+
+    @Shadow
+    @Final
+    public Profiler profiler;
 
     @Inject(method = "Lnet/minecraft/client/Minecraft;init()V",
             at = @At(value = "INVOKE",
@@ -74,5 +81,39 @@ public abstract class MixinMinecraft1_12 {
 
         Display.create(pixelFormat, new ContextAttribs(2, 0, ContextAttribs.CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_DEBUG_BIT_ARB));
         GLDebugOutputUtil.configureDebugOutput(OpenGL.forCurrent(), GLDebugOutputCallback.log(LogManager.getLogger("OpenGL Debug Output")::info));
+    }
+
+    @Inject(method = "createDisplay()V",
+            at = @At(value = "RETURN"),
+            require = 1, allow = 1)
+    private void fp2_debug_createDisplay_setProfilerContext(CallbackInfo ci) {
+        ((IDebugMixinProfiler1_12) this.profiler).fp2_debug_gl(OpenGL.forCurrent());
+    }
+
+    @Inject(method = "runGameLoop()V",
+            at = @At(value = "HEAD"),
+            require = 1, allow = 1)
+    private void fp2_debug_runGameLoop_clearOpenGLDebugGroups(CallbackInfo ci) {
+        ((IDebugMixinProfiler1_12) this.profiler).fp2_debug_beginFrame();
+    }
+
+    @Inject(method = "runGameLoop()V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/shader/Framebuffer;unbindFramebuffer()V"),
+            require = 1, allow = 1)
+    private void fp2_debug_runGameLoop_addProfilingFramebufferBegin(CallbackInfo ci) {
+        this.profiler.startSection("update_framebuffer");
+    }
+
+    @Inject(method = "runGameLoop()V",
+            slice = @Slice(
+                    from = @At(value = "INVOKE:ONE",
+                            target = "Lnet/minecraft/client/shader/Framebuffer;unbindFramebuffer()V")),
+            at = @At(value = "INVOKE_STRING",
+                    target = "Lnet/minecraft/profiler/Profiler;startSection(Ljava/lang/String;)V",
+                    args = "ldc=root"),
+            require = 1, allow = 1)
+    private void fp2_debug_runGameLoop_addProfilingFramebufferEnd(CallbackInfo ci) {
+        this.profiler.endSection();
     }
 }

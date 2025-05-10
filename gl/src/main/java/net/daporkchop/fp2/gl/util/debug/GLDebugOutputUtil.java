@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,8 +23,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
-
-import java.nio.IntBuffer;
+import net.daporkchop.lib.common.closeable.QuietCloseable;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
@@ -56,7 +55,7 @@ public class GLDebugOutputUtil {
             gl.glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
             gl.glDebugMessageCallbackARB(callback);
         } else {
-            throw new UnsupportedOperationException(unsupportedMessage(gl));
+            throw new UnsupportedOperationException(controlUnsupportedMessage(gl));
         }
 
         setEnabledDebugMessages(gl);
@@ -72,6 +71,10 @@ public class GLDebugOutputUtil {
         //suppress NVIDIA driver notifications indicating what kind of memory buffers are stored in (this would be very useful, but it gets
         // logged for every single glCopyBufferSubData)
         glDebugMessageControl(gl, GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, new int[]{ 131185 }, false);
+
+        //suppress debug group push/pop messages
+        glDebugMessageControl(gl, GL_DONT_CARE, GL_DEBUG_TYPE_PUSH_GROUP, GL_DONT_CARE, null, false);
+        glDebugMessageControl(gl, GL_DONT_CARE, GL_DEBUG_TYPE_POP_GROUP, GL_DONT_CARE, null, false);
     }
 
     private static void glDebugMessageControl(OpenGL gl, int source, int type, int severity, int[] ids, boolean enabled) {
@@ -80,11 +83,41 @@ public class GLDebugOutputUtil {
         } else if (gl.supports(GLExtension.GL_ARB_debug_output)) {
             gl.glDebugMessageControlARB(source, type, severity, ids, enabled);
         } else {
-            throw new UnsupportedOperationException(unsupportedMessage(gl));
+            throw new UnsupportedOperationException(controlUnsupportedMessage(gl));
         }
     }
 
-    private static String unsupportedMessage(OpenGL gl) {
+    private static String controlUnsupportedMessage(OpenGL gl) {
         return "OpenGL debug tracing is enabled, but neither " + GLExtension.GL_KHR_debug + " nor " + GLExtension.GL_ARB_debug_output + " are supported! " + gl;
+    }
+
+    public static void tryPushDebugGroupManual(OpenGL gl, int source, int id, @NonNull CharSequence msg) {
+        if (gl.supports(GLExtension.GL_KHR_debug)) {
+            gl.glPushDebugGroup(source, id, msg);
+        }
+    }
+
+    public static void tryPopDebugGroupManual(OpenGL gl) {
+        if (gl.supports(GLExtension.GL_KHR_debug)) {
+            gl.glPopDebugGroup();
+        }
+    }
+
+    public static void tryPopAllDebugGroups(OpenGL gl) {
+        if (gl.supports(GLExtension.GL_KHR_debug)) {
+            int depth = gl.glGetInteger(GL_DEBUG_GROUP_STACK_DEPTH);
+            for (int i = 1; i < depth; i++) { //lower bound of 1 is correct, the default debug stack frame is included
+                gl.glPopDebugGroup();
+            }
+        }
+    }
+
+    public static QuietCloseable tryPushDebugGroup(OpenGL gl, int source, int id, @NonNull CharSequence msg) {
+        if (gl.supports(GLExtension.GL_KHR_debug)) {
+            gl.glPushDebugGroup(source, id, msg);
+            return gl::glPopDebugGroup;
+        } else {
+            return () -> {}; //TODO: replace with QuietCloseable.noop()
+        }
     }
 }
