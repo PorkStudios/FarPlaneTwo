@@ -24,8 +24,6 @@ layout(local_size_x = 16, local_size_y = 16) in;
 //synced with net.daporkchop.fp2.core.client.render.compute.ComputeTextureMipmapGenerator#MAX_LEVELS_PER_DISPATCH
 const uint MAX_LEVELS_PER_DISPATCH = 4u;
 
-#include <"fp2:shaders/util/bvec_helper.glsl"> // bvec_and()
-
 //
 //
 // MACROS
@@ -94,12 +92,6 @@ uniform uint u_levelsThisDispatch;
 
 uniform layout(FP2_MIPMAP_FORMAT_IMAGE_LAYOUT) restrict writeonly FP2_MIPMAP_FORMAT_IMAGE_TYPE u_dstImages[MAX_LEVELS_PER_DISPATCH];
 
-bvec2 isEdgeTexel(in uvec2 prevLevelSize, in uvec2 dstLevelSize, in uvec2 dstTexelCoord) {
-    return bvec_and(
-            notEqual(prevLevelSize & 1u, uvec2(0u)),
-            equal(dstTexelCoord, dstLevelSize - 1u));
-}
-
 texel_t loadMemory(in uvec2 coord) {
     texel_t result;
     #if FP2_MIPMAP_SRC_SAMPLER
@@ -109,6 +101,10 @@ texel_t loadMemory(in uvec2 coord) {
     #endif
 
     return result;
+}
+
+texel_t loadMemorySafe(in uvec2 coord) {
+    return loadMemory(min(coord, srcLevelSize() - 1u));
 }
 
 texel_t loadTexelCache(in uvec2 coord) {
@@ -123,20 +119,26 @@ texel_t loadReduceMemory2x2(in uvec2 coord) {
     return mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
 }
 
-texel_t loadReduceMemoryMaybeEdge(in uvec2 coord, in bvec2 isEdge) {
-    texel_t result = loadReduceMemory2x2(coord);
-    if (any(isEdge)) {
-        if (isEdge.x) {
-            result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 0u)));
-            result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 1u)));
-        }
-        if (isEdge.y) {
-            result = mipmapReduce(result, loadMemory(coord + uvec2(0u, 2u)));
-            result = mipmapReduce(result, loadMemory(coord + uvec2(1u, 2u)));
-        }
-        if (all(isEdge)) {
-            result = mipmapReduce(result, loadMemory(coord + uvec2(2u, 2u)));
-        }
+texel_t loadReduceMemoryOdd(in uvec2 coord) {
+    //we're using loadMemorySafe here because if the source mipmap is very narrow, one axis could have size 1
+    //  and our offsets could go out-of-bounds.
+    texel_t src00 = loadMemorySafe(coord + uvec2(0u, 0u));
+    texel_t src01 = loadMemorySafe(coord + uvec2(0u, 1u));
+    texel_t src10 = loadMemorySafe(coord + uvec2(1u, 0u));
+    texel_t src11 = loadMemorySafe(coord + uvec2(1u, 1u));
+    texel_t result = mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
+
+    bvec2 isOdd = notEqual(srcLevelSize() & 1u, uvec2(0u));
+    if (isOdd.x) {
+        result = mipmapReduce(result, loadMemorySafe(coord + uvec2(2u, 0u)));
+        result = mipmapReduce(result, loadMemorySafe(coord + uvec2(2u, 1u)));
+    }
+    if (isOdd.y) {
+        result = mipmapReduce(result, loadMemorySafe(coord + uvec2(0u, 2u)));
+        result = mipmapReduce(result, loadMemorySafe(coord + uvec2(1u, 2u)));
+    }
+    if (all(isOdd)) {
+        result = mipmapReduce(result, loadMemorySafe(coord + uvec2(2u, 2u)));
     }
     return result;
 }
@@ -147,24 +149,6 @@ texel_t loadReduceCache2x2(in uvec2 coord, in uint stride) {
     texel_t src10 = loadTexelCache(coord + uvec2(1u, 0u) * stride);
     texel_t src11 = loadTexelCache(coord + uvec2(1u, 1u) * stride);
     return mipmapReduce(mipmapReduce(src00, src01), mipmapReduce(src10, src11));
-}
-
-texel_t loadReduceCacheMaybeEdge(in uvec2 coord, in uint stride, in bvec2 isEdge) {
-    texel_t result = loadReduceCache2x2(coord, stride);
-    if (any(isEdge)) {
-        if (isEdge.x) {
-            result = mipmapReduce(result, loadTexelCache(coord + uvec2(2u, 0u) * stride));
-            result = mipmapReduce(result, loadTexelCache(coord + uvec2(2u, 1u) * stride));
-        }
-        if (isEdge.y) {
-            result = mipmapReduce(result, loadTexelCache(coord + uvec2(0u, 2u) * stride));
-            result = mipmapReduce(result, loadTexelCache(coord + uvec2(1u, 2u) * stride));
-        }
-        if (all(isEdge)) {
-            result = mipmapReduce(result, loadTexelCache(coord + uvec2(2u, 2u) * stride));
-        }
-    }
-    return result;
 }
 
 void main() {
@@ -218,8 +202,7 @@ void main() {
         if (all(lessThan(dstTexelCoord, imageSize(u_dstImages[0])))) {
             uvec2 srcTexelCoord = dstTexelCoord * 2u;
 
-            texel_t result = loadReduceMemoryMaybeEdge(srcTexelCoord,
-                    isEdgeTexel(srcLevelSize(), imageSize(u_dstImages[0]), dstTexelCoord));
+            texel_t result = loadReduceMemoryOdd(srcTexelCoord);
 
             imageStore(u_dstImages[0], ivec2(dstTexelCoord), result);
         }
