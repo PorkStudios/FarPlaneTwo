@@ -61,36 +61,20 @@ void aabbClipSpaceToNormalizedDevice(in vec4 clipSpacePoints[8], out vec3 normal
  * @param bmin the AABB's minimum corner
  * @param bmax the AABB's maximum corner
  */
-bool projectBox(vec3 bmin, vec3 bmax, out vec3 ndc_bounds_min, out vec3 ndc_bounds_max) {
-    //TODO: these expressions could be simplified a bit for our specific use case, possibly improving accuracy...
-    vec4 SX = u_modelViewProjectionMatrix * vec4(bmax.x - bmin.x, 0.0, 0.0, 0.0);
-    vec4 SY = u_modelViewProjectionMatrix * vec4(0.0, bmax.y - bmin.y, 0.0, 0.0);
-    vec4 SZ = u_modelViewProjectionMatrix * vec4(0.0, 0.0, bmax.z - bmin.z, 0.0);
-
-    vec4 P0 = u_modelViewProjectionMatrix * vec4(bmin.x, bmin.y, bmin.z, 1.0);
-    vec4 P1 = P0 + SZ;
-    vec4 P2 = P0 + SY;
-    vec4 P3 = P2 + SZ;
-    vec4 P4 = P0 + SX;
-    vec4 P5 = P4 + SZ;
-    vec4 P6 = P4 + SY;
-    vec4 P7 = P6 + SZ;
+bool projectBox(in vec4 clipSpacePositions[8], out vec3 ndc_bounds_min, out vec3 ndc_bounds_max) {
+    vec4 P0 = clipSpacePositions[0];
+    vec4 P1 = clipSpacePositions[1];
+    vec4 P2 = clipSpacePositions[2];
+    vec4 P3 = clipSpacePositions[3];
+    vec4 P4 = clipSpacePositions[4];
+    vec4 P5 = clipSpacePositions[5];
+    vec4 P6 = clipSpacePositions[6];
+    vec4 P7 = clipSpacePositions[7];
 
     //if the box intersects the near plane, we can't transform it without dividing by zero. fortunately
     //  this isn't a problem, since if it intersects the near plane it logically cannot be culled!
     if (isClippedNear(P0) || isClippedNear(P1) || isClippedNear(P2) || isClippedNear(P3) || isClippedNear(P4) || isClippedNear(P5) || isClippedNear(P6) || isClippedNear(P7)) {
         return false;
-    }
-
-    if (false) {
-        P0.xy = clamp(P0.xy, -P0.w, P0.w);
-        P1.xy = clamp(P1.xy, -P1.w, P1.w);
-        P2.xy = clamp(P2.xy, -P2.w, P2.w);
-        P3.xy = clamp(P3.xy, -P3.w, P3.w);
-        P4.xy = clamp(P4.xy, -P4.w, P4.w);
-        P5.xy = clamp(P5.xy, -P5.w, P5.w);
-        P6.xy = clamp(P6.xy, -P6.w, P6.w);
-        P7.xy = clamp(P7.xy, -P7.w, P7.w);
     }
 
     ndc_bounds_min = min8(
@@ -99,28 +83,6 @@ bool projectBox(vec3 bmin, vec3 bmax, out vec3 ndc_bounds_min, out vec3 ndc_boun
     ndc_bounds_max = max8(
         P0.xyz / P0.w, P1.xyz / P1.w, P2.xyz / P2.w, P3.xyz / P3.w,
         P4.xyz / P4.w, P5.xyz / P5.w, P6.xyz / P6.w, P7.xyz / P7.w);
-    return true;
-
-    /*vec4 clipSpacePositions[8];
-    aabbCornersToClipSpace(bmin, bmax, bmax - bmin, clipSpacePositions);
-
-    //if the box intersects the near plane, we can't transform it without dividing by zero. fortunately
-    //  this isn't a problem, since if it intersects the near plane it logically cannot be culled!
-    for (uint i = 0u; i < 8u; i++) {
-        if (isClippedNear(clipSpacePositions[i])) {
-            return false;
-        }
-    }
-
-    ndc_bounds_min = vec3(1.0);
-    ndc_bounds_max = vec3(-1.0); //TODO: adjust for clip control settings
-    for (uint i = 0u; i < 8u; i++) {
-        if (!isClippedFar(clipSpacePositions[i]) && !isClippedSides(clipSpacePositions[i])) {
-            vec3 ndcPosition = clipSpacePositions[i].xyz / clipSpacePositions[i].w;
-            ndc_bounds_min = min(ndc_bounds_min, ndcPosition);
-            ndc_bounds_max = max(ndc_bounds_max, ndcPosition);
-        }
-    }*/
     return true;
 }
 
@@ -146,15 +108,17 @@ bool select(uint tileIndex) {
     ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
     ivec3 position_relative = position_absolute - u_positionFloor;
     vec3 aabb_min = vec3(position_relative) - u_positionFrac;
-    vec3 aabb_max = vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac;
-    if (!isBoxInFrustum(aabb_min, aabb_max)) {
+    vec3 aabb_size = vec3((T_VOXELS + 1) << pos.w);
+
+    vec4 clipSpacePositions[8];
+    if (!isBoxInFrustum(aabb_min, aabb_size, clipSpacePositions)) {
         return false;
     }
 
     // Compute the tile's normalized device coordinates
     vec3 ndc_bounds_min;
     vec3 ndc_bounds_max;
-    if (!projectBox(aabb_min, aabb_max, ndc_bounds_min, ndc_bounds_max)) {
+    if (!projectBox(clipSpacePositions, ndc_bounds_min, ndc_bounds_max)) {
         // If the tile intersects the near plane, it must be visible
         return true;
     }
