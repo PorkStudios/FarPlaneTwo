@@ -42,7 +42,6 @@ import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferAccess;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
-import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
@@ -195,12 +194,12 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
-    public void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
+    public void draw(DrawArguments args, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val list = this.commandLists.get(level, pass);
         int size = list.size();
         if (size != 0) {
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
-            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), this.commandListBufferOffsets[level][pass], size, 0);
+            this.gl.glMultiDrawElementsIndirect(this.bakeStorage.drawMode.mode(), this.bakeStorage.indexFormat.type().type(), this.commandListBufferOffsets[level][pass], size, 0);
         }
     }
 

@@ -38,7 +38,6 @@ import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
-import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.state.StatePreserver;
@@ -134,13 +133,13 @@ public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> ext
     }
 
     @Override
-    public void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
+    public void draw(DrawArguments args, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val selectedLocations = this.selectedLocations[level];
         if (!selectedLocations.isEmpty()) {
+            int modeEnum = this.bakeStorage.drawMode.mode();
             val indexFormat = this.bakeStorage.indexFormat.type();
             int indexType = indexFormat.type();
             int indexSize = indexFormat.size();
-            int modeEnum = mode.mode();
 
             OpenGL gl = this.gl;
             boolean absoluteIndices = this.bakeStorage.absoluteIndices;

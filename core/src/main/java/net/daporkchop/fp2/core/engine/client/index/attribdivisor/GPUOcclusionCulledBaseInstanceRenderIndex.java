@@ -57,7 +57,6 @@ import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.VertexMode;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
@@ -455,8 +454,8 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
     }
 
     @Override
-    public void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
-        super.draw(args, mode, level, pass, shader, uniformSetter);
+    public void draw(DrawArguments args, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
+        super.draw(args, level, pass, shader, uniformSetter);
     }
 
     /**

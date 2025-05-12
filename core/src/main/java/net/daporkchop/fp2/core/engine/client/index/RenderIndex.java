@@ -39,7 +39,6 @@ import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
-import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.state.StatePreserver;
@@ -148,7 +147,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
      * @param shader        the shader which is currently bound and is going to be rendered with
      * @param uniformSetter a handle for setting uniform values in the draw shader
      */
-    public abstract void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter);
+    public abstract void draw(DrawArguments args, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter);
 
     /**
      * Called after {@link #preDraw(DrawArguments)} and after all calls to {@link #draw}.

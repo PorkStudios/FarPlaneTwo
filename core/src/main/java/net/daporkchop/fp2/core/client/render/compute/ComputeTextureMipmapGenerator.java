@@ -169,8 +169,8 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
         checkIndex(srcTexture.levels(), srcLevel);
         checkRangeLen(dstTexture.levels(), dstLevel, levels);
 
-        checkArg(srcTexture.widthAtLevel(srcLevel + 1) == dstTexture.widthAtLevel(dstLevel)
-                        && srcTexture.heightAtLevel(srcLevel + 1) == dstTexture.heightAtLevel(dstLevel),
+        checkArg(Math.max(srcTexture.width() >> (srcLevel + 1), 1) == dstTexture.widthAtLevel(dstLevel)
+                        && Math.max(srcTexture.height() >> (srcLevel + 1), 1) == dstTexture.heightAtLevel(dstLevel),
                 "src and dst texture resolutions don't match!");
 
         TextureInternalFormat srcFormat = srcTexture.internalFormat();

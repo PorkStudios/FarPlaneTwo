@@ -87,10 +87,9 @@ bool projectBox(in vec4 clipSpacePositions[8], out vec3 ndc_bounds_min, out vec3
 }
 
 bool select(uint tileIndex) {
-    //TODO: re-enable this
-    /*if (b_srcVisibleTiles[tileIndex] == 0u) {
+    if (b_srcVisibleTiles[tileIndex] == 0u) {
         return false;
-    }*/
+    }
 
     ivec4 pos = b_tilePositions[tileIndex];
 

@@ -46,7 +46,6 @@ import net.daporkchop.fp2.gl.buffer.BufferAccess;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.download.AsynchronousSmallBufferDownloader;
-import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
@@ -104,7 +103,12 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
     /**
      * The total number of draw commands which are currently renderable (i.e. non-empty draw commands whose tile isn't hidden).
      */
-    protected int indexedCommandCount;
+    protected int nonEmptyCommandCount;
+
+    /**
+     * The total number of tiles which are currently renderable (i.e. tiles which aren't hidden and which contain at least one non-empty draw command).
+     */
+    protected int nonEmptyTileCount;
 
     protected Stats latestDebugStats;
 
@@ -169,7 +173,6 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
         LEVEL levelInstance = this.levels.get(pos.level());
         BakeStorage.Location[] locations = this.bakeStorage.find(pos);
 
-        int deltaIndexedCommandCount = 0;
         if (locations == null || this.hiddenPositions.contains(pos)) {
             //the position doesn't have any render data data associated with it or is hidden, and therefore can be entirely omitted from the index
             int baseInstance = this.renderPosTable.remove(pos);
@@ -179,16 +182,14 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
                     levelInstance.rawDrawListsCPU.get(pass).setZero(baseInstance);
                 }
 
-                deltaIndexedCommandCount -= levelInstance.nonEmptyCommandCounts[baseInstance];
-                levelInstance.nonEmptyCommandCounts[baseInstance] = 0;
-
+                levelInstance.setNonEmptyCommandMask(this, baseInstance, (byte) 0);
                 levelInstance.rawDrawListsDirty = true;
             }
         } else {
             //configure the render commands which will be used when selecting this
             int baseInstance = this.renderPosTable.add(pos);
 
-            int nonEmptyCommandCount = 0;
+            byte nonEmptyCommandMask = 0;
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                 val location = locations[pass];
                 val command = new DrawElementsIndirectCommand();
@@ -200,21 +201,16 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
                     command.baseVertex = location.baseVertex;
                     command.instanceCount = 1;
 
-                    nonEmptyCommandCount++;
+                    nonEmptyCommandMask |= (byte) (1 << pass);
                 } else {
                     //otherwise, the draw command will be filled with zeroes
                 }
                 levelInstance.rawDrawListsCPU.get(pass).set(baseInstance, command);
             }
 
-            deltaIndexedCommandCount -= levelInstance.nonEmptyCommandCounts[baseInstance];
-            deltaIndexedCommandCount += nonEmptyCommandCount;
-            levelInstance.nonEmptyCommandCounts[baseInstance] = nonEmptyCommandCount;
-
+            levelInstance.setNonEmptyCommandMask(this, baseInstance, nonEmptyCommandMask);
             levelInstance.rawDrawListsDirty = true;
         }
-
-        this.indexedCommandCount += deltaIndexedCommandCount;
     }
 
     @Override
@@ -239,14 +235,14 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
     }
 
     @Override
-    public void draw(DrawArguments args, DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
+    public void draw(DrawArguments args, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val levelInstance = this.levels.get(level);
         if (levelInstance.capacityTiles != 0) {
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
             this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, levelInstance.culledDrawListsGPU.id());
             this.gl.glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
 
-            val modeEnum = mode.mode();
+            val modeEnum = this.bakeStorage.drawMode.mode();
             val type = this.bakeStorage.indexFormat.type().type();
             val indirect = (long) pass * levelInstance.capacityTiles * DrawElementsIndirectCommand._SIZE;
             val drawCount = levelInstance.capacityTiles;
@@ -289,7 +285,7 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
         if (this.debugStatisticsDownloader != null) { //if debug statistics are supported, download the selected tile count to the CPU and use it to update the debug statistics
             int indexedTiles = this.renderPosTable.size();
             int hiddenTiles = this.hiddenPositions.size();
-            int indexedCommands = this.indexedCommandCount;
+            int indexedCommands = this.nonEmptyCommandCount;
             this.debugStatisticsDownloader.downloadRange(this.countSelectedBuffer, 0L, (int) this.countSelectedBuffer.capacity(), data -> {
                 //add up the number of selected tiles at each detail level
                 int[] dataArray = NIOBufferUtil.toArray(data.asIntBuffer());
@@ -325,7 +321,12 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
         protected GLBuffer rawDrawListsGPU;
         protected GLBuffer culledDrawListsGPU;
 
-        protected int[] nonEmptyCommandCounts = PorkUtil.EMPTY_INT_ARRAY;
+        //this is really only here for the purpose of updating the debug statistics, it lets us correctly update the total number of non-empty draw commands
+        protected byte[] nonEmptyCommandMaskPerTile = PorkUtil.emptyByteArray();
+
+        protected final int[] nonEmptyCommandCountPerPass = new int[RENDER_PASS_COUNT];
+        protected int nonEmptyCommandCountTotal;
+        protected int nonEmptyTileCountTotal;
 
         protected int capacityTiles;
 
@@ -343,6 +344,44 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
             } catch (Throwable t) {
                 throw PResourceUtil.closeSuppressed(t, this);
             }
+        }
+
+        @Override
+        public void close() {
+            PResourceUtil.closeAll(
+                    this.rawDrawListsCPU,
+                    this.rawDrawListsGPU,
+                    this.culledDrawListsGPU);
+        }
+
+        public final void setNonEmptyCommandMask(AbstractGPUCulledBaseInstanceRenderIndex<?, ?> parent, int tileIndex, byte newNonEmptyCommandMask) {
+            assert (newNonEmptyCommandMask & ((1 << RENDER_PASS_COUNT) - 1)) == 0 : newNonEmptyCommandMask;
+
+            //swap the actual mask values
+            byte oldNonEmptyCommandMask = this.nonEmptyCommandMaskPerTile[tileIndex];
+            this.nonEmptyCommandMaskPerTile[tileIndex] = newNonEmptyCommandMask;
+
+            //adjust the per-pass non-empty command count
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                int deltaNonEmptyCommandCountThisPass = 0;
+                deltaNonEmptyCommandCountThisPass -= (oldNonEmptyCommandMask >> pass) & 1;
+                deltaNonEmptyCommandCountThisPass += (newNonEmptyCommandMask >> pass) & 1;
+                this.nonEmptyCommandCountPerPass[pass] += deltaNonEmptyCommandCountThisPass;
+            }
+
+            //adjust the total non-empty command count
+            int deltaNonEmptyCommandCountTotal = 0;
+            deltaNonEmptyCommandCountTotal -= Integer.bitCount(oldNonEmptyCommandMask);
+            deltaNonEmptyCommandCountTotal += Integer.bitCount(newNonEmptyCommandMask);
+            this.nonEmptyCommandCountTotal += deltaNonEmptyCommandCountTotal;
+            parent.nonEmptyCommandCount += deltaNonEmptyCommandCountTotal;
+
+            //adjust the total non-empty tile count
+            int deltaNonEmptyTileCountTotal = 0;
+            deltaNonEmptyTileCountTotal -= oldNonEmptyCommandMask != 0 ? 1 : 0;
+            deltaNonEmptyTileCountTotal += newNonEmptyCommandMask != 0 ? 1 : 0;
+            this.nonEmptyTileCountTotal += deltaNonEmptyTileCountTotal;
+            parent.nonEmptyTileCount += deltaNonEmptyTileCountTotal;
         }
 
         public final void capacityChanged(int newCapacityTiles) {
@@ -369,7 +408,7 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
             }
 
             //extend the command counts array to the new capacity
-            this.nonEmptyCommandCounts = Arrays.copyOf(this.nonEmptyCommandCounts, newCapacityTiles);
+            this.nonEmptyCommandMaskPerTile = Arrays.copyOf(this.nonEmptyCommandMaskPerTile, newCapacityTiles);
 
             //resize both of the GPU-side buffers to the new capacity.
             //  we can simply allocate new storage since all the data's going to get uploaded later anyway
@@ -396,14 +435,6 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
             }
 
             this.rawDrawListsDirty = false;
-        }
-
-        @Override
-        public void close() {
-            PResourceUtil.closeAll(
-                    this.rawDrawListsCPU,
-                    this.rawDrawListsGPU,
-                    this.culledDrawListsGPU);
         }
     }
 }

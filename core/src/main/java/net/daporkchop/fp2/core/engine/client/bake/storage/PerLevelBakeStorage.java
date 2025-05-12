@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,6 +27,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
+import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
@@ -47,9 +48,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public final class PerLevelBakeStorage<VertexType extends AttributeStruct> extends BakeStorage<VertexType> {
     private final BakeStorage<VertexType>[] storages = uncheckedCast(new BakeStorage[MAX_LODS]);
 
-    public PerLevelBakeStorage(OpenGL gl, BufferUploader bufferUploader, AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat, boolean absoluteIndices,
+    public PerLevelBakeStorage(OpenGL gl, BufferUploader bufferUploader, AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat, boolean absoluteIndices, DrawMode primitiveMode,
                                IntBoolObjFunction<? extends BakeStorage<VertexType>> storageFactory) {
-        super(gl, bufferUploader, vertexFormat, indexFormat, absoluteIndices);
+        super(gl, bufferUploader, vertexFormat, indexFormat, absoluteIndices, primitiveMode);
 
         try {
             for (int level = 0; level < MAX_LODS; level++) {

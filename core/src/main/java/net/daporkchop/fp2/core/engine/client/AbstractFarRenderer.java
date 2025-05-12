@@ -262,8 +262,8 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.drawStateUniformsBuffer = globalRenderer.drawStateUniformsFormat.createUniformBuffer();
 
             this.baker = this.createBaker(context, this.drawMode);
-            this.bakeStorage = new PerLevelBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat, renderIndexType.absoluteIndices(),
-                    (level, absoluteIndices) -> new SimpleBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat, absoluteIndices));
+            this.bakeStorage = new PerLevelBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat, renderIndexType.absoluteIndices(), this.drawMode,
+                    (level, absoluteIndices) -> new SimpleBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat, absoluteIndices, this.drawMode));
             this.renderIndex = renderIndexType.createRenderIndex(this.gl, this.bakeStorage, this.alloc, globalRenderer, this.cameraStateUniformsBuffer);
             this.bakeManager = new BakeManager<>(this, context.tileCache(), this.baker);
 
@@ -448,7 +448,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         val shader = capturedShaderPrograms.blockShaderProgram;
         val uniformSetter = shader.bindUnsafe();
-        this.renderIndex.draw(drawArguments, this.drawMode, level, RenderConstants.LAYER_SOLID, shader, uniformSetter);
+        this.renderIndex.draw(drawArguments, level, RenderConstants.LAYER_SOLID, shader, uniformSetter);
 
         //GlStateManager.enableAlpha();
     }
@@ -461,7 +461,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         val shader = capturedShaderPrograms.blockCutoutShaderProgram;
         val uniformSetter = shader.bindUnsafe();
-        this.renderIndex.draw(drawArguments, this.drawMode, level, RenderConstants.LAYER_CUTOUT, shader, uniformSetter);
+        this.renderIndex.draw(drawArguments, level, RenderConstants.LAYER_CUTOUT, shader, uniformSetter);
 
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
@@ -481,7 +481,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
             this.gl.glStencilFunc(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
-            this.renderIndex.draw(drawArguments, this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+            this.renderIndex.draw(drawArguments, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
         }
 
         this.gl.glDepthMask(true);
@@ -501,7 +501,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
             this.gl.glStencilFunc(GL_EQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
-            this.renderIndex.draw(drawArguments, this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+            this.renderIndex.draw(drawArguments, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
         }
 
         this.gl.glDisable(GL_BLEND);
