@@ -364,18 +364,21 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                 shaderRegistry.<DrawShaderProgram>get(new DrawShaderVariant(debugColorMode, fogMode, this.tilePosTechnique, this.textureQuadsTechnique, false, true)).get());
     }
 
-    private int minLevelToRender() {
-        if (FP2_DEBUG && !this.fp2.globalConfig().debug().levelZeroRendering()) {
-            return 1;
-        }
-
-        return 0;
-    }
-
     /**
      * Renders a frame.
      */
     public void render(@NonNull CameraState cameraState, @NonNull DrawState drawState) {
+        RenderIndex.DrawableMask drawableMask = this.renderIndex.drawableMask();
+
+        if (FP2_DEBUG && !this.fp2.globalConfig().debug().levelZeroRendering()) {
+            //if level-zero rendering is turned off, use a mask with level 0 disabled
+            drawableMask = drawableMask.copyOfLevelRange(1, EngineConstants.MAX_LODS);
+        }
+
+        if (!drawableMask.shouldDrawAnything()) { //early exit if nothing is drawable
+            return;
+        }
+
         //update draw state uniforms
         try (val uniforms = this.drawStateUniformsBuffer.update()) {
             drawState.configureUniforms(uniforms);
@@ -400,12 +403,21 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
             //  from rendering over vanilla water
 
-            for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
-                this.renderSolid(drawArguments, capturedShaderPrograms, level);
-                this.renderCutout(drawArguments, capturedShaderPrograms, level);
+            if (drawableMask.shouldDrawAnythingForLayer(RenderConstants.LAYER_SOLID) || drawableMask.shouldDrawAnythingForLayer(RenderConstants.LAYER_CUTOUT)) {
+                for (int level = drawableMask.minLevelToDraw(); level < drawableMask.maxLevelToDraw(); level++) {
+                    if (drawableMask.shouldDrawAnythingForLevelLayer(level, RenderConstants.LAYER_SOLID)) {
+                        this.renderSolid(drawArguments, capturedShaderPrograms, level);
+                    }
+                    if (drawableMask.shouldDrawAnythingForLevelLayer(level, RenderConstants.LAYER_CUTOUT)) {
+                        this.renderCutout(drawArguments, capturedShaderPrograms, level);
+                    }
+                }
             }
 
-            this.renderTransparent(drawArguments, capturedShaderPrograms);
+            if (drawableMask.shouldDrawAnythingForLayer(RenderConstants.LAYER_TRANSPARENT)) {
+                this.renderTransparentStencilPass(drawableMask, drawArguments, capturedShaderPrograms);
+                this.renderTransparentFragmentPass(drawableMask, drawArguments, capturedShaderPrograms);
+            }
 
             this.postRender(drawArguments);
         }
@@ -466,12 +478,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    private void renderTransparent(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms) {
-        this.renderTransparentStencilPass(drawArguments, capturedShaderPrograms);
-        this.renderTransparentFragmentPass(drawArguments, capturedShaderPrograms);
-    }
-
-    private void renderTransparentStencilPass(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms) {
+    private void renderTransparentStencilPass(RenderIndex.DrawableMask drawableMask, RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms) {
         this.gl.glColorMask(false, false, false, false);
         this.gl.glDepthMask(false);
 
@@ -479,16 +486,18 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         val uniformSetter = shader.bindUnsafe();
 
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
-            this.gl.glStencilFunc(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
-            this.renderIndex.draw(drawArguments, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+        for (int level = drawableMask.minLevelToDraw(); level < drawableMask.maxLevelToDraw(); level++) {
+            if (drawableMask.shouldDrawAnythingForLevelLayer(level, RenderConstants.LAYER_TRANSPARENT)) {
+                this.gl.glStencilFunc(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
+                this.renderIndex.draw(drawArguments, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+            }
         }
 
         this.gl.glDepthMask(true);
         this.gl.glColorMask(true, true, true, true);
     }
 
-    private void renderTransparentFragmentPass(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms) {
+    private void renderTransparentFragmentPass(RenderIndex.DrawableMask drawableMask, RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms) {
         this.gl.glEnable(GL_BLEND);
         this.gl.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
@@ -499,9 +508,11 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         this.gl.glStencilMask(0);
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        for (int level = this.minLevelToRender(); level < EngineConstants.MAX_LODS; level++) {
-            this.gl.glStencilFunc(GL_EQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
-            this.renderIndex.draw(drawArguments, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+        for (int level = drawableMask.minLevelToDraw(); level < drawableMask.maxLevelToDraw(); level++) {
+            if (drawableMask.shouldDrawAnythingForLevelLayer(level, RenderConstants.LAYER_TRANSPARENT)) {
+                this.gl.glStencilFunc(GL_EQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
+                this.renderIndex.draw(drawArguments, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+            }
         }
 
         this.gl.glDisable(GL_BLEND);

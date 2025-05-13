@@ -55,6 +55,7 @@ import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.closeable.QuietCloseable;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Arrays;
 
@@ -214,6 +215,23 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
     }
 
     @Override
+    public DrawableMask drawableMask() {
+        byte[] drawablePassMaskPerLevel = PUnsafe.allocateUninitializedByteArray(EngineConstants.MAX_LODS);
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            val levelInstance = this.levels.get(level);
+
+            byte drawablePassMaskThisLevel = 0;
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                if (levelInstance.nonEmptyCommandCountPerPass[pass] != 0) {
+                    drawablePassMaskThisLevel |= (byte) (1 << pass);
+                }
+            }
+            drawablePassMaskPerLevel[level] = drawablePassMaskThisLevel;
+        }
+        return new DrawableMask(drawablePassMaskPerLevel);
+    }
+
+    @Override
     public void preservedDrawState(StatePreserver.Builder builder) {
         super.preservedDrawState(builder);
 
@@ -355,7 +373,7 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
         }
 
         public final void setNonEmptyCommandMask(AbstractGPUCulledBaseInstanceRenderIndex<?, ?> parent, int tileIndex, byte newNonEmptyCommandMask) {
-            assert (newNonEmptyCommandMask & ((1 << RENDER_PASS_COUNT) - 1)) == 0 : newNonEmptyCommandMask;
+            assert (newNonEmptyCommandMask & -(1 << RENDER_PASS_COUNT)) == 0 : newNonEmptyCommandMask;
 
             //swap the actual mask values
             byte oldNonEmptyCommandMask = this.nonEmptyCommandMaskPerTile[tileIndex];

@@ -45,6 +45,7 @@ import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.annotation.TransferOwnership;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
 import java.util.Arrays;
@@ -119,6 +120,102 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
      * @param blockedTracker a {@link TerrainRenderingBlockedTracker} for tracking which level-0 tiles are blocked from rendering
      */
     public abstract void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker);
+
+    /**
+     * Gets a {@link DrawableMask} indicating which LoDs and render passes currently contain drawable tiles.
+     * <p>
+     * Note that the returned mask may be an over-approximation.
+     *
+     * @return a {@link DrawableMask} indicating which LoDs and render passes currently contain drawable tiles
+     */
+    public DrawableMask drawableMask() {
+        return DrawableMask.EVERYTHING;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static final class DrawableMask {
+        static {
+            //sanity checks so that i don't end up breaking these assumptions in the future
+
+            //noinspection ConstantValue
+            assert RenderConstants.RENDER_PASS_COUNT <= Byte.SIZE;
+            assert EngineConstants.MAX_LODS <= Integer.SIZE;
+        }
+
+        static final DrawableMask NOTHING = new DrawableMask(new byte[EngineConstants.MAX_LODS]);
+        static final DrawableMask EVERYTHING = new DrawableMask(PArrays.filled(EngineConstants.MAX_LODS, (byte) ((1 << RenderConstants.RENDER_PASS_COUNT) - 1)));
+
+        private final int drawableLevelMask;
+        private final byte drawableLayerMask;
+        private final byte[] drawableLayerMaskPerLevel;
+
+        @Getter
+        private final int minLevelToDraw; //inclusive
+        @Getter
+        private final int maxLevelToDraw; //exclusive
+
+        private static int reduceDrawableLevelMask(byte[] drawableLayerMaskPerLevel) {
+            int drawableLevelMask = 0;
+            for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+                drawableLevelMask |= drawableLayerMaskPerLevel[level] != 0 ? (1 << level) : 0;
+            }
+            return drawableLevelMask;
+        }
+
+        private static byte reduceDrawableLayerMask(byte[] drawableLayerMaskPerLevel) {
+            byte drawablePassMask = 0;
+            for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+                drawablePassMask |= drawableLayerMaskPerLevel[level];
+            }
+            return drawablePassMask;
+        }
+
+        public DrawableMask(byte[] drawableLayerMaskPerLevel) {
+            checkArg(drawableLayerMaskPerLevel.length == EngineConstants.MAX_LODS, drawableLayerMaskPerLevel.length);
+
+            this.drawableLevelMask = reduceDrawableLevelMask(drawableLayerMaskPerLevel);
+            this.drawableLayerMask = reduceDrawableLayerMask(drawableLayerMaskPerLevel);
+            this.drawableLayerMaskPerLevel = drawableLayerMaskPerLevel;
+
+            this.minLevelToDraw = Integer.numberOfTrailingZeros(this.drawableLevelMask);
+            this.maxLevelToDraw = Integer.numberOfTrailingZeros(Integer.highestOneBit(this.drawableLevelMask) << 1);
+        }
+
+        public DrawableMask copyOfLevelRange(@NotNegative int minLevelInclusive, @NotNegative int maxLevelExclusive) {
+            checkRange(EngineConstants.MAX_LODS, minLevelInclusive, maxLevelExclusive);
+
+            int levelMask = ((1 << (maxLevelExclusive - minLevelInclusive)) - 1) << minLevelInclusive;
+            if ((this.drawableLevelMask & ~levelMask) == 0) { //there is already nothing renderable outside the given range
+                return this;
+            }
+
+            byte[] drawablePassMaskPerLevel = new byte[EngineConstants.MAX_LODS];
+            System.arraycopy(this.drawableLayerMaskPerLevel, minLevelInclusive, drawablePassMaskPerLevel, minLevelInclusive, maxLevelExclusive - minLevelInclusive);
+            return new DrawableMask(drawablePassMaskPerLevel);
+        }
+
+        public boolean shouldDrawAnything() {
+            return this.drawableLevelMask != 0;
+        }
+
+        public boolean shouldDrawAnythingForLevel(@NotNegative int level) {
+            checkIndex(EngineConstants.MAX_LODS, level);
+            return (this.drawableLevelMask & (1 << level)) != 0;
+        }
+
+        public boolean shouldDrawAnythingForLayer(@NotNegative int layer) {
+            checkIndex(RenderConstants.RENDER_PASS_COUNT, layer);
+            return (this.drawableLayerMask & (1 << layer)) != 0;
+        }
+
+        public boolean shouldDrawAnythingForLevelLayer(@NotNegative int level, @NotNegative int layer) {
+            checkIndex(EngineConstants.MAX_LODS, level);
+            checkIndex(RenderConstants.RENDER_PASS_COUNT, layer);
+            return (this.drawableLayerMaskPerLevel[level] & (1 << layer)) != 0;
+        }
+    }
 
     /**
      * Configures the given {@link StatePreserver} builder to preserve any OpenGL state which may be modified by this render index while drawing.
