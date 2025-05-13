@@ -18,7 +18,13 @@
 #
 
 # GPU-based occlusion culling, indirect MultiDraw (instanced vertex attribute)
-net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUOcclusionCulledBaseInstanceRenderIndex$Type
+#    TODO: Disabled due to the fact that this isn't really useful yet: it can only test for occlusion by vanilla rendered
+#    terrain, culling against itself would require a two-pass approach. However, rendering all opaque layers in multiple
+#    passes isn't possible without sacrificing some accuracy due to the way that we use the stencil buffer to force
+#    less detailed LoDs to always render below more detailed LoDs, regardless of fragment depth.
+#    To solve this, we'd have to make meshes be continuous between LoDs again, which is kinda a big pain. That will
+#    probably have to wait until I finish overhauling the tile format.
+#net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUOcclusionCulledBaseInstanceRenderIndex$Type
 
 # GPU-based frustum culling, indirect MultiDraw (instanced vertex attribute)
 net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex$Type

@@ -233,6 +233,97 @@ public class NIOBufferUtil {
     }
 
     /**
+     * Copies the first {@code n} elements of the given buffer's contents into a new {@code byte[]}. The buffer's {@link Buffer#position() position} is modified.
+     *
+     * @param buffer the buffer
+     * @param n      the number of elements to copy
+     * @return a new {@code byte[]} containing the first {@code n} elements of the given buffer's contents
+     */
+    public static byte[] toArrayCount(ByteBuffer buffer, @NotNegative int n) {
+        val result = PUnsafe.allocateUninitializedByteArray(n);
+        buffer.get(result);
+        return result;
+    }
+
+    /**
+     * Copies the first {@code n} elements of the given buffer's contents into a new {@code short[]}. The buffer's {@link Buffer#position() position} is modified.
+     *
+     * @param buffer the buffer
+     * @param n      the number of elements to copy
+     * @return a new {@code short[]} containing the first {@code n} elements of the given buffer's contents
+     */
+    public static short[] toArrayCount(ShortBuffer buffer, @NotNegative int n) {
+        val result = PUnsafe.allocateUninitializedShortArray(n);
+        buffer.get(result);
+        return result;
+    }
+
+    /**
+     * Copies the first {@code n} elements of the given buffer's contents into a new {@code char[]}. The buffer's {@link Buffer#position() position} is modified.
+     *
+     * @param buffer the buffer
+     * @param n      the number of elements to copy
+     * @return a new {@code char[]} containing the first {@code n} elements of the given buffer's contents
+     */
+    public static char[] toArrayCount(CharBuffer buffer, @NotNegative int n) {
+        val result = PUnsafe.allocateUninitializedCharArray(n);
+        buffer.get(result);
+        return result;
+    }
+
+    /**
+     * Copies the first {@code n} elements of the given buffer's contents into a new {@code int[]}. The buffer's {@link Buffer#position() position} is modified.
+     *
+     * @param buffer the buffer
+     * @param n      the number of elements to copy
+     * @return a new {@code int[]} containing the first {@code n} elements of the given buffer's contents
+     */
+    public static int[] toArrayCount(IntBuffer buffer, @NotNegative int n) {
+        val result = PUnsafe.allocateUninitializedIntArray(n);
+        buffer.get(result);
+        return result;
+    }
+
+    /**
+     * Copies the first {@code n} elements of the given buffer's contents into a new {@code long[]}. The buffer's {@link Buffer#position() position} is modified.
+     *
+     * @param buffer the buffer
+     * @param n      the number of elements to copy
+     * @return a new {@code long[]} containing the first {@code n} elements of the given buffer's contents
+     */
+    public static long[] toArrayCount(LongBuffer buffer, @NotNegative int n) {
+        val result = PUnsafe.allocateUninitializedLongArray(n);
+        buffer.get(result);
+        return result;
+    }
+
+    /**
+     * Copies the first {@code n} elements of the given buffer's contents into a new {@code float[]}. The buffer's {@link Buffer#position() position} is modified.
+     *
+     * @param buffer the buffer
+     * @param n      the number of elements to copy
+     * @return a new {@code float[]} containing the first {@code n} elements of the given buffer's contents
+     */
+    public static float[] toArrayCount(FloatBuffer buffer, @NotNegative int n) {
+        val result = PUnsafe.allocateUninitializedFloatArray(n);
+        buffer.get(result);
+        return result;
+    }
+
+    /**
+     * Copies the first {@code n} elements of the given buffer's contents into a new {@code double[]}. The buffer's {@link Buffer#position() position} is modified.
+     *
+     * @param buffer the buffer
+     * @param n      the number of elements to copy
+     * @return a new {@code double[]} containing the first {@code n} elements of the given buffer's contents
+     */
+    public static double[] toArrayCount(DoubleBuffer buffer, @NotNegative int n) {
+        val result = PUnsafe.allocateUninitializedDoubleArray(n);
+        buffer.get(result);
+        return result;
+    }
+
+    /**
      * Allocates a new {@link ByteBuffer} with direct memory using the native {@link ByteOrder}.
      *
      * @param capacity the capacity

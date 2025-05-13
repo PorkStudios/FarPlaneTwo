@@ -317,6 +317,7 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
         //bind terrain rendering blocked tracker, so that level-0 tiles can be skipped if they overlap with vanilla terrain
         blockedTracker.bindGlBuffers(this.gl, VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_SSBO_BINDING);
 
+        //TODO: this initial frustum pass is no longer necessary, we're already performing frustum checks in the occlusion culling shader
         val cullingShaderProgram = this.tileVisibilityTestShader.get();
         val uniformSetter = cullingShaderProgram.bindUnsafe(); // active program binding will be restored by StatePreserver
 

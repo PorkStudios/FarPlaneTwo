@@ -468,7 +468,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     private void renderCutout(RenderIndex.DrawArguments drawArguments, CapturedShaderPrograms capturedShaderPrograms, int level) {
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
 
-        this.gl.glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
+        this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         this.gl.glStencilFunc(GL_LEQUAL, level, 0x7F);
 
         val shader = capturedShaderPrograms.blockCutoutShaderProgram;

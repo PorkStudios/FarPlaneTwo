@@ -1117,9 +1117,7 @@ public final class GLAPILWJGL2 extends OpenGL {
         IntBuffer buffer = this.getBufferInt(count);
         GL20.glGetProgram(program, pname, buffer);
         super.debugCheckError();
-        int[] res = PUnsafe.allocateUninitializedIntArray(count);
-        buffer.slice().get(res);
-        return res;
+        return NIOBufferUtil.toArrayCount(buffer.duplicate(), count);
     }
 
     @Override
@@ -1682,9 +1680,7 @@ public final class GLAPILWJGL2 extends OpenGL {
         GL31.glGetUniformIndices(program, uniformNames, tmpBuffer);
         super.debugCheckError();
 
-        int[] result = PUnsafe.allocateUninitializedIntArray(uniformNames.length);
-        tmpBuffer.duplicate().get(result);
-        return result;
+        return NIOBufferUtil.toArrayCount(tmpBuffer.duplicate(), uniformNames.length);
     }
 
     @Override
