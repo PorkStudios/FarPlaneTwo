@@ -107,11 +107,6 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
      */
     protected int nonEmptyCommandCount;
 
-    /**
-     * The total number of tiles which are currently renderable (i.e. tiles which aren't hidden and which contain at least one non-empty draw command).
-     */
-    protected int nonEmptyTileCount;
-
     protected Stats latestDebugStats;
 
     public AbstractGPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer, String implName) {
@@ -256,7 +251,7 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
     @Override
     public void draw(DrawArguments args, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val levelInstance = this.levels.get(level);
-        if (levelInstance.capacityTiles != 0) {
+        if (levelInstance.nonEmptyCommandCountPerPass[pass] != 0) {
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
             this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, levelInstance.culledDrawListsGPU.id());
             this.gl.glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
@@ -264,18 +259,20 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
             val modeEnum = this.bakeStorage.drawMode.mode();
             val type = this.bakeStorage.indexFormat.type().type();
             val indirect = (long) pass * levelInstance.capacityTiles * DrawElementsIndirectCommand._SIZE;
-            val drawCount = levelInstance.capacityTiles;
             val stride = 0;
             if (this.useIndirectCount) {
                 //use indirect MultiDraw with indirect counts!
-                //  glMemoryBarrier(GL_COMMAND_BARRIER_BIT) also works as a barrier on GL_PARAMETER_BUFFER, so our memory ordering is safe
+                //  glMemoryBarrier(GL_COMMAND_BARRIER_BIT) also works as a barrier on GL_PARAMETER_BUFFER, so our memory ordering is safe.
+                //  We'll use 'levelInstance.nonEmptyCommandCountPerPass[pass]' as the maximum draw count instead of the level capacity: because
+                //  empty commands are left out of the culled draw lists buffer, it shouldn't be possible for more than the actual number of
+                //  commands for this render pass to end up in the output buffer.
                 val indirectCount = (long) level * COUNT_SELECTED_BUFFER_LEVEL_STRIDE
                         + COUNT_SELECTED_BUFFER_PASSES_OFFSET
                         + (long) pass * Integer.BYTES;
-                this.gl.glMultiDrawElementsIndirectCount(modeEnum, type, indirect, indirectCount, drawCount, stride);
+                this.gl.glMultiDrawElementsIndirectCount(modeEnum, type, indirect, indirectCount, levelInstance.nonEmptyCommandCountPerPass[pass], stride);
             } else {
                 //use ordinary indirect MultiDraw, with unselected tiles skipped by inserting empty commands on the GPU side
-                this.gl.glMultiDrawElementsIndirect(modeEnum, type, indirect, drawCount, stride);
+                this.gl.glMultiDrawElementsIndirect(modeEnum, type, indirect, levelInstance.capacityTiles, stride);
             }
         }
     }
@@ -345,7 +342,6 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
 
         protected final int[] nonEmptyCommandCountPerPass = new int[RENDER_PASS_COUNT];
         protected int nonEmptyCommandCountTotal;
-        protected int nonEmptyTileCountTotal;
 
         protected int capacityTiles;
 
@@ -394,13 +390,6 @@ public abstract class AbstractGPUCulledBaseInstanceRenderIndex<VertexType extend
             deltaNonEmptyCommandCountTotal += Integer.bitCount(newNonEmptyCommandMask);
             this.nonEmptyCommandCountTotal += deltaNonEmptyCommandCountTotal;
             parent.nonEmptyCommandCount += deltaNonEmptyCommandCountTotal;
-
-            //adjust the total non-empty tile count
-            int deltaNonEmptyTileCountTotal = 0;
-            deltaNonEmptyTileCountTotal -= oldNonEmptyCommandMask != 0 ? 1 : 0;
-            deltaNonEmptyTileCountTotal += newNonEmptyCommandMask != 0 ? 1 : 0;
-            this.nonEmptyTileCountTotal += deltaNonEmptyTileCountTotal;
-            parent.nonEmptyTileCount += deltaNonEmptyTileCountTotal;
         }
 
         public final void capacityChanged(int newCapacityTiles) {

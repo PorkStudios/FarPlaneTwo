@@ -454,11 +454,6 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
         this.enqueueDebugStatisticsUpdate(false);
     }
 
-    @Override
-    public void draw(DrawArguments args, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
-        super.draw(args, level, pass, shader, uniformSetter);
-    }
-
     /**
      * @author DaPorkchop_
      */
