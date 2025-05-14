@@ -62,7 +62,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderContainer {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = AbstractComputeShaderContainer.REQUIRED_EXTENSIONS
-            .add(GLExtension.GL_ARB_shader_image_load_store);
+            .add(GLExtension.GL_ARB_shader_image_load_store) //obviously needed by shader, but also for glMemoryBarrier()
+            .add(GLExtension.GL_ARB_shader_image_size); //imageSize() in compute shader
 
     private static final int SHADER_WORK_GROUP_TILE_SIZE = 16; //synced with resources/assets/fp2/shaders/comp/generate_mipmap.comp
     private static final int MAX_LEVELS_PER_DISPATCH = 4; //synced with resources/assets/fp2/shaders/comp/generate_mipmap.comp
@@ -243,7 +244,7 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
             }
             currentlyBoundDstImageCount = levelsThisDispatch;
 
-            this.gl.glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            this.gl.glMemoryBarrier(useSamplerSrc ? GL_TEXTURE_FETCH_BARRIER_BIT : GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
             this.gl.glDispatchCompute(numGroupsX, numGroupsY, 1);
 

@@ -60,7 +60,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public final class ComputeTextureCopier extends AbstractComputeShaderContainer {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = AbstractComputeShaderContainer.REQUIRED_EXTENSIONS
-            .add(GLExtension.GL_ARB_shader_image_load_store);
+            .add(GLExtension.GL_ARB_shader_image_load_store) //obviously needed by shader, but also for glMemoryBarrier()
+            .add(GLExtension.GL_ARB_shader_image_size); //imageSize() in compute shader
 
     private static final int SHADER_WORK_GROUP_TILE_SIZE = 16; //synced with resources/assets/fp2/shaders/comp/texture_copy.comp
 
@@ -132,8 +133,7 @@ public final class ComputeTextureCopier extends AbstractComputeShaderContainer {
 
     /**
      * Generates the given number of mipmap levels from the given level of the given source texture into the
-     * given destination texture starting at the given level. Texels are resampled according to the given
-     * {@link MipmapMode mode}.
+     * given destination texture starting at the given level.
      * <p>
      * This method does <strong>not</strong> invalidate the destination texture's storage.
      * <p>
@@ -166,7 +166,8 @@ public final class ComputeTextureCopier extends AbstractComputeShaderContainer {
 
         //if the source is a depth texture, the first pass needs to read from the source texture using a sampler
         boolean srcSampler = srcFormat.defaultFormat().kind() != PixelKind.COLOR;
-        srcSampler = true; //TODO
+        //TODO: why was this here?
+        //  srcSampler = true;
 
         val shader = this.shaderRegistry.<ComputeShaderProgram>get(new TextureCopyShaderVariant(dstFormat, srcSampler)).get();
         val uniformSetter = shader.bindUnsafe();
@@ -184,7 +185,7 @@ public final class ComputeTextureCopier extends AbstractComputeShaderContainer {
 
         this.gl.glBindImageTexture(DST_IMAGE_BINDING, dstTexture.id(), dstLevel, false, 0, GL_WRITE_ONLY, dstTexture.internalFormat().id());
 
-        this.gl.glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        this.gl.glMemoryBarrier(srcSampler ? GL_TEXTURE_FETCH_BARRIER_BIT : GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         this.gl.glDispatchCompute(numGroupsX, numGroupsY, 1);
     }
