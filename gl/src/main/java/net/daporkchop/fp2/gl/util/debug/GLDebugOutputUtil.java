@@ -117,7 +117,7 @@ public class GLDebugOutputUtil {
             gl.glPushDebugGroup(source, id, msg);
             return gl::glPopDebugGroup;
         } else {
-            return () -> {}; //TODO: replace with QuietCloseable.noop()
+            return QuietCloseable.noop();
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,17 +15,16 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.reference;
 
 import lombok.NonNull;
 import net.daporkchop.lib.common.reference.HandleableReference;
-import net.daporkchop.lib.common.reference.PReferenceHandler;
-import net.daporkchop.lib.common.reference.WeakReference;
+import net.daporkchop.lib.common.reference.PReferenceQueues;
 
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.Map;
 
 /**
@@ -43,11 +42,11 @@ public final class WeakSelfRemovingReference<T> extends WeakReference<T> impleme
      * @return the reference
      */
     public static <T> WeakReference<T> create(@NonNull T referent, Object key, @NonNull Map<?, ?> map) {
-        return PReferenceHandler.createReference(referent, (_referent, queue) -> new WeakSelfRemovingReference<>(_referent, queue, key, map));
+        return new WeakSelfRemovingReference<>(referent, PReferenceQueues.getHandlingReferenceQueue(), key, map);
     }
 
-    protected final Map<?, ?> map;
-    protected final Object key;
+    private final Map<?, ?> map;
+    private final Object key;
 
     private WeakSelfRemovingReference(@NonNull T referent, @NonNull ReferenceQueue<? super T> queue, Object key, @NonNull Map<?, ?> map) {
         super(referent, queue);

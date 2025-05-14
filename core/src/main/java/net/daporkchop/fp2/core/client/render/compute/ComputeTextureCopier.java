@@ -171,8 +171,8 @@ public final class ComputeTextureCopier extends AbstractComputeShaderContainer {
         val shader = this.shaderRegistry.<ComputeShaderProgram>get(new TextureCopyShaderVariant(dstFormat, srcSampler)).get();
         val uniformSetter = shader.bindUnsafe();
 
-        int numGroupsX = PMath.roundUp(dstWidth, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
-        int numGroupsY = PMath.roundUp(dstHeight, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
+        int numGroupsX = PMath.ceilDiv(dstWidth, SHADER_WORK_GROUP_TILE_SIZE);
+        int numGroupsY = PMath.ceilDiv(dstHeight, SHADER_WORK_GROUP_TILE_SIZE);
 
         if (srcSampler) {
             uniformSetter.set1i(shader.uniformLocation("u_srcTextureLod"), srcLevel);

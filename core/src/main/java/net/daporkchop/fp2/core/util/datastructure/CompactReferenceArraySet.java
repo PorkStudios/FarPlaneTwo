@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.datastructure;
@@ -23,6 +22,7 @@ package net.daporkchop.fp2.core.util.datastructure;
 import com.google.common.collect.Iterators;
 import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import lombok.NonNull;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.lang.reflect.Array;
 import java.util.AbstractSet;
@@ -44,7 +44,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public class CompactReferenceArraySet<E> extends AbstractSet<E> {
-    protected Object[] elements = EMPTY_OBJECT_ARRAY;
+    protected Object[] elements = PorkUtil.emptyObjectArray();
 
     @Override
     public int size() {
@@ -53,7 +53,7 @@ public class CompactReferenceArraySet<E> extends AbstractSet<E> {
 
     @Override
     public boolean isEmpty() {
-        return this.elements == EMPTY_OBJECT_ARRAY;
+        return this.elements.length == 0;
     }
 
     @Override
@@ -93,7 +93,7 @@ public class CompactReferenceArraySet<E> extends AbstractSet<E> {
 
         for (int i = 0; i < this.elements.length; i++) {
             if (this.elements[i] == o) { //we found a match! cut the element out of the array and abort
-                Object[] newElements = this.elements.length == 1 ? EMPTY_OBJECT_ARRAY : new Object[this.elements.length - 1];
+                Object[] newElements = this.elements.length == 1 ? PorkUtil.emptyObjectArray() : new Object[this.elements.length - 1];
                 System.arraycopy(this.elements, 0, newElements, 0, i);
                 System.arraycopy(this.elements, i + 1, newElements, i, this.elements.length - 1 - i);
                 this.elements = newElements;
@@ -143,7 +143,7 @@ public class CompactReferenceArraySet<E> extends AbstractSet<E> {
         }
 
         if (writeIndex != this.elements.length) { //some elements were removed
-            this.elements = writeIndex == 0 ? EMPTY_OBJECT_ARRAY : Arrays.copyOf(this.elements, writeIndex);
+            this.elements = writeIndex == 0 ? PorkUtil.emptyObjectArray() : Arrays.copyOf(this.elements, writeIndex);
             return true;
         } else { //nothing changed
             return false;
@@ -160,7 +160,7 @@ public class CompactReferenceArraySet<E> extends AbstractSet<E> {
     @Override
     public void clear() {
         //simply replace with empty array
-        this.elements = EMPTY_OBJECT_ARRAY;
+        this.elements = PorkUtil.emptyObjectArray();
     }
 
     @Override

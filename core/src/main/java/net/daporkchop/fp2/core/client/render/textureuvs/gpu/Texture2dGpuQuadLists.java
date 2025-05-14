@@ -82,7 +82,7 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
         try (val alloc = new DirectMemoryAllocator()) { //temporary allocator for staging data
             try (val listsList = new DirectIVec2List(alloc)) {
                 int width = X_COORD_WRAP;
-                int height = PMath.roundUp(listsSize, width) / width;
+                int height = PMath.ceilDiv(listsSize, width);
                 int capacity = width * height;
 
                 listsList.reserve(capacity);
@@ -99,7 +99,7 @@ public final class Texture2dGpuQuadLists extends GpuQuadLists {
             try (val quadsCoordList = new DirectVec4List(alloc);
                  val quadsTintList = new DirectFloatList(alloc)) {
                 int width = X_COORD_WRAP;
-                int height = PMath.roundUp(quadsSize, width) / width;
+                int height = PMath.ceilDiv(quadsSize, width);
                 int capacity = width * height;
 
                 quadsCoordList.reserve(capacity);

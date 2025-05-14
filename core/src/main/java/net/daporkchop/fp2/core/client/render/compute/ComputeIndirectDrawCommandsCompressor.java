@@ -222,7 +222,7 @@ public final class ComputeIndirectDrawCommandsCompressor extends AbstractCompute
         this.gl.glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         //dispatch the compute shader!
-        this.gl.glDispatchCompute(PMath.roundUp(srcCommandCount, SHADER_WORK_GROUP_SIZE) / SHADER_WORK_GROUP_SIZE, 1, 1);
+        this.gl.glDispatchCompute(PMath.ceilDiv(srcCommandCount, SHADER_WORK_GROUP_SIZE), 1, 1);
     }
 
     @Override

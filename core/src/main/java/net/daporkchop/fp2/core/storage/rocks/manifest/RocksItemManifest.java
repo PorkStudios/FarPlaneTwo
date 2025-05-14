@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.manifest;
@@ -29,13 +28,13 @@ import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -142,6 +141,6 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
         byte[] key = (this.inode + SEPARATOR + INITIALIZED).getBytes(StandardCharsets.UTF_8);
 
         checkState(access.get(this.column, key) == null, "already initialized!");
-        access.put(this.column, key, EMPTY_BYTE_ARRAY);
+        access.put(this.column, key, PorkUtil.emptyByteArray());
     }
 }

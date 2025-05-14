@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -33,13 +33,13 @@ import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.lib.common.function.exception.EFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.common.reference.Reference;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.reflection.type.PTypes;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.ref.Reference;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -168,21 +168,19 @@ public class EventBus implements FEventBus {
     protected final Map<Class<?>, HandlerList> eventClassesToHandlers = CacheBuilder.newBuilder().weakKeys().<Class<?>, HandlerList>build().asMap();
 
     @Override
-    public void register(@NonNull Object listener) {
-        this.registerMember(listener, ReferenceStrength.STRONG);
+    public synchronized void register(@NonNull Object listener) {
+        LISTENER_METHOD_CACHE.getUnchecked(listener.getClass()).forEach(method -> {
+            method.handlerMemberStrong(listener).ifPresent(handler -> this.addHandler(handler, method.signature));
+        });
     }
 
     @Override
-    public void registerWeak(@NonNull Object listener) {
-        this.registerMember(listener, ReferenceStrength.WEAK);
-    }
-
-    protected synchronized void registerMember(@NonNull Object listener, @NonNull ReferenceStrength strength) {
+    public synchronized void registerWeak(@NonNull Object listener) {
         Class<?> listenerClass = listener.getClass();
-        Reference<Object> reference = strength.createReference(listener, ref -> this.cleanup(listenerClass, ref));
+        Reference<Object> reference = ReferenceStrength.WEAK.createReference(listener, ref -> this.cleanup(listenerClass, ref));
 
         LISTENER_METHOD_CACHE.getUnchecked(listener.getClass()).forEach(method -> {
-            method.handlerMember(reference).ifPresent(handler -> this.addHandler(handler, method.signature));
+            method.handlerMemberCollectible(reference).ifPresent(handler -> this.addHandler(handler, method.signature));
         });
     }
 
@@ -344,9 +342,15 @@ public class EventBus implements FEventBus {
         protected final ReturnHandling returnHandling;
         protected final boolean member;
 
-        public Optional<Handler> handlerMember(@NonNull Reference<Object> reference) {
+        public Optional<Handler> handlerMemberStrong(@NonNull Object listener) {
             return this.member
-                    ? Optional.of(new Handler.Member(this, reference))
+                    ? Optional.of(new Handler.MemberStrong(this, listener))
+                    : Optional.empty();
+        }
+
+        public Optional<Handler> handlerMemberCollectible(@NonNull Reference<Object> reference) {
+            return this.member
+                    ? Optional.of(new Handler.MemberCollectible(this, reference))
                     : Optional.empty();
         }
 
@@ -494,10 +498,34 @@ public class EventBus implements FEventBus {
         /**
          * @author DaPorkchop_
          */
-        protected static class Member extends Handler {
+        protected static class MemberStrong extends Handler {
+            protected final Object listener;
+
+            protected MemberStrong(@NonNull HandlerMethod method, @NonNull Object listener) {
+                super(method);
+                this.listener = listener;
+            }
+
+            @Override
+            @SneakyThrows
+            public Optional<?> fire(@NonNull Object event) {
+                return this.returnHandling.wrapReturnValue(this.handle.invoke(this.listener, event));
+            }
+
+            @Override
+            public boolean shouldRemove(@NonNull Object referenceOrListener) {
+                //referenceOrListener is exactly this listener object
+                return this.listener == referenceOrListener;
+            }
+        }
+
+        /**
+         * @author DaPorkchop_
+         */
+        protected static class MemberCollectible extends Handler {
             protected final Reference<Object> reference;
 
-            protected Member(@NonNull HandlerMethod method, @NonNull Reference<Object> reference) {
+            protected MemberCollectible(@NonNull HandlerMethod method, @NonNull Reference<Object> reference) {
                 super(method);
                 this.reference = reference;
             }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.manifest;
@@ -32,6 +31,7 @@ import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -41,7 +41,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -163,7 +162,7 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
     @SneakyThrows(FStorageException.class)
     public void markColumnFamiliesForDeletion(@NonNull FStorageWriteAccess access, @NonNull Collection<String> columnFamilyNames) {
         for (String name : columnFamilyNames) {
-            access.put(this.column, (this.inode + SEPARATOR + COLUMN_FAMILIES_PENDING_DELETION + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8), EMPTY_BYTE_ARRAY);
+            access.put(this.column, (this.inode + SEPARATOR + COLUMN_FAMILIES_PENDING_DELETION + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8), PorkUtil.emptyByteArray());
         }
     }
 
@@ -215,7 +214,7 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
             key = (this.inode + SEPARATOR + INODES + SEPARATOR + escape(inode)).getBytes(StandardCharsets.UTF_8);
         } while (access.get(this.column, key) != null); //if the name is already taken, keep trying until we get one which is unique
 
-        access.put(this.column, key, EMPTY_BYTE_ARRAY);
+        access.put(this.column, key, PorkUtil.emptyByteArray());
         return inode;
     }
 

@@ -220,8 +220,8 @@ public final class ComputeTextureMipmapGenerator extends AbstractComputeShaderCo
             int currLevelWidth = dstTexture.widthAtLevel(dstLevel + processedLevels);
             int currLevelHeight = dstTexture.heightAtLevel(dstLevel + processedLevels);
 
-            int numGroupsX = PMath.roundUp(currLevelWidth, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
-            int numGroupsY = PMath.roundUp(currLevelHeight, SHADER_WORK_GROUP_TILE_SIZE) / SHADER_WORK_GROUP_TILE_SIZE;
+            int numGroupsX = PMath.ceilDiv(currLevelWidth, SHADER_WORK_GROUP_TILE_SIZE);
+            int numGroupsY = PMath.ceilDiv(currLevelHeight, SHADER_WORK_GROUP_TILE_SIZE);
 
             uniformSetter.set1ui(u_levelsThisDispatch, levelsThisDispatch);
 

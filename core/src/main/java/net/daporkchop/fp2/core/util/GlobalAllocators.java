@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,11 +19,9 @@
 
 package net.daporkchop.fp2.core.util;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.lib.common.misc.classvalue.PClassValue;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -41,9 +39,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @UtilityClass
 public class GlobalAllocators {
-    private static final LoadingCache<Class<?>, Cached<ArrayAllocator<?>>> ALLOCATORS_CACHED_BY_COMPONENT_TYPE = CacheBuilder.newBuilder()
-            .weakKeys().weakValues()
-            .build(CacheLoader.from(componentType -> makeThreadLocal(() -> ArrayAllocator.pow2(componentType, ReferenceStrength.STRONG, 32))));
+    private static final PClassValue<Cached<ArrayAllocator<?>>> ALLOCATORS_CACHED_BY_COMPONENT_TYPE = PClassValue.create(componentType -> makeThreadLocal(() -> ArrayAllocator.pow2(componentType, 32)));
 
     public static final Cached<ArrayAllocator<byte[]>> ALLOC_BYTE = createArrayAllocator(PUnsafe::allocateUninitializedByteArray);
     public static final Cached<ArrayAllocator<int[]>> ALLOC_INT = createArrayAllocator(PUnsafe::allocateUninitializedIntArray);
@@ -62,7 +58,7 @@ public class GlobalAllocators {
      * @return a thread-local array allocator
      */
     private static <T> Cached<ArrayAllocator<T>> createArrayAllocator(@NonNull IntFunction<T> allocator) {
-        return makeThreadLocal(() -> ArrayAllocator.pow2(allocator, ReferenceStrength.STRONG, 32));
+        return makeThreadLocal(() -> ArrayAllocator.pow2(allocator, 32));
     }
 
     /**
@@ -72,6 +68,6 @@ public class GlobalAllocators {
      * @return a thread-local array allocator
      */
     public static <T> Cached<ArrayAllocator<T[]>> getArrayAllocatorForComponentType(@NonNull Class<T> componentType) {
-        return uncheckedCast(ALLOCATORS_CACHED_BY_COMPONENT_TYPE.getUnchecked(componentType));
+        return uncheckedCast(ALLOCATORS_CACHED_BY_COMPONENT_TYPE.get(componentType));
     }
 }

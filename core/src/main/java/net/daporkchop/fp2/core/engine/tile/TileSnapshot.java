@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2024 DaPorkchop_
+ * Copyright (c) 2020-2025 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -65,7 +65,7 @@ public final class TileSnapshot extends AbstractTileSnapshot {
         if (length < 0) { //no data!
             this.data = null;
         } else if (length == 0) { //special case for zero-length buffer which requires zero allocations
-            this.data = PorkUtil.EMPTY_BYTE_ARRAY;
+            this.data = PorkUtil.emptyByteArray();
         } else {
             //allocate buffer space and read data
             this.data = PUnsafe.allocateUninitializedByteArray(length);
@@ -83,7 +83,7 @@ public final class TileSnapshot extends AbstractTileSnapshot {
         super(pos, timestamp);
 
         if (dataLength == 0) { //special case for zero-length buffer which requires zero allocations
-            this.data = PorkUtil.EMPTY_BYTE_ARRAY;
+            this.data = PorkUtil.emptyByteArray();
         } else {
             //allocate buffer space
             this.data = PUnsafe.allocateUninitializedByteArray(dataLength);
@@ -98,7 +98,7 @@ public final class TileSnapshot extends AbstractTileSnapshot {
         super(pos, timestamp);
 
         if (data.length == 0) { //special case for zero-length buffer which requires zero allocations
-            this.data = PorkUtil.EMPTY_BYTE_ARRAY;
+            this.data = PorkUtil.emptyByteArray();
         } else {
             //allocate buffer space
             this.data = data.clone();
