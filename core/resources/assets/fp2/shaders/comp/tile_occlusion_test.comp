@@ -19,7 +19,7 @@
  */
 
 //synced with net.daporkchop.fp2.core.engine.client.index.attribdivisor.AbstractGPUCulledBaseInstanceRenderIndex#CULLING_SHADER_WORK_GROUP_SIZE
-layout(local_size_x = 256) in;
+layout(local_size_x = 64) in;
 
 #include <"fp2:shaders/common.glsl"> // T_SHIFT, T_VOXELS
 

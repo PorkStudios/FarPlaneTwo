@@ -62,7 +62,7 @@ public final class ComputeIndirectDrawCommandsCompressor extends AbstractCompute
             .add(GLExtension.GL_ARB_shader_image_load_store) //glMemoryBarrier()
             .add(GLExtension.GL_ARB_shader_atomic_counters);
 
-    private static final int SHADER_WORK_GROUP_SIZE = 32; //synced with resources/assets/fp2/shaders/comp/compress_indirect_draw_commands.comp
+    private static final int SHADER_WORK_GROUP_SIZE = 64; //synced with resources/assets/fp2/shaders/comp/compress_indirect_draw_commands.comp
 
     private static final String SELECTED_FLAGS_SSBO_NAME = "B_SelectedFlags"; //synced with resources/assets/fp2/shaders/comp/compress_indirect_draw_commands.comp
     private static final int SELECTED_FLAGS_SSBO_BINDING = 0;

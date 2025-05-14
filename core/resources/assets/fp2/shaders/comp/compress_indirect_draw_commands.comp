@@ -19,7 +19,7 @@
  */
 
 //synced with net.daporkchop.fp2.core.client.render.compute.ComputeIndirectDrawCommandsCompressor#SHADER_WORK_GROUP_SIZE
-layout(local_size_x = 32) in;
+layout(local_size_x = 64) in;
 
 #include <"fp2:shaders/util/indirect_draw.glsl"> // DrawElementsIndirectCommand
 
