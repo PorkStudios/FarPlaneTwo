@@ -28,7 +28,6 @@ import lombok.val;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.listener.FramebufferResizeListener;
@@ -55,28 +54,24 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.draw.VertexMode;
-import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.texture.GLTexture2D;
-import net.daporkchop.fp2.gl.texture.TextureMagFilter;
 import net.daporkchop.fp2.gl.texture.TextureInternalFormat;
+import net.daporkchop.fp2.gl.texture.TextureMagFilter;
 import net.daporkchop.fp2.gl.texture.TextureMinFilter;
 import net.daporkchop.fp2.gl.texture.TextureWrapMode;
 import net.daporkchop.fp2.gl.texture.framebuffer.FramebufferAttachment;
 import net.daporkchop.fp2.gl.texture.framebuffer.GLFramebuffer;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
@@ -100,7 +95,6 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
     private static final String DEPTH_TEXTURE_SAMPLER2D_NAME = "u_depthTexture";
     private static final int DEPTH_TEXTURE_SAMPLER2D_BINDING = 6;
 
-    private static final Object OCCLUSION_CULLED_CUBE_KEY = "occlusion_culled_cube";
     private static final Object TILE_VISIBILITY_TEST_KEY = "tile_visibility_test";
 
     /**
@@ -144,13 +138,6 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
 
         @Override
         public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry.Builder shaderRegistryBuilder, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
-            shaderRegistryBuilder.registerDraw(OCCLUSION_CULLED_CUBE_KEY, shaderMacros, null)
-                    .addShader(ShaderType.VERTEX, Identifier.from(FP2.MODID, "shaders/vert/occlusion_culled_cube.vert"))
-                    .addShader(ShaderType.FRAGMENT, Identifier.from(FP2.MODID, "shaders/frag/occlusion_culled_cube.frag"))
-                    .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
-                    .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
-                    .addSSBO(DST_SELECTED_TILES_SSBO_BINDING, DST_SELECTED_TILES_SSBO_NAME);
-
             shaderRegistryBuilder.registerCompute(TILE_VISIBILITY_TEST_KEY, shaderMacros, null)
                     .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/tile_visibility_test.comp"))
                     .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
@@ -188,13 +175,12 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
 
         @Override
         public <VertexType extends AttributeStruct> RenderIndex<VertexType> createRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
-            return new GPUOcclusionCulledBaseInstanceRenderIndex<>(FP2Core.fp2().client(), gl, bakeStorage, alloc, globalRenderer, cameraStateUniformsBuffer);
+            return new GPUOcclusionCulledBaseInstanceRenderIndex<>(fp2().client(), gl, bakeStorage, alloc, globalRenderer, cameraStateUniformsBuffer);
         }
     }
 
     private final ReloadableShaderRegistry shaderRegistry;
 
-    private final ReloadableShaderProgram<DrawShaderProgram> occlusionCulledCubeShader;
     private final ReloadableShaderProgram<ComputeShaderProgram> tileVisibilityTestShader;
 
     private final ComputeTextureCopier textureCopier;
@@ -204,11 +190,6 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
     private GLTexture2D depthTexture_depth;
     private GLTexture2D depthTexture_color;
     private final GLFramebuffer copyFramebuffer;
-
-    private final VertexArrayObject cubeVao;
-    private final GLBuffer cubeIndexBuffer;
-    private final int cubeMeshVertices;
-    private final IndexType cubeMeshIndexType;
 
     private final ListenerList<FramebufferResizeListener>.Handle framebufferResizeListenerHandle;
 
@@ -220,7 +201,6 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
         try {
             this.shaderRegistry = globalRenderer.shaderRegistry;
 
-            this.occlusionCulledCubeShader = globalRenderer.shaderRegistry.get(OCCLUSION_CULLED_CUBE_KEY);
             this.tileVisibilityTestShader = globalRenderer.shaderRegistry.get(TILE_VISIBILITY_TEST_KEY);
 
             this.autoReduce = gl.supports(GLExtension.GL_ARB_texture_filter_minmax);
@@ -230,32 +210,6 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
             this.drawCommandsCompressor = new ComputeIndirectDrawCommandsCompressor(gl, globalRenderer, VertexMode.INDICES);
 
             this.copyFramebuffer = GLFramebuffer.create(gl);
-
-            this.cubeIndexBuffer = GLBuffer.createFunctionallyImmutable(gl, (ByteBuffer) ByteBuffer.allocateDirect(3 * 2 * 6)
-                    .put(new byte[]{
-                            //-X
-                            0b000, 0b010, 0b110,
-                            0b000, 0b110, 0b100,
-                            //+X
-                            0b001, 0b111, 0b011,
-                            0b001, 0b101, 0b111,
-                            //-Y
-                            0b000, 0b101, 0b001,
-                            0b000, 0b100, 0b101,
-                            //+Y
-                            0b010, 0b011, 0b111,
-                            0b010, 0b111, 0b110,
-                            //-Z
-                            0b000, 0b001, 0b011,
-                            0b000, 0b011, 0b010,
-                            //+Z
-                            0b100, 0b111, 0b101,
-                            0b100, 0b110, 0b111,
-                    }).flip(), BufferUsage.STATIC_DRAW, 0);
-            this.cubeVao = VertexArrayObject.builder(gl).elementBuffer(this.cubeIndexBuffer).build();
-
-            this.cubeMeshVertices = (int) this.cubeIndexBuffer.capacity();
-            this.cubeMeshIndexType = IndexType.UNSIGNED_BYTE;
 
             this.framebufferResizeListenerHandle = client.addFramebufferResizeListener(this);
         } catch (Throwable t) {
@@ -267,8 +221,6 @@ public final class GPUOcclusionCulledBaseInstanceRenderIndex<VertexType extends 
     public void close() {
         try (val ignored = PResourceUtil.lazyCloseAll(
                 this.framebufferResizeListenerHandle,
-                this.cubeVao,
-                this.cubeIndexBuffer,
                 this.textureCopier,
                 this.mipmapGenerator,
                 this.drawCommandsCompressor,
