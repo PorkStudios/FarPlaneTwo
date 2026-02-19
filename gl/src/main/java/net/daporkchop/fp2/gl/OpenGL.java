@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2025 DaPorkchop_
+ * Copyright (c) 2020-2026 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -2807,7 +2807,7 @@ public abstract class OpenGL {
         @GLRequires(GLExtension.GL_ARB_shader_atomic_counters)
         private final int maxAtomicCounterBufferBindings;
 
-        @GLRequires(GLExtension.GL_ARB_transform_feedback2)
+        @GLRequires(GLExtension.GL_ARB_transform_feedback3)
         private final int maxTransformFeedbackBuffers;
 
         @GLRequires(GLExtension.GL_ARB_shader_storage_buffer_object)
@@ -2847,7 +2847,7 @@ public abstract class OpenGL {
 
             this.maxImageUnits = gl.supports(GLExtension.GL_ARB_shader_image_load_store) ? gl.glGetInteger(GL_MAX_IMAGE_UNITS) : 0;
 
-            this.maxTransformFeedbackBuffers = gl.supports(GLExtension.GL_ARB_transform_feedback2) ? gl.glGetInteger(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS) : 0;
+            this.maxTransformFeedbackBuffers = gl.supports(GLExtension.GL_ARB_transform_feedback3) ? gl.glGetInteger(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS) : 0;
 
             this.maxAtomicCounterBufferBindings = gl.supports(GLExtension.GL_ARB_shader_atomic_counters) ? gl.glGetInteger(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS) : 0;
 
