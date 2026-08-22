@@ -1,0 +1,14 @@
+FarPlane
+Copyright (c) 2026 FarPlane contributors
+
+This project is adapted from FarPlaneTwo by DaPorkchop_ (PorkStudios).
+Original project: https://github.com/PorkStudios/FarPlaneTwo
+
+The following files contain algorithms, constants, or logic adapted from FarPlaneTwo:
+- dev/farplane/engine/EngineConstants.java
+- dev/farplane/engine/TilePos.java
+- dev/farplane/engine/Tile.java
+- dev/farplane/engine/TileData.java
+- dev/farplane/engine/ExactVoxelGenerator.java
+- dev/farplane/engine/VoxelScaler.java
+- dev/farplane/engine/VoxelBaker.java

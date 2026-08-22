@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "farplane",
+  "version": "${version}",
+  "name": "FarPlane",
+  "description": "Far-distance voxel terrain engine for Minecraft",
+  "authors": [
+    "DaPorkchop_ (original FarPlaneTwo)",
+    "FarPlane contributors"
+  ],
+  "contact": {
+    "homepage": "https://github.com/PorkStudios/FarPlaneTwo",
+    "sources": "https://github.com/PorkStudios/FarPlaneTwo"
+  },
+  "license": "MIT",
+  "icon": "assets/farplane/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.farplane.Farplane"
+    ],
+    "client": [
+      "dev.farplane.client.FarplaneClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.1.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
