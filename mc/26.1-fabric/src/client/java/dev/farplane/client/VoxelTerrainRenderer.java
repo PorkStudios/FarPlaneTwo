@@ -173,7 +173,7 @@ public class VoxelTerrainRenderer {
         storage = new FileTileStorage(Path.of("farplane_cache"));
 
         // Initialize async generator
-        asyncGenerator = new AsyncTileGenerator(config, storage);
+        asyncGenerator = new AsyncTileGenerator(config, storage, level);
         asyncGenerator.setOnTileReady(pos -> {
             // When a tile is ready, bake it for rendering
             Tile tile = asyncGenerator.getCachedTile(pos);
@@ -189,12 +189,8 @@ public class VoxelTerrainRenderer {
         tracker = new TileTracker(config);
         tracker.onTileLoad(pos -> {
             // Request generation when tracker says a tile should be loaded
-            if (pos.level() == 0) {
-                asyncGenerator.requestGeneration(pos, sampleSource);
-            } else {
-                // For higher levels, try to scale from children
-                asyncGenerator.requestGeneration(pos, sampleSource);
-            }
+            // The async generator will handle rough vs exact generation
+            asyncGenerator.requestGeneration(pos, sampleSource);
         });
         tracker.onTileUnload(pos -> {
             // Remove from render cache when tracker says unload

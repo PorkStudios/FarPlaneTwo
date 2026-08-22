@@ -23,6 +23,7 @@ package dev.farplane.engine;
 import dev.farplane.Farplane;
 import dev.farplane.config.FarplaneConfig;
 import dev.farplane.engine.storage.TileStorage;
+import net.minecraft.world.level.Level;
 
 import java.util.Map;
 import java.util.concurrent.*;
@@ -39,17 +40,20 @@ import java.util.function.Consumer;
 public class AsyncTileGenerator {
     private final FarplaneConfig config;
     private final TileStorage storage;
+    private final Level level;
     private final ExecutorService generationExecutor;
     private final Map<TilePos, CompletableFuture<Tile>> pendingGenerations = new ConcurrentHashMap<>();
     private final Map<TilePos, Tile> tileCache = new ConcurrentHashMap<>();
     private final VoxelScaler scaler = new VoxelScaler();
+    private RoughVoxelGenerator roughGenerator;
 
     // Callback when a tile is ready
     private Consumer<TilePos> onTileReady;
 
-    public AsyncTileGenerator(FarplaneConfig config, TileStorage storage) {
+    public AsyncTileGenerator(FarplaneConfig config, TileStorage storage, Level level) {
         this.config = config;
         this.storage = storage;
+        this.level = level;
 
         int threads = config.terrainThreads();
         this.generationExecutor = Executors.newFixedThreadPool(threads, r -> {
@@ -60,6 +64,16 @@ public class AsyncTileGenerator {
         });
 
         Farplane.LOGGER.info("[FarPlane] Async generator initialized with {} threads", threads);
+
+        // Initialize rough generator if we have a server level
+        if (level.getServer() != null) {
+            try {
+                this.roughGenerator = new RoughVoxelGenerator(level);
+                Farplane.LOGGER.info("[FarPlane] Rough noise generator initialized");
+            } catch (Exception e) {
+                Farplane.LOGGER.warn("[FarPlane] Failed to initialize rough generator: {}", e.getMessage());
+            }
+        }
     }
 
     /**
@@ -183,14 +197,32 @@ public class AsyncTileGenerator {
 
         // Generate new tile
         if (pos.level() == 0) {
-            // Exact generation from loaded chunks
-            ExactVoxelGenerator generator = new ExactVoxelGenerator(source);
-            Tile tile = new Tile();
-            if (generator.generate(pos, tile)) {
-                return tile;
+            // Try exact generation first (from loaded chunks)
+            if (source != null) {
+                ExactVoxelGenerator exactGen = new ExactVoxelGenerator(source);
+                Tile tile = new Tile();
+                if (exactGen.generate(pos, tile)) {
+                    return tile;
+                }
+            }
+
+            // Fall back to rough generation if exact fails
+            if (roughGenerator != null) {
+                Tile tile = new Tile();
+                if (roughGenerator.generate(pos, tile)) {
+                    return tile;
+                }
             }
         } else {
-            // Scale from child tiles
+            // For higher levels, try rough generation first
+            if (roughGenerator != null) {
+                Tile tile = new Tile();
+                if (roughGenerator.generate(pos, tile)) {
+                    return tile;
+                }
+            }
+
+            // Fall back to scaling from children
             return scaleFromChildren(pos);
         }
 
